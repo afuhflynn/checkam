@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: checkam-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: checkam_user
+      POSTGRES_PASSWORD: checkam_secure_password_2025
+      POSTGRES_DB: checkam_db
+    ports:
+      - "5454:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U checkam_user -d checkam_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Local file store for flyer evidence (mounted into Next.js as /app/uploads)
+  # Production swap: replace with S3/MinIO without changing app code paths.
+  app-storage:
+    image: busybox:1.36
+    container_name: checkam-storage-init
+    command: ["sh", "-c", "mkdir -p /data/evidence && chmod 777 /data/evidence && echo ok"]
+    volumes:
+      - uploads_data:/data
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local

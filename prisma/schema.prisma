@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum VerdictStatus {
+  HIGH_RISK
+  CAUTION
+  VERIFIED_OFFICIAL
+}
+
+enum ReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ScamCategory {
+  CIVIL_SERVICE
+  VISA_TRAVEL
+  MOBILE_MONEY
+  INVESTMENT_PONZI
+  ECOMMERCE
+  OTHER
+}
+
+enum IdentifierType {
+  PHONE
+  EMAIL
+  DOMAIN
+  MOMO_ACCOUNT
+  BANK_ACCOUNT
+}
+
+model User {
+  id               String       @id @default(cuid())
+  name             String?
+  email            String       @unique
+  emailVerified    Boolean      @default(false)
+  image            String?
+  role             Role         @default(USER)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  sessions         Session[]
+  accounts         Account[]
+  moderatedReports ScamReport[] @relation("ModeratedReports")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  expiresAt             DateTime?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ScamVerification {
+  id              String        @id @default(cuid())
+  inputType       String // TEXT, IMAGE, PDF, PHONE, EMAIL
+  queryContent    String? // sanitized text or phone searched
+  fileHash        String? // SHA-256 for caching
+  extractedFacts  Json? // AI-extracted fields
+  verdict         VerdictStatus
+  score           Int // 0 to 100 risk score
+  evidenceBullets Json // Array of string bullets in EN and FR
+  whatsappWarning String?
+  clientIpHash    String?
+  createdAt       DateTime      @default(now())
+
+  @@map("verifications")
+}
+
+// Better Auth email-verification tokens (kept separate from scam checks above)
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("auth_verifications")
+}
+
+model ScamReport {
+  id                 String              @id @default(cuid())
+  slug               String              @unique
+  title              String
+  description        String
+  category           ScamCategory
+  status             ReportStatus        @default(PENDING)
+  targetEntity       String?             // e.g. "MINESEC", "Orange Money", "Embassy of Canada"
+  amountRequested    String?             // e.g. "50,000 FCFA"
+  evidenceUrls       String[]            // Uploaded screenshot paths
+  contactPhone       String?             // Flagged suspect phone
+  contactEmail       String?             // Flagged suspect email
+  paymentDetails     String?             // MoMo number, account name
+  submitterEmail     String?
+  submitterIpHash    String?
+  moderatedById      String?
+  moderatorNotes     String?
+  publishedAt        DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  moderator          User?               @relation("ModeratedReports", fields: [moderatedById], references: [id])
+  flaggedIdentifiers FlaggedIdentifier[]
+}
+
+model FlaggedIdentifier {
+  id              String         @id @default(cuid())
+  type            IdentifierType
+  value           String         // Original representation
+  normalizedValue String         // e.g. E.164 phone or lowercase email
+  riskLevel       VerdictStatus  @default(HIGH_RISK)
+  category        ScamCategory   @default(OTHER)
+  reportId        String?
+  notes           String?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  report          ScamReport?    @relation(fields: [reportId], references: [id])
+
+  @@index([normalizedValue])
+}
+
+model OfficialEntity {
+  id                   String   @id @default(cuid())
+  nameEn               String
+  nameFr               String
+  acronym              String   @unique // e.g. "MINESEC", "MINFOPRA", "ANTIC"
+  officialDomains      String[] // ["minesec.gov.cm", "minesec.cm"]
+  officialPhoneNumbers String[]
+  paymentRules         String   // "Only Trésor Public or BICEC, never personal MoMo"
+  websiteUrl           String
+  anticHotline         String   @default("8202")
+  createdAt            DateTime @default(now())
+}
+
+model WhatsAppWebhookEvent {
+  id              String   @id @default(cuid())
+  messageId       String   @unique
+  fromNumber      String
+  messageType     String   // text, image, document
+  rawPayload      Json
+  processedStatus String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  replyText       String?
+  createdAt       DateTime @default(now())
+}
