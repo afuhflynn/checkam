@@ -54,6 +54,8 @@ model User {
   sessions         Session[]
   accounts         Account[]
   moderatedReports ScamReport[] @relation("ModeratedReports")
+  chatFolders      ChatFolder[]
+  chatSessions     ChatSession[]
 }
 
 model Session {
@@ -98,6 +100,7 @@ model ScamVerification {
   whatsappWarning String?
   clientIpHash    String?
   createdAt       DateTime      @default(now())
+  chatMessages    ChatMessage[]
 
   @@map("verifications")
 }
@@ -177,4 +180,61 @@ model WhatsAppWebhookEvent {
   processedStatus String   @default("PENDING") // PENDING, COMPLETED, FAILED
   replyText       String?
   createdAt       DateTime @default(now())
+}
+
+// Chat memory (spec 0004): folders own sessions own messages. Guest rows
+// stay ownerless with a guestKey until claim. Deletes are soft (deletedAt)
+// with a daily purge; undo tokens are HMAC signed, not stored.
+model ChatFolder {
+  id        String        @id @default(cuid())
+  ownerId   String
+  name      String
+  pinned    Boolean       @default(false)
+  deletedAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  owner     User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  sessions  ChatSession[]
+
+  @@index([ownerId, updatedAt])
+  @@map("chat_folders")
+}
+
+model ChatSession {
+  id         String        @id @default(cuid())
+  ownerId    String?
+  folderId   String?
+  title      String        @default("New check")
+  guestKey   String?
+  pinned     Boolean       @default(false)
+  deletedAt  DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  owner      User?         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  folder     ChatFolder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  messages   ChatMessage[]
+
+  @@index([ownerId, updatedAt])
+  @@index([guestKey, updatedAt])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id             String            @id @default(cuid())
+  sessionId      String
+  seq            Int
+  role           String // user | assistant | system
+  text           String
+  attachments    Json              @default("[]")
+  toolCalls      Json              @default("[]")
+  tokenUse       Json?
+  verificationId String?
+  ipHash         String?
+  createdAt      DateTime          @default(now())
+  session        ChatSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  verification   ScamVerification? @relation(fields: [verificationId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, seq])
+  @@index([sessionId, createdAt])
+  @@map("chat_messages")
 }

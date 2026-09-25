@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "../lib/i18n/context";
+import { UserButton } from "./user-button";
 
 export function Header() {
   const { language, setLanguage, t } = useTranslation();
@@ -12,6 +13,7 @@ export function Header() {
 
   const navLinks = [
     { href: "/", label: t.navHome },
+    { href: "/chat", label: t.navChat },
     { href: "/directory", label: t.navDirectory },
     { href: "/report", label: t.navReport },
     { href: "/whatsapp", label: t.navWhatsApp },
@@ -94,8 +96,15 @@ export function Header() {
           })}
         </nav>
 
+        {/* Desktop account */}
+        <div className="hidden md:block">
+          <UserButton />
+        </div>
+
         {/* Mobile trigger — CSS hamburger, no icon font */}
-        <button
+        <div className="flex items-center gap-2 md:hidden">
+          <UserButton />
+          <button
           type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label={t.toggleMenu}
@@ -115,6 +124,7 @@ export function Header() {
             }`}
           />
         </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}

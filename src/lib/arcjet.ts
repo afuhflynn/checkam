@@ -34,3 +34,17 @@ export const reportLimiter = arcjet({
     }),
   ],
 });
+
+// Auth gate limiter (spec 0002 AC-7): 20 requests per hour per IP across
+// resend, reset-adjacent, and OTP-check actions. Per-mail caps live beside
+// the caller, counted on Verification rows.
+export const authLimiter = arcjet({
+  key: process.env.ARCJET_KEY || "ajkey_placeholder",
+  rules: [
+    fixedWindow({
+      mode: process.env.NODE_ENV === "production" ? "LIVE" : "DRY_RUN",
+      window: "1h",
+      max: 20,
+    }),
+  ],
+});

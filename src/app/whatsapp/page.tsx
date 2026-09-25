@@ -20,6 +20,7 @@ import React, { useState } from "react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader } from "../../components/ui/card";
+import { GuideTrials } from "../../components/guide-trials";
 import { useTranslation } from "../../lib/i18n/context";
 
 const MINSEC_REPLY_FR = `🚨 *ALERTE ARNAQUE / CHECKAM CAMEROUN* 🚨
@@ -236,6 +237,9 @@ export default function WhatsAppPage() {
           </div>
         </div>
       </div>
+
+      {/* Save number + trials */}
+      <GuideTrials />
 
       {/* Webhook Developer Info Card */}
       <Card className="border border-slate-200 bg-authority-50/50 p-6 sm:p-8 space-y-4">

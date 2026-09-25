@@ -1,7 +1,9 @@
 "use client";
 
 import { ArrowUp } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useState } from "react";
+import { authClient } from "../lib/auth-client";
 import { useTranslation } from "../lib/i18n/context";
 import type { VerificationResult } from "../lib/rules/engine";
 import { IntakeHub } from "./intake-hub";
@@ -24,6 +26,12 @@ export function LandingPage({ stats, reports }: LandingPageProps) {
   const { t } = useTranslation();
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { data: session } = authClient.useSession();
+  const [returning] = useState(
+    () =>
+      typeof document !== "undefined" &&
+      /(?:^|;\s*)checkam_returning=1/.test(document.cookie),
+  );
 
   const scrollToDesk = useCallback(() => {
     document.getElementById("desk")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -34,25 +42,49 @@ export function LandingPage({ stats, reports }: LandingPageProps) {
     scrollToDesk();
   }, [scrollToDesk]);
 
+  const desk = (
+    <DeskSection>
+      {verificationResult ? (
+        <VerdictCard result={verificationResult} onReset={handleReset} />
+      ) : (
+        <IntakeHub
+          onVerificationComplete={(res) => {
+            document.cookie = "checkam_returning=1; max-age=31536000; path=/; SameSite=Lax";
+            setVerificationResult(res);
+          }}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+        />
+      )}
+    </DeskSection>
+  );
+
   return (
     <div className="flex flex-col">
       <BulletinBar initialStats={stats} />
 
-      <HeroSection onVerify={scrollToDesk} />
+      {session?.user && (
+        <div className="bg-emerald-700 px-4 py-2.5 text-center sm:px-6">
+          <p className="text-sm font-semibold text-white">
+            {t.continueBarText}{" "}
+            <Link href="/chat" className="underline underline-offset-2 hover:no-underline">
+              {t.continueBarBtn}
+            </Link>
+          </p>
+        </div>
+      )}
 
-      <DeskSection>
-        {verificationResult ? (
-          <VerdictCard result={verificationResult} onReset={handleReset} />
-        ) : (
-          <IntakeHub
-            onVerificationComplete={(res) => {
-              setVerificationResult(res);
-            }}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-          />
-        )}
-      </DeskSection>
+      {returning && !session?.user ? (
+        <>
+          {desk}
+          <HeroSection onVerify={scrollToDesk} />
+        </>
+      ) : (
+        <>
+          <HeroSection onVerify={scrollToDesk} />
+          {desk}
+        </>
+      )}
 
       <HowSection />
 

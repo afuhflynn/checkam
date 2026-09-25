@@ -19,6 +19,29 @@
   --color-paper-deep: #efe9da;
   --color-ink: #101828;
 
+  /* Semantic shadcn tokens (Tailwind v4 reads these from @theme, so stock
+     shadcn classes like bg-background and border-input resolve). Values
+     mirror the :root palette below. */
+  --color-background: #f8fafc;
+  --color-foreground: #0a0f1e;
+  --color-card: #ffffff;
+  --color-card-foreground: #0a0f1e;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0a0f1e;
+  --color-primary: #0b192c;
+  --color-primary-foreground: #f8fafc;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #1e293b;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #1e293b;
+  --color-destructive: #e11d48;
+  --color-destructive-foreground: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-input: #cbd5e1;
+  --color-ring: #244371;
+
   --color-verdict-scam-bg: #fef2f2;
   --color-verdict-scam-border: #fca5a5;
   --color-verdict-scam-text: #991b1b;

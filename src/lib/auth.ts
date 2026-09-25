@@ -1,7 +1,45 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { emailOTP } from "better-auth/plugins";
 import { headers } from "next/headers";
 import { db } from "./db";
+import { type MailPayload, queueMail } from "./mail/queue";
+
+function requestLocale(): Promise<"en" | "fr"> {
+  return readLangCookie().then((lang) => (lang === "en" ? "en" : "fr"));
+}
+
+async function readLangCookie(): Promise<string | null> {
+  try {
+    const h = await headers();
+    const cookie = h.get("cookie") ?? "";
+    const match = cookie.match(/(?:^|;\s*)checkam_lang=(en|fr)/);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function enqueue(purpose: MailPayload["purpose"], userId: string, email: string) {
+  await queueMail(
+    purpose === "verify"
+      ? "mail/verify.requested"
+      : purpose === "reset"
+        ? "mail/password-reset.requested"
+        : "mail/welcome.requested",
+    { userId, email, locale: await requestLocale(), purpose },
+  );
+}
+
+const googleKeys =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? {
+        google: {
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        },
+      }
+    : {};
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
@@ -10,7 +48,41 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+    requireEmailVerification: true,
+    minPasswordLength: 8,
+    sendResetPassword: async ({ user }) => {
+      await enqueue("reset", user.id, user.email);
+    },
+    resetPasswordTokenExpiresIn: 3600,
   },
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    expiresIn: 86400,
+    sendVerificationEmail: async ({ user }) => {
+      await enqueue("verify", user.id, user.email);
+    },
+  },
+  socialProviders: {
+    ...googleKeys,
+  },
+  plugins: [
+    emailOTP({
+      expiresIn: 600,
+      allowedAttempts: 5,
+      sendVerificationOTP: async ({ email, otp, type }) => {
+        const user = await db.user.findUnique({ where: { email } });
+        if (!user) return;
+        await queueMail("mail/password-reset.requested", {
+          userId: user.id,
+          email,
+          locale: await requestLocale(),
+          purpose: type === "email-verification" ? "verify" : "reset",
+          verificationId: otp,
+        });
+      },
+    }),
+  ],
   user: {
     additionalFields: {
       role: {
@@ -19,7 +91,30 @@ export const auth = betterAuth({
       },
     },
   },
+  databaseHooks: {
+    user: {
+      update: {
+        // Welcome trigger (spec 0003 AC-3): when a password user completes
+        // verify, queue the one time welcome. The job re-checks and marks,
+        // so repeated updates stay no ops.
+        after: async (user) => {
+          if (!user.emailVerified) return;
+          const google = await db.account.findFirst({
+            where: { userId: user.id, providerId: "google" },
+          });
+          if (google) return;
+          const marker = await db.verification.findFirst({
+            where: { identifier: `welcome:${user.id}` },
+          });
+          if (marker) return;
+          await enqueue("welcome", user.id, user.email);
+        },
+      },
+    },
+  },
   session: {
+    expiresIn: 60 * 60 * 24 * 30,
+    updateAge: 60 * 60 * 24,
     cookieCache: {
       enabled: true,
       maxAge: 5 * 60, // 5 minutes
@@ -28,6 +123,12 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET || "dev-secret-key-checkam-cameroon-2025-min-32-chars",
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });
+
+// Revoke every session for a user (password change, per spec 0002 AC-6).
+export async function revokeAllSessions(userId: string): Promise<number> {
+  const result = await db.session.deleteMany({ where: { userId } });
+  return result.count;
+}
 
 // Prisma-backed equivalent of Supabase has_role(): moderation restricted to admins.
 // Public read stays limited to APPROVED registry rows (enforced in queries).
