@@ -147,3 +147,13 @@ Tools run server side only with no client keys. Tavily key never leaves the serv
 - [ ] Name the Tavily per day budget at build.
 - [ ] Record prompt owners in the registry at build.
 - [ ] Consider installing community skills for AI SDK plus Tavily conventions before build.
+## Amendments (peer review pass, 2026-09-25)
+
+- Timeouts are race enforced (10 seconds plus one retry) since bare abort signals do not stop every call.
+- Stored rows keep structured identifiers for function; free text is redacted at rest, traces never hold secrets.
+- Flagged checks normalize every contact and scan all of them, not the first.
+- Model prose and titles pass a verdict lexicon scrub; matches fall back to engine bullets.
+- Tavily fires at most twice per turn (initial plus the wrapper retry); budget counts trace entries per Douala day.
+- Prompt files carry changelog frontmatter parsed by the loader.
+- Accepted deviations: no searching stream event (dossier shows traces implicitly); prompt owners still unassigned; per-day budget default 100 pending real spend.
+

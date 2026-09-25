@@ -158,3 +158,12 @@ Owner or guest key on every call per `0004-chat-memory` guards. Uploads validate
 - [ ] Connect a design MCP and name the shell file plus frames.
 - [ ] Confirm Blob budget guardrails at build.
 - [ ] Consider installing community skills for AI Elements plus AI SDK conventions before build.
+## Amendments (peer review pass, 2026-09-25)
+
+- Transport takes the persisted user sequence and excludes the current turn from the wall recount: single enforcement, no double charge.
+- Repeat texts reuse stored facts for rules (extraction cache honored) with a fresh answer each turn.
+- Title fallback capped at 60 chars per AC-5; drafts scrubbed like answers.
+- Rail pages by cursor with 30 second stale keys; thread reads through its query key so invalidation refetches.
+- Uploads and lookups pass the guest cap and Arcjet; folders require verified writes.
+- Accepted deviations: offline queue drops attachments and is FIFO best effort; reload restores answer text but not the seal (fallback path).
+

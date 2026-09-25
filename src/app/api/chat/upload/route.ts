@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { authLimiter } from "../../../../lib/arcjet";
-import { resolveActor } from "../../../../lib/chat/actor";
+import { clientIp, hashIp, resolveActor } from "../../../../lib/chat/actor";
+import { guestTriesUsed } from "../../../../lib/chat/counter";
 import { sessionScope, refuseUnverifiedWrite } from "../../../../lib/chat/scope";
 import { db } from "../../../../lib/db";
 import { saveChatFile } from "../../../../lib/storage";
@@ -17,6 +18,9 @@ export async function POST(req: NextRequest) {
   if (actor.kind === "guest") {
     const decision = await authLimiter.protect(req);
     if (decision.isDenied()) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    // Uploads pass the same guest cap as sends (spec 0005 invariants).
+    const used = await guestTriesUsed(actor.guestKey, hashIp(clientIp(req.headers)));
+    if (used >= 2) return NextResponse.json({ error: "guest_wall", triesLeft: 0 }, { status: 403 });
   }
 
   const form = await req.formData().catch(() => null);

@@ -1,7 +1,8 @@
 ---
 name: title-draft
-version: 1
+version: 2
 owner: unassigned
+changelog: v2 documents the versioned registry flow; wording unchanged from v1
 ---
 
 # Title draft (v1)

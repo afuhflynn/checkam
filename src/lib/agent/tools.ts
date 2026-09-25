@@ -6,13 +6,15 @@ import { extractFactsFromTextOrImage } from "../ai/extract-facts";
 import { findOfficialEntity } from "../rules/cameroon-entities";
 
 // Tool timeout: 10s plus one retry inside a 60s turn budget (spec 0006).
+// The race enforces the deadline even when the underlying call ignores
+// abort signals; callers pass the signal where the API accepts one.
 export async function withTool<T>(
   name: string,
   fn: () => Promise<T>,
 ): Promise<{ ok: true; value: T } | { ok: false; note: string }> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const value = await fn();
+      const value = await withTimeout(fn(), 10_000);
       return { ok: true, value };
     } catch (err) {
       if (attempt === 1) {
@@ -24,9 +26,13 @@ export async function withTool<T>(
 }
 
 export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  return promise.finally(() => clearTimeout(timer));
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("tool_timeout")), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 export const registryLookupTool = tool({

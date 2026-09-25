@@ -65,12 +65,21 @@ export function LandingPage({ stats, reports }: LandingPageProps) {
 
       {session?.user && (
         <div className="bg-emerald-700 px-4 py-2.5 text-center sm:px-6">
-          <p className="text-sm font-semibold text-white">
-            {t.continueBarText}{" "}
-            <Link href="/chat" className="underline underline-offset-2 hover:no-underline">
-              {t.continueBarBtn}
-            </Link>
-          </p>
+          {(session.user as { emailVerified?: boolean }).emailVerified === false ? (
+            <p className="text-sm font-semibold text-white">
+              {t.gateUnverifiedDesc}{" "}
+              <Link href="/signin" className="underline underline-offset-2 hover:no-underline">
+                {t.gateSignInBtn}
+              </Link>
+            </p>
+          ) : (
+            <p className="text-sm font-semibold text-white">
+              {t.continueBarText}{" "}
+              <Link href="/chat" className="underline underline-offset-2 hover:no-underline">
+                {t.continueBarBtn}
+              </Link>
+            </p>
+          )}
         </div>
       )}
 

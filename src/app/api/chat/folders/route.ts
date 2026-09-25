@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveActor } from "../../../../lib/chat/actor";
+import { refuseUnverifiedWrite } from "../../../../lib/chat/scope";
 import { db } from "../../../../lib/db";
 
 const FolderSchema = z.object({
@@ -24,6 +25,8 @@ export async function POST(req: NextRequest) {
   if (actor.kind !== "user") {
     return NextResponse.json({ error: "signed_out" }, { status: 401 });
   }
+  const refused = refuseUnverifiedWrite(actor);
+  if (refused) return refused;
   const body: unknown = await req.json().catch(() => null);
   const parsed = FolderSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "invalid_name" }, { status: 422 });

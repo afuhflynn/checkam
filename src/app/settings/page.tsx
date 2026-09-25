@@ -55,9 +55,11 @@ export default function SettingsPage() {
         revokeOtherSessions: true,
       });
       if (res.error) throw new Error("password_failed");
-      setCurrentPw("");
-      setNewPw("");
-      toast.success(t.settingsPwChanged);
+      // Spec invariant: every session dies on password change, including
+      // this one. Revoke all, then sign back in fresh.
+      await fetch("/api/user/revoke-all", { method: "POST" });
+      await authClient.signOut();
+      window.location.href = "/signin";
     } catch {
       toast.error(t.gateFailed);
     } finally {

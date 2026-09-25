@@ -20,14 +20,19 @@ async function readLangCookie(): Promise<string | null> {
   }
 }
 
-async function enqueue(purpose: MailPayload["purpose"], userId: string, email: string) {
+async function enqueue(
+  purpose: MailPayload["purpose"],
+  userId: string,
+  email: string,
+  secret?: string,
+) {
   await queueMail(
     purpose === "verify"
       ? "mail/verify.requested"
       : purpose === "reset"
         ? "mail/password-reset.requested"
         : "mail/welcome.requested",
-    { userId, email, locale: await requestLocale(), purpose },
+    { userId, email, locale: await requestLocale(), purpose, secret },
   );
 }
 
@@ -50,8 +55,8 @@ export const auth = betterAuth({
     autoSignIn: true,
     requireEmailVerification: true,
     minPasswordLength: 8,
-    sendResetPassword: async ({ user }) => {
-      await enqueue("reset", user.id, user.email);
+    sendResetPassword: async ({ user, url }) => {
+      await enqueue("reset", user.id, user.email, url);
     },
     resetPasswordTokenExpiresIn: 3600,
   },
@@ -59,8 +64,8 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     expiresIn: 86400,
-    sendVerificationEmail: async ({ user }) => {
-      await enqueue("verify", user.id, user.email);
+    sendVerificationEmail: async ({ user, url }) => {
+      await enqueue("verify", user.id, user.email, url);
     },
   },
   socialProviders: {
@@ -78,7 +83,7 @@ export const auth = betterAuth({
           email,
           locale: await requestLocale(),
           purpose: type === "email-verification" ? "verify" : "reset",
-          verificationId: otp,
+          secret: otp,
         });
       },
     }),
@@ -120,7 +125,13 @@ export const auth = betterAuth({
       maxAge: 5 * 60, // 5 minutes
     },
   },
-  secret: process.env.BETTER_AUTH_SECRET || "dev-secret-key-checkam-cameroon-2025-min-32-chars",
+  secret:
+    process.env.BETTER_AUTH_SECRET ||
+    (process.env.NODE_ENV === "production"
+      ? (() => {
+          throw new Error("BETTER_AUTH_SECRET is required in production");
+        })()
+      : "dev-secret-key-checkam-cameroon-2025-min-32-chars"),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });
 

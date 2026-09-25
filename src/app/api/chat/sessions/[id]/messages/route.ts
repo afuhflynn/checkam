@@ -118,7 +118,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             createdAt: true,
           },
         });
-        await tx.chatSession.update({ where: { id }, data: {} });
+        await tx.chatSession.update({ where: { id }, data: { updatedAt: new Date() } });
         return created;
       });
       break;

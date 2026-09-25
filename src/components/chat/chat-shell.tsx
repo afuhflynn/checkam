@@ -1,7 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -31,6 +31,10 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const queryClient = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [cursor, setCursor] = useState<string | null>(null);
+  // Accumulated pages across "More", deduped by id: keyset windows may
+  // overlap at millisecond boundaries, so rows can repeat but never vanish.
+  const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [railOpen, setRailOpen] = useState(false);
   const [dossierOpen, setDossierOpen] = useState(false);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
@@ -41,7 +45,7 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const [confirmDelete, setConfirmDelete] = useState<{ kind: "session" | "folder"; id: string; count?: number } | null>(null);
   const [newFolder, setNewFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
-  const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null);
+  const [renaming, setRenaming] = useState<{ kind: "session" | "folder"; id: string; title: string } | null>(null);
 
   const foldersQuery = useQuery({
     queryKey: ["chat", "folders"],
@@ -53,13 +57,36 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   });
 
   const sessionsQuery = useQuery({
-    queryKey: ["chat", "sessions", search],
-    queryFn: async (): Promise<SessionRow[]> => {
-      const res = await fetch(`/api/chat/sessions${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+    queryKey: ["chat", "sessions", search, cursor],
+    staleTime: 30_000,
+    queryFn: async (): Promise<{ sessions: SessionRow[]; nextCursor: string | null }> => {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (cursor) params.set("cursor", cursor);
+      const res = await fetch(`/api/chat/sessions${params.size ? `?${params}` : ""}`);
       if (!res.ok) throw new Error("sessions_failed");
-      return ((await res.json()) as { sessions: SessionRow[] }).sessions;
+      return (await res.json()) as { sessions: SessionRow[]; nextCursor: string | null };
     },
   });
+
+  // Fold each fetched page into the rail, deduped. New searches and mutations reset.
+  const pageData = sessionsQuery.data;
+  useEffect(() => {
+    if (!pageData) return;
+    setSessions((prev) => {
+      const seen = new Set(prev.map((row) => row.id));
+      const fresh = pageData.sessions.filter((row) => !seen.has(row.id));
+      return fresh.length ? [...prev, ...fresh] : prev;
+    });
+  }, [pageData]);
+
+  const nextCursor = sessionsQuery.data?.nextCursor ?? null;
+
+  function resetRail() {
+    setCursor(null);
+    setSessions([]);
+    void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
+  }
 
   const counterQuery = useQuery({
     queryKey: ["chat", "counter"],
@@ -74,8 +101,8 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const wallCapped = capped || (counterQuery.data?.capped ?? false);
 
   function refresh() {
+    resetRail();
     void queryClient.invalidateQueries({ queryKey: ["chat", "folders"] });
-    void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
     void queryClient.invalidateQueries({ queryKey: ["chat", "counter"] });
   }
 
@@ -148,9 +175,11 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
 
   async function submitRename() {
     if (!renaming || !renaming.title.trim()) return;
-    const target = sessionsQuery.data?.find((s) => s.id === renaming.id);
-    const url = target ? `/api/chat/sessions/${renaming.id}` : `/api/chat/folders/${renaming.id}`;
-    const body = target ? { title: renaming.title.trim() } : { name: renaming.title.trim() };
+    // Kind rides the rename state so a folder id absent from the rail can
+    // never misroute to the session endpoint.
+    const isSession = renaming.kind === "session";
+    const url = isSession ? `/api/chat/sessions/${renaming.id}` : `/api/chat/folders/${renaming.id}`;
+    const body = isSession ? { title: renaming.title.trim() } : { name: renaming.title.trim() };
     const res = await fetch(url, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -180,7 +209,6 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
     }
   }
 
-  const sessions = sessionsQuery.data ?? [];
   const folders = foldersQuery.data ?? [];
   const activeSession = sessions.find((s) => s.id === activeId) ?? null;
 
@@ -193,7 +221,11 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
       </div>
       <Input
         value={search}
-        onChange={(event) => setSearch(event.target.value)}
+        onChange={(event) => {
+          setSearch(event.target.value);
+          setCursor(null);
+          setSessions([]);
+        }}
         placeholder={t.chatSearchPh}
       />
       <div className="flex items-center justify-between">
@@ -232,7 +264,7 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                 >
                   <Input
                     value={renaming.title}
-                    onChange={(event) => setRenaming({ id: folder.id, title: event.target.value })}
+                    onChange={(event) => setRenaming({ kind: "folder", id: folder.id, title: event.target.value })}
                     maxLength={80}
                   />
                   <Button type="submit" size="sm">
@@ -256,7 +288,7 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                     variant="ghost"
                     size="sm"
                     aria-label={t.chatRename}
-                    onClick={() => setRenaming({ id: folder.id, title: folder.name })}
+                    onClick={() => setRenaming({ kind: "folder", id: folder.id, title: folder.name })}
                   >
                     ✎
                   </Button>
@@ -291,8 +323,8 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                       setActiveId(item.id);
                       setRailOpen(false);
                     }}
-                    onRename={(title) => setRenaming({ id: item.id, title })}
-                    onRenameChange={(title) => setRenaming({ id: item.id, title })}
+                    onRename={(title) => setRenaming({ kind: "session", id: item.id, title })}
+                    onRenameChange={(title) => setRenaming({ kind: "session", id: item.id, title })}
                     onRenameSubmit={submitRename}
                     onPin={() => togglePin("session", item.id, item.pinned)}
                     onDelete={() => setConfirmDelete({ kind: "session", id: item.id })}
@@ -321,8 +353,8 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                       setActiveId(item.id);
                       setRailOpen(false);
                     }}
-                    onRename={(title) => setRenaming({ id: item.id, title })}
-                    onRenameChange={(title) => setRenaming({ id: item.id, title })}
+                    onRename={(title) => setRenaming({ kind: "session", id: item.id, title })}
+                    onRenameChange={(title) => setRenaming({ kind: "session", id: item.id, title })}
                     onRenameSubmit={submitRename}
                     onPin={() => togglePin("session", item.id, item.pinned)}
                     onDelete={() => setConfirmDelete({ kind: "session", id: item.id })}
@@ -337,6 +369,17 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
           </section>
         )}
       </div>
+      {nextCursor && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={sessionsQuery.isFetching}
+          onClick={() => setCursor(nextCursor)}
+        >
+          {t.chatMore}
+        </Button>
+      )}
       {!wallCapped && counterQuery.data && (
         <p className="text-xs text-slate-500">
           {counterQuery.data.triesLeft} {t.chatTriesLeft}

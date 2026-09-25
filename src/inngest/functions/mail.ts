@@ -8,9 +8,12 @@ function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }
 
-async function latestVerification(email: string) {
+async function latestVerification(email: string, prefix: string) {
   return db.verification.findFirst({
-    where: { identifier: { contains: email } },
+    where: {
+      identifier: { contains: email, startsWith: prefix },
+      expiresAt: { gt: new Date() },
+    },
     orderBy: { createdAt: "desc" },
   });
 }
@@ -81,18 +84,28 @@ export const sendVerifyMail = inngest.createFunction(
     triggers: [{ event: "mail/verify.requested" }],
   },
   async ({ event, step }: MailHandler) => {
-    const { userId, email, locale } = event.data as {
+    const { userId, email, locale, secret } = event.data as {
       userId: string;
       email: string;
       locale: Language;
+      secret?: string;
     };
     const t = translations[locale] ?? translations.fr;
     const user = await step.run("load-user", () => db.user.findUnique({ where: { id: userId } }));
     if (!user) return { skipped: "no-user" };
     if (user.emailVerified) return { skipped: "already-verified" };
-    const row = await step.run("load-token", () => latestVerification(email));
-    if (!row) return { skipped: "no-token" };
-    const link = `${appUrl()}/verify?token=${encodeURIComponent(row.value)}`;
+    // Single-mail secret rides the event; a purpose-filtered fresh row is
+    // the only fallback, markers never qualify.
+    const link =
+      secret ??
+      (await step.run("load-token", async () => {
+        const row = await latestVerification(email, "email-verification:");
+        if (!row || row.identifier.includes("-otp-") || row.identifier.startsWith("resend:")) {
+          return null;
+        }
+        return `${appUrl()}/verify?token=${encodeURIComponent(row.value)}`;
+      }));
+    if (!link) return { skipped: "no-token" };
     const { html, text } = await step.run("render", () =>
       renderVerifyMail(
         {
@@ -101,6 +114,7 @@ export const sendVerifyMail = inngest.createFunction(
           body: t.mailVerifyBody,
           cta: t.mailVerifyCta,
           closing: t.mailClosing,
+          codeLabel: t.mailCodeLabel,
         },
         link,
       ),
@@ -120,19 +134,21 @@ export const sendResetMail = inngest.createFunction(
     triggers: [{ event: "mail/password-reset.requested" }],
   },
   async ({ event, step }: MailHandler) => {
-    const { userId, email, locale, verificationId } = event.data as {
+    const { userId, email, locale, secret } = event.data as {
       userId: string;
       email: string;
       locale: Language;
-      verificationId?: string;
+      secret?: string;
     };
     const t = translations[locale] ?? translations.fr;
     const user = await step.run("load-user", () => db.user.findUnique({ where: { id: userId } }));
     if (!user) return { skipped: "no-user" };
-    const row = await step.run("load-token", () => latestVerification(email));
-    if (!row) return { skipped: "no-token" };
-    const link = `${appUrl()}/reset?token=${encodeURIComponent(row.value)}`;
-    const code = verificationId && /^\d{4,8}$/.test(verificationId) ? verificationId : null;
+    // The secret decides the mail shape: an http link, a digit code, or
+    // nothing when the sender only queued intent. Link and code flows are
+    // separate triggers, each mail carries what its flow provided.
+    if (!secret) return { skipped: "no-secret" };
+    const link = secret.startsWith("http") ? secret : `${appUrl()}/signin`;
+    const code = /^\d{4,8}$/.test(secret) ? secret : null;
     const { html, text } = await step.run("render", () =>
       renderResetMail(
         {
@@ -141,6 +157,7 @@ export const sendResetMail = inngest.createFunction(
           body: t.mailResetBody,
           cta: t.mailResetCta,
           closing: t.mailClosing,
+          codeLabel: t.mailCodeLabel,
         },
         link,
         code,
@@ -172,11 +189,15 @@ export const sendWelcomeMail = inngest.createFunction(
       if (!user?.emailVerified) return false;
       const google = await db.account.findFirst({ where: { userId, providerId: "google" } });
       if (google) return false;
-      const marker = await db.verification.findFirst({ where: { identifier: `welcome:${userId}` } });
-      if (marker) return false;
-      await db.verification.create({
-        data: { identifier: `welcome:${userId}`, value: "sent", expiresAt: new Date("2100-01-01") },
-      });
+      try {
+        await db.verification.create({
+          data: { identifier: `welcome:${userId}`, value: "sent", expiresAt: new Date("2100-01-01") },
+        });
+      } catch (err: unknown) {
+        // Pair unique: a concurrent run already marked it.
+        if ((err as { code?: string })?.code === "P2002") return false;
+        throw err;
+      }
       return true;
     });
     if (!qualifies) return { skipped: "not-qualified" };
@@ -189,6 +210,7 @@ export const sendWelcomeMail = inngest.createFunction(
           body: t.mailWelcomeBody,
           cta: t.mailWelcomeCta,
           closing: t.mailClosing,
+          codeLabel: t.mailCodeLabel,
         },
         link,
       ),

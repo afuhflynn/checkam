@@ -69,7 +69,7 @@ export function MailCta({ href, label }: { href: string; label: string }) {
   );
 }
 
-export function MailCode({ code }: { code: string }) {
+export function MailCode({ code, label }: { code: string; label: string }) {
   return (
     <Section
       style={{
@@ -80,6 +80,7 @@ export function MailCode({ code }: { code: string }) {
         textAlign: "center",
       }}
     >
+      <Text style={{ color: "#64748B", fontSize: 12, margin: "0 0 8px" }}>{label}</Text>
       <Text
         style={{
           color: "#0B192C",

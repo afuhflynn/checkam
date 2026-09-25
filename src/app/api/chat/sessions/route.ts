@@ -19,18 +19,27 @@ export async function GET(req: NextRequest) {
   const search = (req.nextUrl.searchParams.get("search") ?? "").trim().slice(0, 80);
   const cursor = decodeCursor(req.nextUrl.searchParams.get("cursor"));
   const scope = sessionScope(actor);
+  // Keyset over (pinned desc, updatedAt desc, id desc). The id branch
+  // uses lte on purpose: timestamptz stores microseconds the ISO cursor
+  // cannot carry, so equality could miss same-millisecond rows. The rail
+  // dedupes by id, trading possible duplicates for never lost rows.
+  const keyset = cursor
+    ? cursor.pinned
+      ? [
+          { pinned: true, updatedAt: { lt: new Date(cursor.updatedAt) } },
+          { pinned: true, updatedAt: { lte: new Date(cursor.updatedAt) }, id: { lt: cursor.id } },
+          { pinned: false },
+        ]
+      : [
+          { pinned: false, updatedAt: { lt: new Date(cursor.updatedAt) } },
+          { pinned: false, updatedAt: { lte: new Date(cursor.updatedAt) }, id: { lt: cursor.id } },
+        ]
+    : undefined;
   const sessions = await db.chatSession.findMany({
     where: {
       ...scope,
       ...(search ? { title: { contains: search, mode: "insensitive" } } : {}),
-      ...(cursor
-        ? {
-            OR: [
-              { pinned: false, updatedAt: { lt: new Date(cursor.updatedAt) } },
-              { pinned: cursor.pinned, updatedAt: new Date(cursor.updatedAt), id: { lt: cursor.id } },
-            ],
-          }
-        : {}),
+      ...(keyset ? { OR: keyset } : {}),
     },
     orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
     take: PAGE + 1,

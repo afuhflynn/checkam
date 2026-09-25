@@ -1,8 +1,13 @@
+import { headers } from "next/headers";
 import { GateForm } from "../../components/gate-form";
 
-export const metadata = {
-  title: "Sign in — CheckAm",
-};
+export async function generateMetadata() {
+  const cookie = (await headers()).get("cookie") ?? "";
+  const fr = !/(?:^|;\s*)checkam_lang=en/.test(cookie);
+  return {
+    title: fr ? "Connexion — CheckAm" : "Sign in — CheckAm",
+  };
+}
 
 export default async function SignInPage({
   searchParams,

@@ -142,3 +142,11 @@ Self only profile writes, rate capped password change, number endpoint is public
 
 - [ ] Connect a design MCP and name the shell file plus frames.
 - [ ] Decide cross device language sync as later work or never.
+## Amendments (peer review pass, 2026-09-25)
+
+- Continue bar routes unverified users to the resend panel, not chat.
+- Guide carries tel links plus locale-prefilled wa.me trials alongside web trials.
+- Metadata is locale aware per route; robots excludes admin, api, settings, and chat; sitemap includes approved dossiers.
+- Settings password change revokes every session including the current one, then signs out.
+- Accepted deviations: trial suspect text rides the URL by user action; whatsapp demo copy stays inline (pre-existing style); language does not roam devices.
+

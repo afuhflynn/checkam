@@ -3,7 +3,7 @@
 import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Conversation,
@@ -84,8 +84,8 @@ export function DossierPane({
               {t.chatSealStamped}: {verdict.verdict} · {verdict.score}
             </p>
             <ul className="mt-2 space-y-1.5">
-              {verdict.bullets.map((bullet) => (
-                <li key={bullet} className="text-sm text-slate-700">
+              {verdict.bullets.map((bullet, index) => (
+                <li key={`${index}-${bullet.slice(0, 24)}`} className="text-sm text-slate-700">
                   {bullet}
                 </li>
               ))}
@@ -126,7 +126,6 @@ export function ThreadView({
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState("");
   const [inFlightSeq, setInFlightSeq] = useState<number | null>(null);
-  const [persisted, setPersisted] = useState<ThreadItem[]>([]);
   const [online, setOnline] = useState(true);
   const [uploading, setUploading] = useState(false);
 
@@ -134,12 +133,15 @@ export function ThreadView({
   // so parent re-renders never retrigger the thread fetch.
   const callbacks = useRef({ onVerdict, onLookup, onFallback, failedCopy: t.gateFailed, initialDraft });
   callbacks.current = { onVerdict, onLookup, onFallback, failedCopy: t.gateFailed, initialDraft };
+  // Sequence of the persisted user turn, handed to the transport so the
+  // wall recount excludes the current turn instead of charging it twice.
+  const turnSeq = useRef<number | undefined>(undefined);
 
   const { messages, sendMessage, stop, status, error } = useChat({
     id: sessionId ?? "guest-pending",
     transport: new DefaultChatTransport({
       api: "/api/chat/transport",
-      body: () => ({ sessionId, locale }),
+      body: () => ({ sessionId, locale, userSeq: turnSeq.current }),
     }),
     onData: (part) => {
       const data = part as { type?: string; data?: Verdict };
@@ -157,35 +159,45 @@ export function ThreadView({
     },
   });
 
+  // Thread reads through the query key, so the onFinish invalidation
+  // below actually refetches instead of going stale.
+  const threadQuery = useQuery({
+    queryKey: ["chat", "thread", sessionId],
+    staleTime: 30_000,
+    enabled: sessionId !== null,
+    queryFn: async (): Promise<ThreadItem[]> => {
+      const res = await fetch(`/api/chat/sessions/${sessionId}/messages`);
+      if (!res.ok) throw new Error("thread_failed");
+      return ((await res.json()) as { messages: ThreadItem[] }).messages;
+    },
+  });
+  const persisted = threadQuery.data ?? [];
+
+  // Reset local turn state when the session changes. The keyed query
+  // refetches the thread on its own; this only clears the old screen.
+  const lastSession = useRef<string | null>(null);
   useEffect(() => {
-    setPersisted([]);
+    if (lastSession.current === sessionId) return;
+    lastSession.current = sessionId;
     setDraft("");
     setInFlightSeq(null);
-    const { onVerdict, onLookup, onFallback, failedCopy, initialDraft } = callbacks.current;
+    const { onVerdict, onLookup, onFallback, failedCopy } = callbacks.current;
     onVerdict(null, false);
     onLookup(null);
     onFallback(null);
-    if (!sessionId) return;
-    let live = true;
-    fetch(`/api/chat/sessions/${sessionId}/messages`)
-      .then((res) => {
-        if (!res.ok) throw new Error("thread_failed");
-        return res.json() as Promise<{ messages: ThreadItem[] }>;
-      })
-      .then((data) => {
-        if (!live) return;
-        setPersisted(data.messages);
-        const lastAssistant = [...data.messages].reverse().find((row) => row.role === "assistant");
-        onFallback(lastAssistant ? lastAssistant.text : null);
-        if (data.messages.length === 0 && initialDraft) setDraft(initialDraft);
-      })
-      .catch(() => {
-        if (live) toast.error(failedCopy);
-      });
-    return () => {
-      live = false;
-    };
-  }, [sessionId]);
+    if (threadQuery.error) toast.error(failedCopy);
+  }, [sessionId, threadQuery.error]);
+
+  useEffect(() => {
+    if (!threadQuery.data) return;
+    const lastAssistant = [...threadQuery.data]
+      .reverse()
+      .find((row) => row.role === "assistant");
+    callbacks.current.onFallback(lastAssistant ? lastAssistant.text : null);
+    if (threadQuery.data.length === 0 && callbacks.current.initialDraft) {
+      setDraft((current) => current || callbacks.current.initialDraft || "");
+    }
+  }, [threadQuery.data]);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -238,6 +250,7 @@ export function ThreadView({
       if (!res.ok) throw new Error("persist_failed");
       const data = (await res.json()) as { message: { seq: number } };
       setInFlightSeq(data.message.seq);
+      turnSeq.current = data.message.seq;
       setDraft("");
       await sendMessage({ text });
     } catch {
@@ -295,6 +308,7 @@ export function ThreadView({
       if (!res.ok) throw new Error("persist_failed");
       const data = (await res.json()) as { message: { seq: number } };
       setInFlightSeq(data.message.seq);
+      turnSeq.current = data.message.seq;
       setDraft("");
       await sendMessage({ text });
     } catch {

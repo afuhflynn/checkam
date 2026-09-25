@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { authLimiter } from "../../../../lib/arcjet";
 import { resolveActor } from "../../../../lib/chat/actor";
 import { sessionScope } from "../../../../lib/chat/scope";
 import { db } from "../../../../lib/db";
@@ -8,6 +9,8 @@ import { normalizeCameroonPhone } from "../../../../lib/rules/phone-normalizer";
 // then read the flagged registry plus approved reports. Read only.
 export async function GET(req: NextRequest) {
   const actor = await resolveActor();
+  const limited = await authLimiter.protect(req);
+  if (limited.isDenied()) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const raw = (req.nextUrl.searchParams.get("phone") ?? "").trim().slice(0, 40);
   if (!raw) return NextResponse.json({ error: "invalid_phone" }, { status: 422 });
 

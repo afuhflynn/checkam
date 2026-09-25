@@ -21,6 +21,7 @@ describe("mail templates", () => {
         body: t.mailVerifyBody,
         cta: t.mailVerifyCta,
         closing: t.mailClosing,
+        codeLabel: t.mailCodeLabel,
       },
       link,
     );
@@ -33,13 +34,14 @@ describe("mail templates", () => {
   it("carries the OTP code in the reset mail only when present", async () => {
     const t = translations.en;
     const link = "http://localhost:3000/reset?token=abc";
-    const copy = {
-      subject: t.mailResetSubject,
-      headline: t.mailResetHeadline,
-      body: t.mailResetBody,
-      cta: t.mailResetCta,
-      closing: t.mailClosing,
-    };
+  const copy = {
+    subject: t.mailResetSubject,
+    headline: t.mailResetHeadline,
+    body: t.mailResetBody,
+    cta: t.mailResetCta,
+    closing: t.mailClosing,
+    codeLabel: t.mailCodeLabel,
+  };
     const withCode = await renderResetMail(copy, link, "123456");
     expect(withCode.html).toContain("123456");
     expect(withCode.text).toContain("123456");
@@ -62,7 +64,7 @@ describe("mail queue", () => {
       locale: "fr",
       purpose: "verify",
     });
-    expect(id).toBe("mail/verify.requested:u1:none");
+    expect(id).toMatch(/^mail:verify:u1:[a-z0-9]+$/);
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });

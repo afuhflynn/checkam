@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { loadPrompt } from "../ai/prompts";
+import { normalizeCameroonPhone } from "../rules/phone-normalizer";
 import {
   PRIMARY_VISION_MODELS,
   isAiCircuitOpen,
@@ -26,7 +27,9 @@ export interface AgentTrace {
 }
 
 export interface AgentTurn {
-  facts: ExtractedFacts;
+  // Null when extraction itself failed; the caller must degrade honest
+  // instead of dereferencing.
+  facts: ExtractedFacts | null;
   traces: AgentTrace[];
   answer: string | null;
   flagged: boolean;
@@ -61,8 +64,29 @@ async function answerWithCascade(system: string, context: string): Promise<strin
   return null;
 }
 
-// Agent turn (spec 0006): local tools first, Tavily only on miss, title
-// after the answer. Facts flow to rules; the agent never decides.
+// Normalize any contact to the flagged registry key space: E.164 for
+// Cameroon phones, lowercase for mails. Unparseable input yields null.
+export function normalizeContact(contact: string): string | null {
+  if (contact.includes("@")) {
+    const mail = contact.trim().toLowerCase();
+    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail) ? mail : null;
+  }
+  const parsed = normalizeCameroonPhone(contact);
+  return parsed.isValid ? parsed.normalized : null;
+}
+
+// Verdict lexicon the model must never voice: the engine alone decides.
+// Anything matching falls back to engine bullets downstream.
+const VERDICT_WORDS =
+  /\b(high.?risk|haut risque|verified|vérifié|official|officiel|authentic|authentique|safe|sûr|legitimate|légitime|genuine|not a scam|pas une arnaque|garanti)\b/i;
+
+// Verdict lexicon the model must never voice: judgment claims belong to
+// the engine alone. Topic words (scam, arnaque, fraud) stay allowed since
+// the user asked about them; claims of safety or officialdom do not.
+export function scrubVerdictWords(text: string): string | null {
+  if (VERDICT_WORDS.test(text)) return null;
+  return text;
+}
 export async function runAgentTurn(params: { text: string; locale: "en" | "fr" }): Promise<AgentTurn> {
   const { text, locale } = params;
   const traces: AgentTrace[] = [];
@@ -95,24 +119,33 @@ export async function runAgentTurn(params: { text: string; locale: "en" | "fr" }
   }
 
   let flagged = false;
-  if (facts.phoneNumbers.length > 0 || facts.emails.length > 0) {
-    const value = facts.phoneNumbers[0] ?? facts.emails[0] ?? "";
+  let flaggedChecked = 0;
+  const contacts = [...facts.phoneNumbers, ...facts.emails];
+  for (const contact of contacts) {
+    const normalized = normalizeContact(contact);
+    if (!normalized) continue;
+    flaggedChecked += 1;
     try {
       const hit = (await runTool("flagged", flaggedLookupTool.execute as ToolExecute<{ value: string }>, {
-        value,
+        value: normalized,
       })) as { found: boolean };
-      flagged = hit.found;
-      traces.push({ tool: "flagged", ok: true });
+      if (hit.found) {
+        flagged = true;
+        break;
+      }
     } catch (err: unknown) {
       traces.push({ tool: "flagged", ok: false, note: String(err) });
     }
   }
+  traces.push({ tool: "flagged", ok: true, note: `checked:${flaggedChecked} hit:${flagged}` });
 
   const miss =
     (!registry || (registry as { found?: boolean }).found === false) &&
     !flagged &&
     facts.suspiciousPhrases.length === 0;
 
+  // Tavily fires at most twice per turn: the initial attempt plus the one
+  // retry inside withTool. Budget, locale, and PII redaction live in tools.ts.
   let passages: unknown = null;
   if (miss) {
     const spent = await tavilySpentToday().catch(() => Number.MAX_SAFE_INTEGER);
@@ -141,7 +174,10 @@ export async function runAgentTurn(params: { text: string; locale: "en" | "fr" }
     `Web: ${JSON.stringify(passages)}`,
     `Suspect text: ${text.slice(0, 2000)}`,
   ].join("\n");
-  const answer = await answerWithCascade(prompt.body, context);
+  const raw = await answerWithCascade(prompt.body, context);
+  // The engine alone voices verdicts; a model that judges gets dropped to
+  // engine bullets downstream.
+  const answer = raw ? scrubVerdictWords(raw) : null;
   return { facts, traces, answer, flagged };
 }
 
@@ -156,6 +192,7 @@ export async function draftTitle(params: {
   const context = `Locale: ${params.locale}\nUser: ${params.userText.slice(0, 300)}\nAssistant: ${params.assistantText.slice(0, 300)}`;
   const title = await answerWithCascade(prompt.body, context);
   if (!title) return null;
-  const clean = title.replace(/["“”]/g, "").trim().slice(0, 60);
-  return clean || null;
+  const clean = scrubVerdictWords(title.replace(/["“”]/g, "").trim()) ?? "";
+  const short = clean.slice(0, 60);
+  return short || null;
 }

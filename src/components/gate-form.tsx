@@ -10,15 +10,48 @@ import { Input } from "./ui/input";
 
 type GateMode = "signin" | "signup" | "forgot" | "otp" | "sent";
 
+const COMMON_PASSWORDS = new Set([
+  "password",
+  "12345678",
+  "qwerty123",
+  "azerty123",
+  "motdepasse",
+  "cameroun",
+  "cameroun1",
+  "douala123",
+  "yaounde123",
+  "mtn12345",
+  "orange123",
+  "password1",
+  "123456789",
+  "letmein123",
+  "welcome123",
+  "admin1234",
+  "checkam123",
+  "football",
+  "jesus123",
+  "amour123",
+]);
+
 function passwordScore(password: string): 0 | 1 | 2 {
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) return 0;
   let points = 0;
   if (password.length >= 8) points += 1;
   if (password.length >= 12 || (/[A-Z]/.test(password) && /[0-9]/.test(password))) points += 1;
   return points as 0 | 1 | 2;
 }
 
-function errorCopy(code: string, dict: { gateRateLimited: string; gateFailed: string }): string {
+interface ErrorDict {
+  gateRateLimited: string;
+  gateFailed: string;
+  gateUnverifiedDesc: string;
+  gateExpiredDesc: string;
+}
+
+function errorCopy(code: string, dict: ErrorDict): string {
   if (code === "rate_limited" || code === "RATE_LIMITED") return dict.gateRateLimited;
+  if (code === "EMAIL_NOT_VERIFIED") return dict.gateUnverifiedDesc;
+  if (code === "INVALID_TOKEN" || code === "EXPIRED_TOKEN") return dict.gateExpiredDesc;
   return dict.gateFailed;
 }
 
@@ -35,7 +68,12 @@ export function GateForm({ notice }: { notice: string | null }) {
 
   async function fail(err: unknown) {
     const code = err instanceof Error ? err.message : "failed";
-    const copy = errorCopy(code, { gateRateLimited: t.gateRateLimited, gateFailed: t.gateFailed });
+    const copy = errorCopy(code, {
+      gateRateLimited: t.gateRateLimited,
+      gateFailed: t.gateFailed,
+      gateUnverifiedDesc: t.gateUnverifiedDesc,
+      gateExpiredDesc: t.gateExpiredDesc,
+    });
     setFieldError(copy);
     toast.error(copy);
   }
@@ -104,11 +142,30 @@ export function GateForm({ notice }: { notice: string | null }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error ?? "failed");
-      }
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+        jobId?: string | null;
+      } | null;
+      if (!res.ok) throw new Error(data?.error ?? "failed");
       toast.success(t.gateResendOk);
+      // Honest delayed state: poll the job once it exists, surface failed.
+      if (data?.jobId) {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          try {
+            const poll = await fetch(`/api/mail/status?jobId=${encodeURIComponent(data.jobId)}`);
+            if (!poll.ok) continue;
+            const state = (await poll.json()) as { state?: string };
+            if (state.state === "failed") {
+              setFieldError(`${t.gateDelayedTitle}. ${t.gateDelayedDesc}`);
+              break;
+            }
+            if (state.state === "sent") break;
+          } catch {
+            break;
+          }
+        }
+      }
     } catch (err: unknown) {
       await fail(err);
     } finally {
@@ -138,7 +195,21 @@ export function GateForm({ notice }: { notice: string | null }) {
           <div className="space-y-2 rounded-lg bg-verdict-caution-bg px-3 py-2">
             <p className="text-sm font-bold text-verdict-caution-text">{t.gateExpiredTitle}</p>
             <p className="text-sm text-verdict-caution-text">{t.gateExpiredDesc}</p>
-            <Button type="button" variant="outline" onClick={handleResend} disabled={busy}>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t.gateEmailPlaceholder}
+              autoComplete="email"
+              disabled={busy}
+              aria-label={t.gateEmailLabel}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleResend}
+              disabled={busy || !email.trim()}
+            >
               {t.gateReissueBtn}
             </Button>
           </div>

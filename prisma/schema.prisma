@@ -114,6 +114,9 @@ model Verification {
   createdAt  DateTime? @default(now())
   updatedAt  DateTime? @updatedAt
 
+  // Pair uniqueness powers exactly-once markers (welcome mail, restores)
+  // while leaving distinct OTP codes side by side.
+  @@unique([identifier, value])
   @@map("auth_verifications")
 }
 
@@ -196,6 +199,7 @@ model ChatFolder {
   owner     User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   sessions  ChatSession[]
 
+  @@unique([ownerId, name])
   @@index([ownerId, updatedAt])
   @@map("chat_folders")
 }

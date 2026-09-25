@@ -1,20 +1,38 @@
+import arcjet, { fixedWindow } from "@arcjet/next";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../lib/auth";
 import { db } from "../../../../lib/db";
 import { headers } from "next/headers";
 
+const statusLimiter = arcjet({
+  key: process.env.ARCJET_KEY || "ajkey_placeholder",
+  rules: [
+    fixedWindow({
+      mode: process.env.NODE_ENV === "production" ? "LIVE" : "DRY_RUN",
+      window: "24h",
+      max: 20,
+    }),
+  ],
+});
+
 // Job status endpoint (spec 0003 AC-5, AC-9): the gate polls by the job id
-// returned at trigger time. State derives from domain truth since history
-// only is the store: verified means sent, a fresh token row means sending,
-// anything older means failed.
+// returned at trigger time, in either id format the queue emits. State
+// derives from domain truth: verified means sent, a fresh token row means
+// sending, anything older means failed.
 export async function GET(req: NextRequest) {
+  const limited = await statusLimiter.protect(req);
+  if (limited.isDenied()) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
     return NextResponse.json({ error: "signed_out" }, { status: 401 });
   }
 
   const jobId = req.nextUrl.searchParams.get("jobId") ?? "";
-  const match = jobId.match(/^mail:(verify|password-reset|welcome):([^:]+)/);
+  const match =
+    jobId.match(/^mail:(verify|password-reset|welcome):([^:]+)/) ??
+    jobId.match(/^mail\/(verify|password-reset|welcome)[^:]*:([^:]+)/);
   if (!match?.[2] || match[2] !== session.user.id) {
     return NextResponse.json({ error: "unknown_job" }, { status: 404 });
   }

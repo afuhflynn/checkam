@@ -3,7 +3,10 @@ import { db } from "../../lib/db";
 import { deleteStoredFiles } from "../../lib/storage";
 
 // Daily purge (spec 0004 AC-9): rows soft deleted over 30 days ago go away
-// for good, with stored attachments collected first.
+// for good, plus never claimed guest rows past the same line. Rows die
+// first so a failed file pass never leaves servable rows with dangling
+// keys; file failures log for the next run. Stale single-use markers
+// (restores, resends) are swept alongside.
 export const purgeDeletedChats = inngest.createFunction(
   {
     id: "purge-deleted-chats",
@@ -16,13 +19,26 @@ export const purgeDeletedChats = inngest.createFunction(
 
     const staleSessions = await step.run("find-stale", () =>
       db.chatSession.findMany({
-        where: { deletedAt: { lt: cutoff } },
+        where: {
+          OR: [{ deletedAt: { lt: cutoff } }, { ownerId: null, updatedAt: { lt: cutoff } }],
+        },
         select: { id: true },
       }),
     );
     const staleFolders = await step.run("find-stale-folders", () =>
       db.chatFolder.findMany({
         where: { deletedAt: { lt: cutoff } },
+        select: { id: true },
+      }),
+    );
+    const staleMarkers = await step.run("find-stale-markers", () =>
+      db.verification.findMany({
+        where: {
+          OR: [
+            { identifier: { startsWith: "restore:" }, createdAt: { lt: cutoff } },
+            { identifier: { startsWith: "resend:" }, createdAt: { lt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) } },
+          ],
+        },
         select: { id: true },
       }),
     );
@@ -44,14 +60,20 @@ export const purgeDeletedChats = inngest.createFunction(
       return out;
     });
 
-    await step.run("delete-files", () => deleteStoredFiles(keys));
     const removed = await step.run("delete-rows", () =>
       db.$transaction([
         db.chatMessage.deleteMany({ where: { sessionId: { in: staleSessions.map((s) => s.id) } } }),
         db.chatSession.deleteMany({ where: { id: { in: staleSessions.map((s) => s.id) } } }),
         db.chatFolder.deleteMany({ where: { id: { in: staleFolders.map((s) => s.id) } } }),
+        db.verification.deleteMany({ where: { id: { in: staleMarkers.map((s) => s.id) } } }),
       ]),
     );
-    return { purgedSessions: removed[1].count, purgedFolders: removed[2].count };
+    const files = await step.run("delete-files", () => deleteStoredFiles(keys));
+    return {
+      purgedSessions: removed[1].count,
+      purgedFolders: removed[2].count,
+      purgedMarkers: removed[3].count,
+      filesDeleted: files.deleted,
+    };
   },
 );

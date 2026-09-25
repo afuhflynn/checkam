@@ -8,6 +8,7 @@ export interface MailCopy {
   body: string;
   cta: string;
   closing: string;
+  codeLabel: string;
 }
 
 function textTwin(paragraphs: string[]): string {
@@ -30,7 +31,7 @@ export async function renderResetMail(copy: MailCopy, link: string, code: string
     <MailLayout preview={copy.subject} headline={copy.headline} closing={copy.closing}>
       <Text style={{ color: "#334155", fontSize: 15, margin: "0 0 8px" }}>{copy.body}</Text>
       <MailCta href={link} label={copy.cta} />
-      {code ? <MailCode code={code} /> : null}
+      {code ? <MailCode code={code} label={copy.codeLabel} /> : null}
       <Text style={{ color: "#94A3B8", fontSize: 12 }}>{link}</Text>
     </MailLayout>,
   );
@@ -40,7 +41,7 @@ export async function renderResetMail(copy: MailCopy, link: string, code: string
       copy.headline,
       copy.body,
       `${copy.cta}: ${link}`,
-      ...(code ? [`Code: ${code}`] : []),
+      ...(code ? [`${copy.codeLabel}: ${code}`] : []),
       copy.closing,
     ]),
   };

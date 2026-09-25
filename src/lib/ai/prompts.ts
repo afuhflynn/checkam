@@ -7,6 +7,7 @@ export interface PromptFile {
   name: string;
   version: number;
   owner: string;
+  changelog: string;
   body: string;
 }
 
@@ -26,6 +27,7 @@ function parse(raw: string, fallbackName: string): PromptFile {
     name: get("name", fallbackName),
     version: Number(get("version", "1")) || 1,
     owner: get("owner", "unassigned"),
+    changelog: get("changelog", ""),
     body,
   };
 }

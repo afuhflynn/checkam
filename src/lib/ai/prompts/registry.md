@@ -7,9 +7,10 @@ it. Runtime loads by version and logs it in dev.
 
 | Prompt | File | Version | Owner | Job |
 |---|---|---|---|---|
-| chat-answer | `src/lib/ai/prompts/chat-answer.md` | 1 | unassigned | Ground chat answers in supplied facts, FR plus EN sections |
-| title-draft | `src/lib/ai/prompts/title-draft.md` | 1 | unassigned | Draft session titles under 60 chars |
+| chat-answer | `src/lib/ai/prompts/chat-answer.md` | 2 | unassigned | Ground chat answers in supplied facts, FR plus EN sections |
+| title-draft | `src/lib/ai/prompts/title-draft.md` | 2 | unassigned | Draft session titles under 60 chars |
 
 ## Changelog
 
+- v2 (2026-09-25): documents the versioned registry flow; wording unchanged from v1.
 - v1 (2026-09-25): initial prompts for the agent child.

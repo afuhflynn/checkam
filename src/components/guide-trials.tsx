@@ -39,6 +39,13 @@ export function GuideTrials() {
     }
   }
 
+  const waId = (number?.waLink ?? "").split("/").pop() ?? "";
+  const waPrefill: string | undefined = waId
+    ? `https://wa.me/${waId}?text=${encodeURIComponent(
+        language === "fr" ? "Bonjour CheckAm, je veux vérifier un message." : "Hello CheckAm, I want to check a message.",
+      )}`
+    : undefined;
+
   return (
     <Card className="border-2 border-authority-900/10 bg-white">
       <CardContent className="space-y-4 p-6 sm:p-8">
@@ -51,16 +58,28 @@ export function GuideTrials() {
             <p className="font-mono text-lg font-bold text-ink">{number.display}</p>
           )}
           {number?.display && (
-            <Button type="button" variant="outline" onClick={saveNumber}>
-              {t.guideSaveBtn}
-            </Button>
+            <>
+              <Button type="button" variant="outline" onClick={saveNumber}>
+                {t.guideSaveBtn}
+              </Button>
+              <Button type="button" variant="outline" asChild>
+                <a href={`tel:${number.display.replace(/[^0-9+]/g, "")}`}>{number.display}</a>
+              </Button>
+            </>
           )}
           {number?.waLink ? (
-            <Button type="button" variant="whatsapp" asChild>
-              <a href={number.waLink} target="_blank" rel="noreferrer">
-                {t.guideOpenWa}
-              </a>
-            </Button>
+            <>
+              <Button type="button" variant="whatsapp" asChild>
+                <a href={number.waLink} target="_blank" rel="noreferrer">
+                  {t.guideOpenWa}
+                </a>
+              </Button>
+              <Button type="button" variant="outline" asChild>
+                <a href={waPrefill} target="_blank" rel="noreferrer">
+                  {t.guideWaPrefill}
+                </a>
+              </Button>
+            </>
           ) : (
             <Button type="button" asChild>
               <Link href="/chat">{t.guideUseWebChat}</Link>

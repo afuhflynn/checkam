@@ -158,3 +158,11 @@ Owner only always, guest rows keyed by unguessable browser id, undo tokens singl
 - [ ] `0006-agent` owes the title draft action used by **AC-5**.
 - [ ] Name purge schedule cadence at build.
 - [ ] Consider installing community skills for Prisma conventions before build.
+## Amendments (peer review pass, 2026-09-25)
+
+- Cursor keyset uses lte on the id branch with rail dedupe: duplicates possible, rows never lost (microsecond storage vs millisecond cursors).
+- Restore markers carry the delete stamp; restore matches a one second window around it.
+- Claim binds the key to the signed guest cookie and upserts the default folder on its unique pair.
+- Purge deletes rows before files, sweeps guest rows past 30 days, and clears stale restore and resend markers.
+- Folders list returns empty for guests by design (they cannot own folders); the table's 401 applies to writes.
+

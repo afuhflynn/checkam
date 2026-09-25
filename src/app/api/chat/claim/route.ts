@@ -9,8 +9,11 @@ const ClaimSchema = z.object({
 });
 
 // Claim (spec 0004 AC-3): move ownerless rows for one guest key into the
-// fresh account's default folder. Idempotent per guest key plus user id:
-// reruns with nothing left are no ops.
+// fresh account's default folder. The claimed key must match the signed
+// guest cookie when the browser still holds it, so one user cannot sweep
+// another browser's tries. Idempotent per guest key plus user id: reruns
+// with nothing left are no ops. The default folder upserts on its unique
+// pair, so concurrent claims converge instead of splitting sessions.
 export async function POST(req: NextRequest) {
   const actor = await resolveActor();
   if (actor.kind !== "user") {
@@ -27,19 +30,24 @@ export async function POST(req: NextRequest) {
   if (strays.length === 0) return NextResponse.json({ claimed: 0 });
 
   const folderName = parsed.data.locale === "en" ? "My checks" : "Mes vérifications";
-  const existing = await db.chatFolder.findFirst({
-    where: { ownerId: actor.userId, name: folderName, deletedAt: null },
+  const folder = await db.chatFolder.upsert({
+    where: { ownerId_name: { ownerId: actor.userId, name: folderName } },
+    update: {},
+    create: { ownerId: actor.userId, name: folderName },
     select: { id: true },
   });
-  const folder =
-    existing ??
-    (await db.chatFolder.create({
-      data: { ownerId: actor.userId, name: folderName },
-      select: { id: true },
-    }));
 
+  // Bind to the presented cookie when the browser still holds it; a fresh
+  // sign in on the same browser always does.
+  const cookieGuest = req.cookies.get("checkam_guest")?.value.split(".")[0] ?? null;
+  const keyMatch = cookieGuest === null || cookieGuest === parsed.data.guestKey;
   const moved = await db.chatSession.updateMany({
-    where: { guestKey: parsed.data.guestKey, ownerId: null, deletedAt: null },
+    where: {
+      guestKey: parsed.data.guestKey,
+      ownerId: null,
+      deletedAt: null,
+      ...(keyMatch ? {} : { id: "__never__" }),
+    },
     data: { ownerId: actor.userId, folderId: folder.id, guestKey: null },
   });
   return NextResponse.json({ claimed: moved.count, folderId: folder.id });

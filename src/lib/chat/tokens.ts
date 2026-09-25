@@ -12,7 +12,11 @@ export interface UndoPayload {
 }
 
 function secret(): string {
-  return process.env.BETTER_AUTH_SECRET || "dev-secret-key-checkam-cameroon-2025-min-32-chars";
+  const value = process.env.BETTER_AUTH_SECRET;
+  if (!value && process.env.NODE_ENV === "production") {
+    throw new Error("BETTER_AUTH_SECRET is required in production");
+  }
+  return value || "dev-secret-key-checkam-cameroon-2025-min-32-chars";
 }
 
 export function issueUndoToken(type: UndoTarget, id: string, ts: number = Date.now()): string {
