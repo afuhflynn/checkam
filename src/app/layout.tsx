@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Mono, Public_Sans } from "next/font/google";
+import Script from "next/script";
 import { Footer } from "../components/footer";
 import { Header } from "../components/header";
 import { Providers } from "../components/providers";
@@ -64,8 +65,12 @@ export default function RootLayout({
     >
       <head>
         {/* Pre-paint language: cookie choice wins, else browser language.
-            Keeps <html lang> correct for screen readers before React hydrates. */}
-        <script
+            Keeps <html lang> correct for screen readers before React hydrates.
+            next/script (beforeInteractive) is the sanctioned inline-script
+            path; a raw <script> tag trips Next's client render warning. */}
+        <Script
+          id="checkam-lang"
+          strategy="beforeInteractive"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: static pre-hydration language script, no dynamic content
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var m=document.cookie.match(/(?:^|;\\s*)checkam_lang=(en|fr)/);var l=m?m[1]:null;if(!l){try{l=localStorage.getItem('checkam_lang')}catch(e){l=null}}if(l!=='en'&&l!=='fr'){l=(navigator.language||'fr').toLowerCase().indexOf('en')===0?'en':'fr'}document.documentElement.lang=l;}catch(e){}})();`,
