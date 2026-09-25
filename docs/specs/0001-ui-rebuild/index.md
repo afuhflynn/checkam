@@ -1,6 +1,6 @@
 # 0001 — CheckAm UI rebuild (umbrella)
 
-**Status:** In Progress
+**Status:** Accepted
 **Date:** 2026-09-25
 **Build approach:** Journey (one full user path at a time, each phase usable)
 **Scope:** `docs/scope/scope.md` features 1–9

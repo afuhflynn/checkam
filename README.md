@@ -17,6 +17,7 @@ ready-to-forward WhatsApp warning.
 | **1 — Verification engine + site** | Intake hub (paste text / upload flyer-PDF / lookup phone-email), 3 one-tap demo cases, deterministic rules engine, AI fact extraction, Receipts card (badge + 3 evidence bullets + official website + ANTIC 8202 + copyable WhatsApp warning) |
 | **2 — WhatsApp channel** | Meta webhook (`GET` verify + `POST` HMAC-signed receiver), idempotent event inbox, Inngest async processing, media fetch + same-engine verdict, short WhatsApp reply |
 | **3 — Registry + data feed** | Public scam directory (`/directory`), permanent dossiers (`/scam/$slug`), public reporting with moderation queue, gated admin dashboard, structured threat feed (JSON/CSV) for telcos/banks |
+| **4 — Accounts + chat (new)** | Permit gate at `/signin` (password + Google, email verify, reset link + OTP, resend caps), avatar menu, `/chat` atelier (folders, streaming threads, evidence dossier, Verdict Seal), guest tries (2/day) with sign-in wall, persistent history with undo restore, agent tools (registry, flagged, verify, Tavily web search, title drafts) behind versioned prompts, Nodemailer mail (verify/reset/welcome) via Inngest, lean `/settings`, WhatsApp trials guide, bilingual SEO + sitemap |
 
 Bilingual throughout: browser-language detection with persisted EN | FR switch. Mobile-first.
 
@@ -27,8 +28,9 @@ Bilingual throughout: browser-language detection with persisted EN | FR switch. 
 - **Next.js 16.3.6** (Turbopack) + React 19 + strict TypeScript (`noUncheckedIndexedAccess`), Biome lint/format
 - **Tailwind CSS v4** (CSS-first `@theme`), shadcn-style `ui/*`, Lucide icons, Sonner toasts
 - **PostgreSQL 16** (Docker, port `5454`) + **Prisma 6** ORM + seed (official entities + 4 confirmed scams + admin)
-- **Vercel AI SDK v7** + **OpenRouter** free-model cascade with circuit breaker + heuristic fallback; results cached by SHA-256 so the same flyer is never re-read
-- **Arcjet** (Shield + bot defense + rate limits), **Inngest v4** (WhatsApp processing, threat-feed sync), **TanStack Query**, **nuqs** (shareable `?q=&category=`), **Better-Auth** (email+password, ADMIN/MODERATOR roles)
+- **Vercel AI SDK v7** + **OpenRouter** free-model cascade with circuit breaker + heuristic fallback; results cached by SHA-256 so the same flyer is never re-read; `@ai-sdk/react` streaming + AI Elements chat surfaces
+- **Arcjet** (Shield + bot defense + rate limits), **Inngest v4** (WhatsApp processing, threat-feed sync, mail jobs, chat purge), **TanStack Query**, **nuqs** (shareable `?q=&category=`), **Better-Auth** (email+password, Google OAuth, ADMIN/MODERATOR roles)
+- **Nodemailer** SMTP mail (verify/reset/welcome), **Tavily** web search for the agent, **Vercel Blob** flyer storage (local driver in dev)
 - Local evidence storage: `public/uploads/evidence/` (Docker volume `uploads_data`; swap for S3 without changing code paths)
 
 ---
@@ -60,7 +62,12 @@ Copy the keys in `.env` and fill real values for production:
 | Key | Purpose |
 | --- | ------- |
 | `DATABASE_URL` | Postgres connection |
-| `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` | Auth signing + base URL |
+| `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` | Auth signing + base URL (secret required in production, throws at boot) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google sign-in (empty keeps password only; register `<app-url>/api/auth/callback/google` in production) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | Nodemailer mail sending (empty fails loud, never silently) |
+| `ALERT_WEBHOOK_URL` | Ops alert for mail failures past retries (empty logs only) |
+| `TAVILY_API_KEY` / `TAVILY_DAILY_BUDGET` | Agent web search + daily cap (default 100; empty disables search, local tools remain) |
+| `WHATSAPP_NUMBER` | Guide `wa.me` link number (empty falls back to web chat) |
 | `OPENROUTER_API_KEY` / `OPENROUTER_BASE_URL` | AI fact extraction (without a real key the heuristic extractor runs offline) |
 | `ARCJET_KEY` | Bot defense + rate limits (dry-run in dev) |
 | `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Meta webhook `GET` verification |
@@ -75,12 +82,23 @@ Copy the keys in `.env` and fill real values for production:
 | Route | Purpose |
 | ----- | ------- |
 | `/` | Intake hub + verdict Receipts card |
+| `/signin` | Permit gate (password + Google, verify/reset/OTP) |
+| `/verify` / `/reset` | Consume verify / reset link tokens |
+| `/chat` | Chat atelier (folders, threads, dossier, composer) |
+| `/settings` | Profile, language, password, sign out |
 | `/directory` | Public registry (search + category pills, `?q=&category=`) |
 | `/scam/[slug]` | Permanent shareable case dossier |
 | `/report` | Public report-a-scam (held PENDING until approved) |
-| `/whatsapp` | How the WhatsApp bot works |
+| `/whatsapp` | How the WhatsApp bot works (+ trials guide) |
 | `/admin` | Moderation queue (gated: ADMIN/MODERATOR) |
 | `/api/verify` | Verification engine (Arcjet + cache + AI + rules) |
+| `/api/chat/sessions` + `/folders` + `/messages` | Chat memory CRUD (owner scoped, guest keys, cursor pages) |
+| `/api/chat/transport` | Streaming chat transport (SSE text + verdict events) |
+| `/api/chat/upload` + `/lookup` + `/guest-counter` + `/claim` + `/restore` | Flyer upload, phone lookup, guest cap, claim, undo restore |
+| `/api/auth/resend-verify` | Capped verify resend (returns job id) |
+| `/api/mail/status` | Mail job state for the gate |
+| `/api/guide/number` | WhatsApp number with web fallback |
+| `/api/user/revoke-all` | Revoke every session (after password change) |
 | `/api/reports` | Public list (APPROVED only) + submit |
 | `/api/uploads` | Flyer evidence upload → `/uploads/evidence/…` |
 | `/api/admin/reports` | Moderation queue + APPROVE/REJECT (gated) |
