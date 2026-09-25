@@ -56,7 +56,7 @@ Nodemailer sends, Inngest queues and retries: verify on sign up, reset on reques
    - [x] Three jobs plus triggers (AC-1, AC-2, AC-3, AC-6, AC-7)
    - [x] Status endpoint plus gate states (AC-5, AC-8, AC-9)
 - [ ] Verify it: `/verify-release mail plumbing`
-- [ ] Test it: `/test-engineer mail plumbing`
+- [x] Test it: `/test-engineer mail plumbing` (`src/tests/mail.test.ts`: templates, queue fallback)
 Spec 0003 (`docs/specs/0001-ui-rebuild/0003-mail.md`) · code in `src/lib/mail/transport.ts`, `src/lib/mail/queue.ts`, `src/lib/mail/templates/`, `src/inngest/functions/mail.ts`, `src/app/api/mail/status/`
 
 ## Path 3: chat
@@ -82,7 +82,7 @@ Spec 0005 (`docs/specs/0001-ui-rebuild/0005-chat-shell.md`) · code in `src/app/
    - [x] Guest persist plus claim plus counter (AC-3, AC-4)
    - [x] Titles plus delete UX plus rail (AC-5, AC-6, AC-7, AC-8, AC-9)
 - [ ] Verify it: `/verify-release chat memory`
-- [ ] Test it: `/test-engineer chat memory`
+- [x] Test it: `/test-engineer chat memory` (`src/tests/chat-memory.test.ts`: cursor, undo tokens, Douala day)
 Spec 0004 (`docs/specs/0001-ui-rebuild/0004-chat-memory.md`) · code in `prisma/schema.prisma` (`ChatFolder`, `ChatSession`, `ChatMessage`), `src/lib/chat/`, `src/app/api/chat/`, `src/inngest/functions/purge-chats.ts`
 
 ### 6. Agent tools + Tavily + prompt review · in-progress · GA
@@ -94,7 +94,7 @@ Agent with tools: Tavily web search plus registry lookup plus flagged lookup plu
    - [x] Prompts plus title (AC-3, AC-4)
    - [x] Model plus caps (AC-5, AC-7)
 - [ ] Verify it: `/verify-release agent tools`
-- [ ] Test it: `/test-engineer agent tools`
+- [x] Test it: `/test-engineer agent tools` (`src/tests/agent.test.ts`: tool wrapper, budget, prompt registry)
 Spec 0006 (`docs/specs/0001-ui-rebuild/0006-agent.md`) · code in `src/lib/agent/`, `src/lib/ai/prompts.ts`, `src/lib/ai/prompts/`, rewired `src/app/api/chat/transport/`
 
 ## Path 4: account
