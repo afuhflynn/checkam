@@ -39,6 +39,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, jobId: null });
   }
 
+  // Marker row so this resend counts toward the per-mail cap above.
+  await db.verification.create({
+    data: {
+      identifier: `resend:${email}`,
+      value: "sent",
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    },
+  });
+
   const jobId = await queueMail("mail/verify.requested", {
     userId: user.id,
     email,
