@@ -6,7 +6,7 @@ import { auth } from "./lib/auth";
 // pages bounce to the gate with a return path. API, static, verify, and
 // reset paths never redirect. A failed session read fails closed for
 // protected pages and open for public ones.
-export default async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   let userId: string | null = null;

@@ -91,15 +91,5 @@
     "tw-animate-css": "^1.0.7",
     "typescript": "^5.7.3",
     "vitest": "^3.0.7"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@biomejs/biome",
-      "@prisma/client",
-      "@prisma/engines",
-      "esbuild",
-      "prisma",
-      "protobufjs"
-    ]
   }
 }
