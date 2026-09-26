@@ -2,9 +2,10 @@
 
 import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useStickToBottomContext } from "use-stick-to-bottom";
 import {
   Conversation,
   ConversationContent,
@@ -47,6 +48,16 @@ export interface LookupResult {
 }
 
 const OFFLINE_KEY = "checkam-offline-queue";
+
+// Binds the StickToBottom scroll element out to a ref so paging can read
+// heights and hold position across prepends.
+function ScrollBinder({ target }: { target: React.RefObject<HTMLElement | null> }) {
+  const { scrollRef } = useStickToBottomContext();
+  useEffect(() => {
+    target.current = scrollRef.current;
+  });
+  return null;
+}
 
 function readQueue(): { sessionId: string | null; text: string }[] {
   try {
@@ -151,7 +162,7 @@ export function ThreadView({
     },
     onFinish: () => {
       setInFlightSeq(null);
-      void queryClient.invalidateQueries({ queryKey: ["chat", "thread", sessionId] });
+      void syncNew();
       void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
     },
     onError: () => {
@@ -159,45 +170,170 @@ export function ThreadView({
     },
   });
 
-  // Thread reads through the query key, so the onFinish invalidation
-  // below actually refetches instead of going stale.
-  const threadQuery = useQuery({
-    queryKey: ["chat", "thread", sessionId],
-    staleTime: 30_000,
-    enabled: sessionId !== null,
-    queryFn: async (): Promise<ThreadItem[]> => {
-      const res = await fetch(`/api/chat/sessions/${sessionId}/messages`);
-      if (!res.ok) throw new Error("thread_failed");
-      return ((await res.json()) as { messages: ThreadItem[] }).messages;
-    },
-  });
-  const persisted = threadQuery.data ?? [];
+  // Windowed pages (spec 0009): oldest page first, 50 rows each, at most
+  // 3 mounted unless the thread is fully loaded. Scroll position is held
+  // across prepends by height delta, so paging up never jumps.
+  const PAGE_ROWS = 50;
+  const MAX_MOUNTED_PAGES = 3;
+  const [pages, setPages] = useState<ThreadItem[][]>([]);
+  const [hasMoreUp, setHasMoreUp] = useState(true);
+  const [loadingUp, setLoadingUp] = useState(false);
+  const [fullyLoaded, setFullyLoaded] = useState(false);
+  const scrollEl = useRef<HTMLElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // Reset local turn state when the session changes. The keyed query
-  // refetches the thread on its own; this only clears the old screen.
+  const mountedPages = fullyLoaded ? pages : pages.slice(-MAX_MOUNTED_PAGES);
+  const mounted = mountedPages.flat();
+  const oldestSeq = mounted.length ? mounted[0]?.seq ?? null : null;
+
+  const fetchPage = useCallback(
+    async (before: number | null): Promise<{ rows: ThreadItem[]; more: boolean }> => {
+      const params = new URLSearchParams();
+      if (before !== null) params.set("before", String(before));
+      const res = await fetch(`/api/chat/sessions/${sessionId}/messages${params.size ? `?${params}` : ""}`);
+      if (!res.ok) throw new Error("thread_failed");
+      const data = (await res.json()) as { messages: ThreadItem[]; hasMore: boolean };
+      return { rows: data.messages, more: data.hasMore };
+    },
+    [sessionId],
+  );
+
+  const loadInitial = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const { rows, more } = await fetchPage(null);
+      setPages([rows]);
+      setHasMoreUp(more);
+      setFullyLoaded(!more);
+      const lastAssistant = [...rows].reverse().find((row) => row.role === "assistant");
+      callbacks.current.onFallback(lastAssistant ? lastAssistant.text : null);
+      void fetchPage;
+    } catch {
+      toast.error(callbacks.current.failedCopy);
+    }
+  }, [sessionId, fetchPage]);
+
+  const loadOlder = useCallback(async () => {
+    if (!sessionId || loadingUp || !hasMoreUp || oldestSeq === null) return;
+    setLoadingUp(true);
+    const el = scrollEl.current;
+    const prevHeight = el?.scrollHeight ?? 0;
+    const prevTop = el?.scrollTop ?? 0;
+    try {
+      const { rows, more } = await fetchPage(oldestSeq);
+      if (rows.length) {
+        setPages((prev) => {
+          const seen = new Set(prev.flat().map((row) => row.id));
+          const fresh = rows.filter((row) => !seen.has(row.id));
+          return fresh.length ? [fresh, ...prev] : prev;
+        });
+      }
+      setHasMoreUp(more);
+      if (!more) setFullyLoaded(true);
+      requestAnimationFrame(() => {
+        if (el) el.scrollTop = prevTop + (el.scrollHeight - prevHeight);
+      });
+    } catch {
+      toast.error(callbacks.current.failedCopy);
+    } finally {
+      setLoadingUp(false);
+    }
+  }, [sessionId, loadingUp, hasMoreUp, oldestSeq, fetchPage]);
+
+  // Newest mounted seq rides a ref so the sync callback stays stable
+  // across page appends.
+  const newestSeq = useRef(-1);
+  useEffect(() => {
+    const last = pages.flat().at(-1)?.seq;
+    if (last !== undefined) newestSeq.current = last;
+  }, [pages]);
+
+  // Sync new rows (own sends, other tabs, other devices) without reload.
+  const syncNew = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const params = new URLSearchParams({ after: String(newestSeq.current) });
+      const res = await fetch(`/api/chat/sessions/${sessionId}/messages?${params}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { messages: ThreadItem[] };
+      if (!data.messages.length) return;
+      setPages((prev) => {
+        const seen = new Set(prev.flat().map((row) => row.id));
+        const fresh = data.messages.filter((row) => !seen.has(row.id));
+        if (!fresh.length) return prev;
+        if (!prev.length) return [fresh];
+        const last = [...prev];
+        last[last.length - 1] = [...(last[last.length - 1] ?? []), ...fresh];
+        return last;
+      });
+      const lastAssistant = [...data.messages].reverse().find((row) => row.role === "assistant");
+      if (lastAssistant) callbacks.current.onFallback(lastAssistant.text);
+    } catch {
+      // Poll backup absorbs transient failures on its next round.
+    }
+  }, [sessionId]);
+
+  // Reset local turn state when the session changes, then load the
+  // latest page fresh.
   const lastSession = useRef<string | null>(null);
   useEffect(() => {
     if (lastSession.current === sessionId) return;
     lastSession.current = sessionId;
     setDraft("");
     setInFlightSeq(null);
+    setPages([]);
+    setHasMoreUp(true);
+    setFullyLoaded(false);
     const { onVerdict, onLookup, onFallback, failedCopy } = callbacks.current;
     onVerdict(null, false);
     onLookup(null);
     onFallback(null);
-    if (threadQuery.error) toast.error(failedCopy);
-  }, [sessionId, threadQuery.error]);
+    if (!sessionId) return;
+    void loadInitial().catch(() => toast.error(callbacks.current.failedCopy));
+  }, [sessionId, loadInitial]);
+
+  // Top sentinel pages older turns in as it scrolls into view.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMoreUp) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) void loadOlder();
+      },
+      { rootMargin: "400px 0px 0px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreUp, loadOlder]);
+
+  // Freshness in three layers (spec 0009): SSE push, 30 second poll,
+  // window focus. SSE is a hint, the poll stays authoritative.
+  useEffect(() => {
+    if (!sessionId) return;
+    let source: EventSource | null = null;
+    try {
+      source = new EventSource(
+        `/api/chat/stream?sessionId=${encodeURIComponent(sessionId)}&since=${encodeURIComponent(new Date().toISOString())}`,
+      );
+      source.addEventListener("change", () => void syncNew());
+    } catch {
+      source = null;
+    }
+    const poll = window.setInterval(() => void syncNew(), 30_000);
+    const onFocus = () => void syncNew();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      source?.close();
+      window.clearInterval(poll);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [sessionId, syncNew]);
 
   useEffect(() => {
-    if (!threadQuery.data) return;
-    const lastAssistant = [...threadQuery.data]
-      .reverse()
-      .find((row) => row.role === "assistant");
-    callbacks.current.onFallback(lastAssistant ? lastAssistant.text : null);
-    if (threadQuery.data.length === 0 && callbacks.current.initialDraft) {
+    if (mounted.length === 0 && callbacks.current.initialDraft) {
       setDraft((current) => current || callbacks.current.initialDraft || "");
     }
-  }, [threadQuery.data]);
+  }, [mounted.length]);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -329,13 +465,21 @@ export function ThreadView({
   }
 
   const visiblePersisted =
-    inFlightSeq === null ? persisted : persisted.filter((row) => row.seq < inFlightSeq);
+    inFlightSeq === null ? mounted : mounted.filter((row) => row.seq < inFlightSeq);
   const streaming = status === "streaming" || status === "submitted";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <Conversation className="min-h-0 flex-1">
+        <ScrollBinder target={scrollEl} />
         <ConversationContent>
+          {hasMoreUp && mounted.length > 0 && (
+            <div ref={sentinelRef} aria-hidden="true" className="flex justify-center py-2">
+              {loadingUp && (
+                <span className="font-mono text-[11px] text-slate-400">···</span>
+              )}
+            </div>
+          )}
           {visiblePersisted.length === 0 && !streaming && (
             <ConversationEmptyState title={t.chatEmptyTitle} description={t.chatEmptySub} />
           )}

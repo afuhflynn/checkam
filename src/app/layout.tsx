@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Mono, Public_Sans } from "next/font/google";
 import Script from "next/script";
-import { Footer } from "../components/footer";
-import { Header } from "../components/header";
 import { Providers } from "../components/providers";
 import "./globals.css";
 
@@ -78,11 +76,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col antialiased bg-paper text-ink font-sans">
-        <Providers>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

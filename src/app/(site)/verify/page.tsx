@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { authClient } from "../../lib/auth-client";
-import { useTranslation } from "../../lib/i18n/context";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
+import { authClient } from "../../../lib/auth-client";
+import { useTranslation } from "../../../lib/i18n/context";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent } from "../../../components/ui/card";
 
 // Consumes a verify link token (?token=), then lands in chat. Invalid or
 // expired tokens route to the gate expired panel with reissue.

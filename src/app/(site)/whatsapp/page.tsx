@@ -17,11 +17,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardHeader } from "../../components/ui/card";
-import { GuideTrials } from "../../components/guide-trials";
-import { useTranslation } from "../../lib/i18n/context";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent, CardHeader } from "../../../components/ui/card";
+import { GuideTrials } from "../../../components/guide-trials";
+import { useTranslation } from "../../../lib/i18n/context";
 
 const MINSEC_REPLY_FR = `🚨 *ALERTE ARNAQUE / CHECKAM CAMEROUN* 🚨
 

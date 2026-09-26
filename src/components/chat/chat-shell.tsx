@@ -1,9 +1,11 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { authClient } from "../../lib/auth-client";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
@@ -49,6 +51,8 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
 
   const foldersQuery = useQuery({
     queryKey: ["chat", "folders"],
+    staleTime: 30_000,
+    refetchInterval: 30_000,
     queryFn: async (): Promise<Folder[]> => {
       const res = await fetch("/api/chat/folders");
       if (!res.ok) throw new Error("folders_failed");
@@ -59,6 +63,7 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const sessionsQuery = useQuery({
     queryKey: ["chat", "sessions", search, cursor],
     staleTime: 30_000,
+    refetchInterval: 30_000,
     queryFn: async (): Promise<{ sessions: SessionRow[]; nextCursor: string | null }> => {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
@@ -106,12 +111,12 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
     void queryClient.invalidateQueries({ queryKey: ["chat", "counter"] });
   }
 
-  async function createSession() {
+  async function createSession(folderId?: string) {
     try {
       const res = await fetch("/api/chat/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify(folderId ? { folderId } : {}),
       });
       if (res.status === 403) {
         setCapped(true);
@@ -212,10 +217,47 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const folders = foldersQuery.data ?? [];
   const activeSession = sessions.find((s) => s.id === activeId) ?? null;
 
+  async function moveSession(id: string, folderId: string | null) {
+    const res = await fetch(`/api/chat/sessions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ folderId }),
+    });
+    if (res.ok) refresh();
+    else toast.error(t.gateFailed);
+  }
+
+  function sessionRow(item: SessionRow) {
+    return (
+      <SessionRowView
+        key={item.id}
+        item={item}
+        folders={folders}
+        active={item.id === activeId}
+        renaming={renaming?.id === item.id ? renaming.title : null}
+        onOpen={() => {
+          setActiveId(item.id);
+          setRailOpen(false);
+        }}
+        onRename={(title) => setRenaming({ kind: "session", id: item.id, title })}
+        onRenameChange={(title) => setRenaming({ kind: "session", id: item.id, title })}
+        onRenameSubmit={submitRename}
+        onPin={() => togglePin("session", item.id, item.pinned)}
+        onDelete={() => setConfirmDelete({ kind: "session", id: item.id })}
+        onMove={(folderId) => moveSession(item.id, folderId)}
+        t={{
+          rename: t.chatRename,
+          pin: item.pinned ? t.chatUnpin : t.chatPin,
+          del: t.chatDeleteSession,
+        }}
+      />
+    );
+  }
+
   const rail = (
     <div className="flex h-full flex-col gap-3">
       <div className="flex items-center gap-2">
-        <Button type="button" className="flex-1 font-bold" onClick={createSession}>
+        <Button type="button" className="flex-1 font-bold" onClick={() => createSession()}>
           {t.chatNewChat}
         </Button>
       </div>
@@ -278,6 +320,16 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                     type="button"
                     variant="ghost"
                     size="sm"
+                    aria-label={t.chatNewChat}
+                    title={t.chatNewChat}
+                    onClick={() => createSession(folder.id)}
+                  >
+                    +
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
                     aria-label={folder.pinned ? t.chatUnpin : t.chatPin}
                     onClick={() => togglePin("folder", folder.id, folder.pinned)}
                   >
@@ -311,60 +363,14 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
               )}
             </div>
             <ul className="mt-1 space-y-0.5">
-              {sessions
-                .filter((s) => s.folderId === folder.id)
-                .map((item) => (
-                  <SessionRowView
-                    key={item.id}
-                    item={item}
-                    active={item.id === activeId}
-                    renaming={renaming?.id === item.id ? renaming.title : null}
-                    onOpen={() => {
-                      setActiveId(item.id);
-                      setRailOpen(false);
-                    }}
-                    onRename={(title) => setRenaming({ kind: "session", id: item.id, title })}
-                    onRenameChange={(title) => setRenaming({ kind: "session", id: item.id, title })}
-                    onRenameSubmit={submitRename}
-                    onPin={() => togglePin("session", item.id, item.pinned)}
-                    onDelete={() => setConfirmDelete({ kind: "session", id: item.id })}
-                    t={{
-                      rename: t.chatRename,
-                      pin: item.pinned ? t.chatUnpin : t.chatPin,
-                      del: t.chatDeleteSession,
-                    }}
-                  />
-                ))}
+              {sessions.filter((s) => s.folderId === folder.id).map((item) => sessionRow(item))}
             </ul>
           </section>
         ))}
         {sessions.filter((s) => !s.folderId).length > 0 && (
           <section aria-label="unfiled">
             <ul className="space-y-0.5">
-              {sessions
-                .filter((s) => !s.folderId)
-                .map((item) => (
-                  <SessionRowView
-                    key={item.id}
-                    item={item}
-                    active={item.id === activeId}
-                    renaming={renaming?.id === item.id ? renaming.title : null}
-                    onOpen={() => {
-                      setActiveId(item.id);
-                      setRailOpen(false);
-                    }}
-                    onRename={(title) => setRenaming({ kind: "session", id: item.id, title })}
-                    onRenameChange={(title) => setRenaming({ kind: "session", id: item.id, title })}
-                    onRenameSubmit={submitRename}
-                    onPin={() => togglePin("session", item.id, item.pinned)}
-                    onDelete={() => setConfirmDelete({ kind: "session", id: item.id })}
-                    t={{
-                      rename: t.chatRename,
-                      pin: item.pinned ? t.chatUnpin : t.chatPin,
-                      del: t.chatDeleteSession,
-                    }}
-                  />
-                ))}
+              {sessions.filter((s) => !s.folderId).map((item) => sessionRow(item))}
             </ul>
           </section>
         )}
@@ -385,8 +391,46 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
           {counterQuery.data.triesLeft} {t.chatTriesLeft}
         </p>
       )}
+      <UserCard />
     </div>
   );
+
+  function UserCard() {
+    const { data: session } = authClient.useSession();
+    if (!session?.user) {
+      return (
+        <Link
+          href="/signin"
+          className="rounded-lg bg-authority-950 px-3 py-2 text-center text-sm font-bold text-white"
+        >
+          {t.gateSignInBtn}
+        </Link>
+      );
+    }
+    const name = session.user.name || session.user.email;
+    const initials = (session.user.name?.trim() || session.user.email || "?")
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase();
+    return (
+      <Link
+        href="/settings"
+        className="flex items-center gap-2.5 rounded-xl border border-authority-900/10 bg-white px-2.5 py-2 hover:bg-slate-50"
+      >
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-authority-950 font-mono text-[11px] font-bold text-white">
+          {initials}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-bold text-ink">{name}</span>
+          <span className="block font-mono text-[10px] uppercase tracking-wider text-slate-400">
+            {t.gateUserMenuSettings}
+          </span>
+        </span>
+      </Link>
+    );
+  }
 
   return (
     <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-7xl gap-4 px-4 py-4 sm:px-6">
@@ -419,10 +463,10 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
               >
                 {t.chatSampleText}
               </Button>
-              <Button type="button" variant="outline" onClick={createSession}>
+              <Button type="button" variant="outline" onClick={() => createSession()}>
                 {t.chatSampleFlyer}
               </Button>
-              <Button type="button" variant="outline" onClick={createSession}>
+              <Button type="button" variant="outline" onClick={() => createSession()}>
                 {t.chatSamplePhone}
               </Button>
             </div>
@@ -497,6 +541,7 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
 
 function SessionRowView({
   item,
+  folders,
   active,
   renaming,
   onOpen,
@@ -505,9 +550,11 @@ function SessionRowView({
   onRenameSubmit,
   onPin,
   onDelete,
+  onMove,
   t,
 }: {
   item: SessionRow;
+  folders: Folder[];
   active: boolean;
   renaming: string | null;
   onOpen: () => void;
@@ -516,6 +563,7 @@ function SessionRowView({
   onRenameSubmit: () => void;
   onPin: () => void;
   onDelete: () => void;
+  onMove: (folderId: string | null) => void;
   t: { rename: string; pin: string; del: string };
 }) {
   if (renaming !== null) {
@@ -573,6 +621,19 @@ function SessionRowView({
         >
           ✕
         </button>
+        <select
+          aria-label="folder"
+          value={item.folderId ?? ""}
+          onChange={(event) => onMove(event.target.value || null)}
+          className={`max-w-20 truncate rounded bg-transparent text-xs ${active ? "text-slate-300" : "text-slate-400"}`}
+        >
+          <option value="">≣</option>
+          {folders.map((folder) => (
+            <option key={folder.id} value={folder.id}>
+              {folder.name}
+            </option>
+          ))}
+        </select>
       </div>
     </li>
   );

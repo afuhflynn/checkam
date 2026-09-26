@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { ChatShell } from "../../components/chat/chat-shell";
+import { ChatShell } from "../../../components/chat/chat-shell";
 
 export const metadata = {
   title: "Chat — CheckAm",

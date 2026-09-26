@@ -55,7 +55,8 @@ function errorCopy(code: string, dict: ErrorDict): string {
   return dict.gateFailed;
 }
 
-export function GateForm({ notice }: { notice: string | null }) {
+export function GateForm({ notice, next }: { notice: string | null; next?: string }) {
+  const landing = typeof next === "string" && next.startsWith("/") ? next : "/";
   const { t } = useTranslation();
   const [mode, setMode] = useState<GateMode>("signin");
   const [email, setEmail] = useState("");
@@ -82,7 +83,7 @@ export function GateForm({ notice }: { notice: string | null }) {
     setBusy(true);
     setFieldError(null);
     try {
-      await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+      await authClient.signIn.social({ provider: "google", callbackURL: landing });
     } catch (err: unknown) {
       await fail(err);
     } finally {
@@ -108,7 +109,7 @@ export function GateForm({ notice }: { notice: string | null }) {
       } else {
         const res = await authClient.signIn.email({ email, password });
         if (res.error) throw new Error(res.error.code ?? "failed");
-        window.location.href = "/";
+        window.location.href = landing;
       }
     } catch (err: unknown) {
       await fail(err);
@@ -125,7 +126,7 @@ export function GateForm({ notice }: { notice: string | null }) {
       const res = await authClient.emailOtp.verifyEmail({ email, otp });
       if (res.error) throw new Error(res.error.code ?? "failed");
       toast.success(t.gateOtpBtn);
-      window.location.href = "/";
+      window.location.href = landing;
     } catch (err: unknown) {
       await fail(err);
     } finally {

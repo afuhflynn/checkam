@@ -18,11 +18,11 @@ import {
 import Link from "next/link";
 import { useQueryState } from "nuqs";
 import { Suspense, useEffect, useState } from "react";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardHeader } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
-import { useTranslation } from "../../lib/i18n/context";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent, CardHeader } from "../../../components/ui/card";
+import { Input } from "../../../components/ui/input";
+import { useTranslation } from "../../../lib/i18n/context";
 
 interface ScamReportItem {
   id: string;

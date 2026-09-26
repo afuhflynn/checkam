@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { authClient } from "../../lib/auth-client";
-import { useTranslation } from "../../lib/i18n/context";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
+import { authClient } from "../../../lib/auth-client";
+import { useTranslation } from "../../../lib/i18n/context";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Input } from "../../../components/ui/input";
 
 // Completes a reset link (?token=) with a new password form.
 export default function ResetPage() {

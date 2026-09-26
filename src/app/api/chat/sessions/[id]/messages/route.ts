@@ -28,6 +28,18 @@ const AppendSchema = z.object({
   verificationId: z.string().cuid().nullable().optional(),
 });
 
+const MESSAGE_SELECT = {
+  id: true,
+  seq: true,
+  role: true,
+  text: true,
+  attachments: true,
+  toolCalls: true,
+  tokenUse: true,
+  verificationId: true,
+  createdAt: true,
+} as const;
+
 async function visibleSession(actor: Awaited<ReturnType<typeof resolveActor>>, id: string) {
   return db.chatSession.findFirst({ where: { id, ...sessionScope(actor) } });
 }
@@ -40,25 +52,51 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const session = await visibleSession(actor, id);
   if (!session) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  const after = Number(req.nextUrl.searchParams.get("after") ?? -1);
-  const messages = await db.chatMessage.findMany({
-    where: { sessionId: id, seq: { gt: Number.isFinite(after) ? Math.floor(after) : -1 } },
-    orderBy: { seq: "asc" },
-    take: PAGE,
-    select: {
-      id: true,
-      seq: true,
-      role: true,
-      text: true,
-      attachments: true,
-      toolCalls: true,
-      tokenUse: true,
-      verificationId: true,
-      createdAt: true,
-    },
-  });
+  const search = req.nextUrl.searchParams;
+  const afterRaw = search.get("after");
+  const beforeRaw = search.get("before");
+  // Newer than seq (live tail, oldest first) or older than seq (paging up,
+  // newest first). No cursor means the latest page, newest first.
+  const base = { sessionId: id };
+  let messages: {
+    id: string;
+    seq: number;
+    role: string;
+    text: string;
+    attachments: unknown;
+    toolCalls: unknown;
+    tokenUse: unknown;
+    verificationId: string | null;
+    createdAt: Date;
+  }[];
+  let hasMore = false;
+  if (afterRaw !== null) {
+    const after = Math.floor(Number(afterRaw));
+    messages = await db.chatMessage.findMany({
+      where: { ...base, seq: { gt: Number.isFinite(after) ? after : -1 } },
+      orderBy: { seq: "asc" },
+      take: PAGE,
+      select: MESSAGE_SELECT,
+    });
+  } else {
+    const before = beforeRaw === null ? null : Math.floor(Number(beforeRaw));
+    const rows = await db.chatMessage.findMany({
+      where: { ...base, ...(before !== null && Number.isFinite(before) ? { seq: { lt: before } } : {}) },
+      orderBy: { seq: "desc" },
+      take: PAGE + 1,
+      select: MESSAGE_SELECT,
+    });
+    hasMore = rows.length > PAGE;
+    messages = rows.slice(0, PAGE).reverse();
+  }
+  const first = messages[0];
   const last = messages[messages.length - 1];
-  return NextResponse.json({ messages, nextAfter: last ? last.seq : after });
+  return NextResponse.json({
+    messages,
+    nextAfter: last ? last.seq : null,
+    oldestSeq: first ? first.seq : null,
+    hasMore,
+  });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

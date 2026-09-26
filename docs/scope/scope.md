@@ -11,15 +11,17 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 
 | # | Feature | Phase | Status |
 |---|---------|-------|--------|
-| 1 | Landing refresh | Path 1: enter | planned |
-| 2 | Auth refresh (password + Google + user button) | Path 2: sign in | planned |
-| 3 | Mail plumbing (Nodemailer + Inngest) | Path 2: sign in | planned |
-| 4 | Chat shell (AI Elements streaming) | Path 3: chat | planned |
-| 5 | Chat memory + folders + caching | Path 3: chat | planned |
-| 6 | Agent tools + Tavily + prompt review | Path 3: chat | planned |
-| 7 | Lean settings | Path 4: account | planned |
-| 8 | WhatsApp guide | Path 4: account | planned |
-| 9 | Visual polish (tokens + seal + shadcn) | Throughout | planned |
+| 1 | Landing refresh | Path 1: enter | done |
+| 2 | Auth refresh (password + Google + user button) | Path 2: sign in | done |
+| 3 | Mail plumbing (Nodemailer + Inngest) | Path 2: sign in | done |
+| 4 | Chat shell (AI Elements streaming) | Path 3: chat | done |
+| 5 | Chat memory + folders + caching | Path 3: chat | done |
+| 6 | Agent tools + Tavily + prompt review | Path 3: chat | done |
+| 7 | Lean settings | Path 4: account | done |
+| 8 | WhatsApp guide | Path 4: account | done |
+| 9 | Visual polish (tokens + seal + shadcn) | Throughout | done |
+| 10 | Dedicated chat layout | Path 5: immerse | planned |
+| 11 | Virtual thread + realtime sync | Path 5: immerse | planned |
 
 ## Path 1: enter
 
@@ -122,6 +124,29 @@ Dossier identity on the shadcn base: archival paper tokens, Fraunces display plu
 **Done when:** all rebuilt screens share one style, verdicts stamp memorably, and phone plus desktop plus keyboard plus reduced motion all pass.
 - [x] Designed in umbrella spec Design section + applied across builds 0002–0007 (no separate spec needed)
 Spec 0001 (`docs/specs/0001-ui-rebuild/index.md` Design section)
+
+## Path 5: immerse
+
+### 10. Dedicated chat layout · done
+Own route group shell for chat: no marketing header or footer, full height rail plus thread plus dossier, user card with settings at the rail foot, new chats unfiled unless a folder is picked, per folder create plus move to folder.
+**Done when:** `/chat` renders its own immersive shell with the dossier light theme, folders hold chats, and the user card opens settings.
+- [x] Design it (spec): `/solution-architect chat layout`
+- [x] Build it: `/feature-build chat layout`
+   - [x] Proxy routing plus protection (AC-4, AC-5)
+   - [x] Group shells plus user card plus folder actions (AC-1, AC-2, AC-3)
+- [x] Verify it: `/verify-release chat layout`
+Spec 0008 (`docs/specs/0001-ui-rebuild/0008-chat-layout.md`)
+
+### 11. Virtual thread + realtime sync · done
+Windowed thread (50 per page, 3 in DOM, scroll anchored) with poll plus focus plus SSE freshness, so long histories stay smooth and multi tab edits appear.
+**Done when:** first load shows the latest page, scrolling up pages older turns in while far pages leave the DOM, and new turns arrive without reload.
+- [x] Design it (spec): `/solution-architect thread sync`
+- [x] Build it: `/feature-build thread sync`
+   - [x] Older pages endpoint (AC-1, AC-2, AC-6)
+   - [x] Windowed thread UI (AC-2, AC-3, AC-4)
+   - [x] Stream endpoint plus client (AC-5)
+- [x] Verify it: `/verify-release thread sync`
+Spec 0009 (`docs/specs/0001-ui-rebuild/0009-thread-sync.md`)
 
 ## Deferred
 

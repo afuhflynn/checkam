@@ -1,6 +1,6 @@
-import { LandingPage } from "../components/landing-page";
-import type { PreviewReport } from "../components/landing/registry-preview";
-import { db } from "../lib/db";
+import { LandingPage } from "../../components/landing-page";
+import type { PreviewReport } from "../../components/landing/registry-preview";
+import { db } from "../../lib/db";
 
 export const revalidate = 120;
 

@@ -19,6 +19,8 @@ Child specs, one per load bearing decision (each buildable on its own):
 - `0005-chat-shell.md` ([chat shell](0005-chat-shell.md), written `Proposed`) — AI Elements thread, streaming via AI SDK, folders rail, composer, upload + lookup (scope 4)
 - `0006-agent.md` ([agent tools](0006-agent.md), written `Proposed`) — tools (Tavily web search, registry + flagged lookup, verify call), reviewed versioned prompts, safety limits (scope 6)
 - `0007-shell.md` ([shell](0007-shell.md), written `Proposed`) — landing desk, lean settings, WhatsApp guide (scope 1, 7, 8)
+- `0008-chat-layout.md` ([chat layout](0008-chat-layout.md), written `Proposed`) — route group shells, proxy routing, user card, folder actions (scope 10)
+- `0009-thread-sync.md` ([thread sync](0009-thread-sync.md), written `Proposed`) — windowed thread, older pages, SSE plus poll freshness (scope 11)
 - Visual polish direction (scope 9) lives in the Design section below and applies to every child.
 
 Cross child contracts: rules decide every verdict and AI never does; all user strings ship EN + FR; chat messages may link a `ScamVerification`; mail state is the `emailVerified` flag on the user row plus the Inngest run history.

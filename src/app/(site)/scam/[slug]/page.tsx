@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { type DossierReport, ScamDossier } from "../../../components/scam-dossier";
-import { db } from "../../../lib/db";
-import { runRulesEngine } from "../../../lib/rules/engine";
+import { type DossierReport, ScamDossier } from "../../../../components/scam-dossier";
+import { db } from "../../../../lib/db";
+import { runRulesEngine } from "../../../../lib/rules/engine";
 
 interface Props {
   params: Promise<{ slug: string }>;
