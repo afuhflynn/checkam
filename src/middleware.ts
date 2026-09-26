@@ -27,13 +27,15 @@ export default async function middleware(request: NextRequest) {
   if (pathname === "/signin") {
     if (!userId) return NextResponse.next();
     const next = request.nextUrl.searchParams.get("next") ?? "/chat";
+    // Single slash only: protocol relative URLs (//evil.com) would escape.
+    const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/chat";
     const url = request.nextUrl.clone();
-    url.pathname = next.startsWith("/") ? next : "/chat";
+    url.pathname = safeNext;
     url.search = "";
     return NextResponse.redirect(url);
   }
 
-  if (pathname === "/settings" || pathname === "/admin") {
+  if (pathname === "/settings" || pathname.startsWith("/settings/") || pathname === "/admin" || pathname.startsWith("/admin")) {
     if (!userId) return NextResponse.redirect(signinUrl(pathname + search));
     return NextResponse.next();
   }
@@ -42,5 +44,5 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/signin", "/settings", "/admin", "/chat"],
+  matcher: ["/signin", "/settings/:path*", "/admin/:path*", "/chat/:path*"],
 };

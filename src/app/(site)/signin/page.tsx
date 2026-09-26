@@ -18,7 +18,8 @@ export default async function SignInPage({
   const error = typeof params?.error === "string" ? params.error : null;
   const expired = params?.expired === "1";
   const notice = error ? "google-kept" : expired ? "expired" : null;
-  const next = typeof params?.next === "string" && params.next.startsWith("/") ? params.next : "/";
+  const rawNext = typeof params?.next === "string" ? params.next : "/";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
 
   return (
     <div className="mx-auto flex min-h-[70vh] w-full max-w-7xl items-center justify-center px-4 py-12 sm:px-6">

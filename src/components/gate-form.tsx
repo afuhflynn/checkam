@@ -56,7 +56,7 @@ function errorCopy(code: string, dict: ErrorDict): string {
 }
 
 export function GateForm({ notice, next }: { notice: string | null; next?: string }) {
-  const landing = typeof next === "string" && next.startsWith("/") ? next : "/";
+  const landing = typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/";
   const { t } = useTranslation();
   const [mode, setMode] = useState<GateMode>("signin");
   const [email, setEmail] = useState("");
