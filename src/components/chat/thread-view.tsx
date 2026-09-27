@@ -118,6 +118,8 @@ export function ThreadView({
   sessionId,
   locale,
   initialDraft,
+  pendingSend,
+  onPendingSent,
   wallCapped,
   onWall,
   onVerdict,
@@ -127,6 +129,8 @@ export function ThreadView({
   sessionId: string | null;
   locale: Language;
   initialDraft: string | null;
+  pendingSend: string | null;
+  onPendingSent: () => void;
   wallCapped: boolean;
   onWall: () => void;
   onVerdict: (verdict: Verdict | null, sealed: boolean) => void;
@@ -329,11 +333,22 @@ export function ThreadView({
     };
   }, [sessionId, syncNew]);
 
+  const sentPending = useRef<string | null>(null);
+  const pendingSentRef = useRef(onPendingSent);
+  pendingSentRef.current = onPendingSent;
   useEffect(() => {
-    if (mounted.length === 0 && callbacks.current.initialDraft) {
+    if (mounted.length !== 0) return;
+    if (pendingSend && sessionId && sentPending.current !== pendingSend) {
+      sentPending.current = pendingSend;
+      pendingSentRef.current();
+      void submitTurn(pendingSend);
+      return;
+    }
+    if (callbacks.current.initialDraft) {
       setDraft((current) => current || callbacks.current.initialDraft || "");
     }
-  }, [mounted.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSend, sessionId, mounted.length]);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -472,7 +487,8 @@ export function ThreadView({
     <div className="flex min-h-0 flex-1 flex-col">
       <Conversation className="min-h-0 flex-1">
         <ScrollBinder target={scrollEl} />
-        <ConversationContent>
+        <ConversationContent className="items-center">
+          <div className="flex w-full max-w-3xl flex-col gap-8">
           {hasMoreUp && mounted.length > 0 && (
             <div ref={sentinelRef} aria-hidden="true" className="flex justify-center py-2">
               {loadingUp && (
@@ -504,11 +520,13 @@ export function ThreadView({
                 </MessageContent>
               </Message>
             ))}
+          </div>
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
 
       <div className="border-t border-authority-900/10 bg-white px-3 pb-3 pt-2 sm:px-4">
+        <div className="mx-auto w-full max-w-3xl">
         {!online && (
           <output className="mb-2 block rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
             <span className="font-bold">{t.chatOfflineTitle}.</span> {t.chatOfflineDesc}
@@ -569,6 +587,7 @@ export function ThreadView({
             )}
           </PromptInputFooter>
         </PromptInput>
+        </div>
       </div>
     </div>
   );

@@ -86,10 +86,10 @@ export function DemoCases({ onSelectCase, isLoading }: DemoCasesProps) {
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold text-slate-900 group-hover:text-authority-900 line-clamp-1">
+                  <div className="text-xs font-bold text-slate-900 group-hover:text-authority-900 line-clamp-2">
                     {title}
                   </div>
-                  <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5 font-mono">
+                  <div className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 font-mono">
                     {demo.highlightText}
                   </div>
                 </div>

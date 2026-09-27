@@ -9,6 +9,12 @@ import { authClient } from "../../lib/auth-client";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
+import {
+  PromptInput,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from "../ai-elements/prompt-input";
 import type { Language } from "../../lib/i18n/dictionary";
 import { useTranslation } from "../../lib/i18n/context";
 import { DossierPane, ThreadView, type LookupResult, type Verdict } from "./thread-view";
@@ -48,6 +54,13 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const [newFolder, setNewFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [renaming, setRenaming] = useState<{ kind: "session" | "folder"; id: string; title: string } | null>(null);
+  const [pendingSend, setPendingSend] = useState<string | null>(null);
+  const [emptyDraft, setEmptyDraft] = useState("");
+
+  async function startWithText(text: string) {
+    const id = await createSession();
+    if (id) setPendingSend(text);
+  }
 
   const foldersQuery = useQuery({
     queryKey: ["chat", "folders"],
@@ -111,7 +124,7 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
     void queryClient.invalidateQueries({ queryKey: ["chat", "counter"] });
   }
 
-  async function createSession(folderId?: string) {
+  async function createSession(folderId?: string): Promise<string | null> {
     try {
       const res = await fetch("/api/chat/sessions", {
         method: "POST",
@@ -120,15 +133,17 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
       });
       if (res.status === 403) {
         setCapped(true);
-        return;
+        return null;
       }
       if (!res.ok) throw new Error("create_failed");
       const data = (await res.json()) as { session: SessionRow };
       refresh();
       setActiveId(data.session.id);
       setRailOpen(false);
+      return data.session.id;
     } catch {
       toast.error(t.gateFailed);
+      return null;
     }
   }
 
@@ -433,40 +448,68 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-7xl gap-4 px-4 py-4 sm:px-6">
-      <div className="flex items-center gap-2 md:hidden">
+    <div className="flex h-dvh w-full flex-col bg-paper">
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-authority-900/10 px-3 md:hidden">
         <Button type="button" variant="outline" size="sm" onClick={() => setRailOpen((open) => !open)}>
           ☰
         </Button>
+        <p className="flex-1 truncate text-center font-display text-base font-black text-ink">CheckAm</p>
         <Button type="button" variant="outline" size="sm" onClick={() => setDossierOpen((open) => !open)}>
           ❖
         </Button>
       </div>
+      <div className="flex min-h-0 flex-1 gap-0 md:gap-3 md:p-3">
       <aside
-        className={`${railOpen ? "fixed inset-y-0 left-0 z-40 w-72 bg-paper p-4" : "hidden"} md:static md:block md:w-64 md:shrink-0`}
+        className={`${railOpen ? "fixed inset-y-0 left-0 z-40 w-72 border-r border-authority-900/10 bg-paper p-4" : "hidden"} md:static md:block md:w-64 md:shrink-0`}
         aria-label={t.chatFolders}
       >
         {rail}
       </aside>
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border border-authority-900/10 bg-white">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-white md:rounded-2xl md:border md:border-authority-900/10">
         {!activeId ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-            <p className="font-display text-2xl font-black text-ink">{t.chatEmptyTitle}</p>
-            <p className="text-sm text-slate-500">{t.chatEmptySub}</p>
+          <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+              {t.gateKicker}
+            </p>
+            <p className="font-display text-3xl font-black tracking-tight text-ink sm:text-4xl">{t.chatEmptyTitle}</p>
+            <p className="max-w-md text-sm text-slate-500">{t.chatEmptySub}</p>
+            <div className="w-full">
+              <PromptInput
+                onSubmit={(message) => {
+                  if (message.text.trim()) void startWithText(message.text.trim());
+                }}
+              >
+                <PromptInputTextarea
+                  value={emptyDraft}
+                  onChange={(event) => setEmptyDraft(event.target.value)}
+                  placeholder={t.chatComposerPh}
+                />
+                <PromptInputFooter>
+                  <span className="font-mono text-[11px] text-slate-400">
+                    {!wallCapped && counterQuery.data
+                      ? `${counterQuery.data.triesLeft} ${t.chatTriesLeft}`
+                      : ""}
+                  </span>
+                  <PromptInputSubmit disabled={!emptyDraft.trim()} />
+                </PromptInputFooter>
+              </PromptInput>
+            </div>
             <div className="flex flex-wrap justify-center gap-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={async () => {
-                  await createSession();
-                }}
+                onClick={() => startWithText(t.chatSampleTextFill)}
               >
                 {t.chatSampleText}
               </Button>
               <Button type="button" variant="outline" onClick={() => createSession()}>
                 {t.chatSampleFlyer}
               </Button>
-              <Button type="button" variant="outline" onClick={() => createSession()}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => startWithText(t.chatSamplePhoneFill)}
+              >
                 {t.chatSamplePhone}
               </Button>
             </div>
@@ -477,6 +520,8 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
             sessionId={activeId}
             locale={locale}
             initialDraft={trial}
+            pendingSend={pendingSend}
+            onPendingSent={() => setPendingSend(null)}
             wallCapped={wallCapped}
             onWall={() => {
               setCapped(true);
@@ -497,10 +542,18 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
         )}
       </main>
       <aside
-        className={`${dossierOpen ? "fixed inset-y-0 right-0 z-40 w-80 overflow-y-auto bg-paper p-4" : "hidden"} lg:static lg:block lg:w-80 lg:shrink-0`}
+        className={`${dossierOpen ? "fixed inset-y-0 right-0 z-40 w-80 overflow-y-auto border-l border-authority-900/10 bg-paper p-4" : "hidden"} lg:static lg:block lg:w-80 lg:shrink-0`}
         aria-label={t.chatDossierTitle}
       >
         <DossierPane verdict={verdict} sealed={sealed} fallbackText={fallback} lookup={lookup} />
+        {!verdict && !fallback && !lookup && (
+          <div className="rounded-xl border border-dashed border-authority-900/20 bg-white/60 p-4">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              {t.chatDossierTitle}
+            </p>
+            <p className="mt-1.5 text-sm text-slate-500">{t.chatDossierEmpty}</p>
+          </div>
+        )}
       </aside>
 
       <Dialog.Root open={confirmDelete !== null} onOpenChange={(open) => !open && setConfirmDelete(null)}>
@@ -535,6 +588,7 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+      </div>
     </div>
   );
 }

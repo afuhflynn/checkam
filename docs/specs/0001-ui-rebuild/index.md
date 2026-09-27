@@ -21,6 +21,7 @@ Child specs, one per load bearing decision (each buildable on its own):
 - `0007-shell.md` ([shell](0007-shell.md), written `Proposed`) — landing desk, lean settings, WhatsApp guide (scope 1, 7, 8)
 - `0008-chat-layout.md` ([chat layout](0008-chat-layout.md), written `Proposed`) — route group shells, proxy routing, user card, folder actions (scope 10)
 - `0009-thread-sync.md` ([thread sync](0009-thread-sync.md), written `Proposed`) — windowed thread, older pages, SSE plus poll freshness (scope 11)
+- `0010-proxy-edge-limits.md` ([edge rate limits](0010-proxy-edge-limits.md), written `Proposed`) — Arcjet sliding windows at the proxy with tiered caps (scope 13)
 - Visual polish direction (scope 9) lives in the Design section below and applies to every child.
 
 Cross child contracts: rules decide every verdict and AI never does; all user strings ship EN + FR; chat messages may link a `ScamVerification`; mail state is the `emailVerified` flag on the user row plus the Inngest run history.

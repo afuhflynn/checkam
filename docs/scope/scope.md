@@ -20,8 +20,11 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 7 | Lean settings | Path 4: account | done |
 | 8 | WhatsApp guide | Path 4: account | done |
 | 9 | Visual polish (tokens + seal + shadcn) | Throughout | done |
-| 10 | Dedicated chat layout | Path 5: immerse | planned |
-| 11 | Virtual thread + realtime sync | Path 5: immerse | planned |
+| 10 | Dedicated chat layout | Path 5: immerse | done |
+| 11 | Virtual thread + realtime sync | Path 5: immerse | done |
+| 12 | Landing redesign (intentional) | Path 1: enter | done |
+| 13 | Proxy edge rate limits | Path 6: harden | in-progress |
+| 14 | Thread window tuning from data | Path 6: harden | planned |
 
 ## Path 1: enter
 
@@ -34,6 +37,14 @@ Live desk above the fold (paste / upload / lookup) with a sample flyer beside it
    - [x] Bilingual SEO (AC-6)
 - [x] Verify it: `/verify-release landing refresh`
 Spec 0007 (`docs/specs/0001-ui-rebuild/0007-shell.md`) · code in `src/components/landing-page.tsx`, `src/components/header.tsx`, `src/app/sitemap.ts`, `src/app/robots.ts`, `src/app/directory/layout.tsx`, `src/app/report/layout.tsx`
+
+### 12. Landing redesign (intentional) · done
+Deliberate non templated landing voice: bilingual echo headlines, language correct sealed specimen with stamp in motion, dossier filing steps instead of giant numerals, Lucide icons over emoji, no gradients.
+Done when: screenshot reviewed against the brief with checks green on phone and desktop.
+- [x] Design it: frontend-design pass (echo, seal, dossier steps, icon swap)
+- [x] Build it: hero, how, desk, registry, globals, dictionary EN plus FR
+- [x] Verify it: after screenshot review plus typecheck, lint, tests green
+Code in `src/components/landing/`, `src/app/globals.css`, `src/lib/i18n/dictionary.ts` (no spec; design skill pass, not architected)
 
 ## Path 2: sign in
 
@@ -147,6 +158,25 @@ Windowed thread (50 per page, 3 in DOM, scroll anchored) with poll plus focus pl
    - [x] Stream endpoint plus client (AC-5)
 - [x] Verify it: `/verify-release thread sync`
 Spec 0009 (`docs/specs/0001-ui-rebuild/0009-thread-sync.md`)
+
+## Path 6: harden
+
+### 13. Proxy edge rate limits · in-progress
+Enforce abusive IP caps at the proxy edge from spec 0008 follow-up, Arcjet per route stays authoritative.
+Done when: abusive IPs are capped before render without touching legit traffic.
+- [x] Design it (spec): `/solution-architect proxy edge rate limits`
+- [ ] Build it: `/feature-build proxy edge rate limits`
+   - [ ] Matcher plus windows plus tiers plus identity (AC-1, AC-2, AC-3, AC-5)
+   - [ ] Capped responses plus headers plus slow down page (AC-4)
+   - [ ] Logging plus dev mode plus fail open alert (AC-5, AC-6)
+- [ ] Verify it: `/verify-release proxy edge rate limits`
+- [ ] Test it: `/test-engineer proxy edge rate limits`
+Spec 0010 (`docs/specs/0001-ui-rebuild/0010-proxy-edge-limits.md`)
+
+### 14. Thread window tuning from data · planned
+Tune the 50 by 3 thread window from real thread lengths after launch, from spec 0009 follow-up.
+Done when: the window matches measured p99 threads with smooth scroll retained.
+- [ ] Build it: `/feature-build thread window tuning`
 
 ## Deferred
 

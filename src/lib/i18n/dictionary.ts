@@ -363,6 +363,9 @@ export const translations = {
     chatPin: "Pin",
     chatUnpin: "Unpin",
     chatTriesLeft: "tries left today",
+    chatDossierEmpty: "Evidence from your checks lands here, sealed with its verdict.",
+    chatSampleTextFill: "MINSEC avis de recrutement des 325 instituteurs. Frais de dossier 25 000 FCFA par Orange Money au 699123456.",
+    chatSamplePhoneFill: "+237 ",
 
     // Mail templates (rich HTML + plaintext twins)
     mailVerifySubject: "Verify your CheckAm account",
@@ -745,6 +748,9 @@ export const translations = {
     chatPin: "Épingler",
     chatUnpin: "Désépingler",
     chatTriesLeft: "essais restants aujourd'hui",
+    chatDossierEmpty: "Les preuves de vos vérifications arrivent ici, scellées avec leur verdict.",
+    chatSampleTextFill: "Avis de recrutement MINESEC des 325 instituteurs. Frais de dossier 25 000 FCFA par Orange Money au 699123456.",
+    chatSamplePhoneFill: "+237 ",
 
     // Modèles de mail (HTML riche + jumeau texte)
     mailVerifySubject: "Vérifiez votre compte CheckAm",
