@@ -5,10 +5,12 @@ import { useTranslation } from "../../lib/i18n/context";
 export function HowSection() {
   const { t } = useTranslation();
 
+  // Filed exhibits, not countdown numerals: the order is a real process
+  // (deposit, then rules, then receipts), so the filing labels carry it.
   const steps = [
-    { numeral: "01", title: t.howStep1Title, desc: t.howStep1Desc },
-    { numeral: "02", title: t.howStep2Title, desc: t.howStep2Desc },
-    { numeral: "03", title: t.howStep3Title, desc: t.howStep3Desc },
+    { file: t.howFile1, title: t.howStep1Title, desc: t.howStep1Desc },
+    { file: t.howFile2, title: t.howStep2Title, desc: t.howStep2Desc },
+    { file: t.howFile3, title: t.howStep3Title, desc: t.howStep3Desc },
   ];
 
   return (
@@ -23,23 +25,25 @@ export function HowSection() {
         <p className="text-sm sm:text-base text-slate-600">{t.howSub}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {steps.map((step) => (
-          <article
-            key={step.numeral}
-            className="relative overflow-hidden rounded-2xl border border-authority-900/10 bg-white p-6 sm:p-7 shadow-sm"
+      <ol className="grid grid-cols-1 md:grid-cols-3 gap-5 list-none">
+        {steps.map((step, idx) => (
+          <li
+            key={step.file}
+            className="relative overflow-hidden rounded-2xl border border-authority-900/10 bg-white shadow-sm"
           >
-            <span
-              className="font-display text-6xl font-black text-authority-100 select-none"
-              aria-hidden="true"
-            >
-              {step.numeral}
-            </span>
-            <h3 className="mt-3 text-lg font-bold text-ink">{step.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.desc}</p>
-          </article>
+            <div className="quittance-stripes border-b border-slate-200/80 px-6 sm:px-7 py-2.5">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                {step.file}
+              </span>
+            </div>
+            <div className="p-6 sm:p-7 pt-5">
+              <span className="sr-only">{`${idx + 1} / ${steps.length}`}</span>
+              <h3 className="text-lg font-bold text-ink">{step.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.desc}</p>
+            </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   );
 }

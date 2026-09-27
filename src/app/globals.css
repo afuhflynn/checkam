@@ -142,6 +142,35 @@ body {
   transform: rotate(-8deg);
 }
 
+/* Seal press: the one orchestrated motion on the landing. Static when the
+   visitor prefers reduced motion. */
+@keyframes stamp-press {
+  0% {
+    opacity: 0;
+    transform: rotate(-8deg) scale(1.6);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+
+.stamp-in {
+  transform: rotate(-8deg);
+  animation: stamp-press 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp-in {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 .perforated-edge {
   background-image: linear-gradient(90deg, #e2e8f0 50%, transparent 50%);
   background-size: 12px 2px;

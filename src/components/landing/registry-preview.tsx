@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Calendar } from "lucide-react";
+import { ArrowRight, Banknote, Calendar, Phone } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "../../lib/i18n/context";
 import type { TranslationDictionary } from "../../lib/i18n/dictionary";
@@ -79,9 +79,19 @@ export function RegistryPreview({ reports }: { reports: PreviewReport[] }) {
                 )}
               </div>
               <h3 className="font-bold text-ink leading-snug line-clamp-2">{report.title}</h3>
-              <div className="font-mono text-xs text-slate-500 space-y-1 pt-1">
-                {report.contactPhone && <p>📞 {report.contactPhone}</p>}
-                {report.amountRequested && <p>💰 {report.amountRequested}</p>}
+              <div className="font-mono text-xs text-slate-500 space-y-1.5 pt-1">
+                {report.contactPhone && (
+                  <p className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+                    {report.contactPhone}
+                  </p>
+                )}
+                {report.amountRequested && (
+                  <p className="flex items-center gap-1.5">
+                    <Banknote className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+                    {report.amountRequested}
+                  </p>
+                )}
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                 <span className="flex items-center gap-1 text-[11px] text-slate-400">

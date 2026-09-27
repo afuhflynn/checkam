@@ -191,9 +191,12 @@ export const translations = {
     heroNoteBilingual: "EN / FR",
     heroReceiptTitle: "Specimen — verification receipt",
     heroTrustLabel: "Cross-checked with",
+    heroSealScam: "Scam",
+    heroSealRisk: "High risk",
 
     // Landing — verification desk
     deskKicker: "The verification desk",
+    deskFileNo: "Counter Nº 1",
     deskTitle: "Drop it here. Verdict in seconds.",
     deskSub: "Three ways in, one clear answer out: high risk, caution, or verified official.",
 
@@ -211,6 +214,9 @@ export const translations = {
     howStep3Title: "You get receipts to forward",
     howStep3Desc:
       "Badge, three evidence bullets, official contacts, and a WhatsApp warning ready to protect your family groups.",
+    howFile1: "Exhibit — intake",
+    howFile2: "Exhibit — rules",
+    howFile3: "Exhibit — receipts",
 
     // Landing — anatomy of a scam
     anatomyKicker: "Anatomy of a scam",
@@ -566,9 +572,12 @@ export const translations = {
     heroNoteBilingual: "EN / FR",
     heroReceiptTitle: "Spécimen — reçu de vérification",
     heroTrustLabel: "Recoupé avec",
+    heroSealScam: "Arnaque",
+    heroSealRisk: "Risque élevé",
 
     // Accueil — guichet de vérification
     deskKicker: "Le guichet de vérification",
+    deskFileNo: "Guichet Nº 1",
     deskTitle: "Déposez-le ici. Verdict en quelques secondes.",
     deskSub:
       "Trois voies d'entrée, une réponse claire : risque élevé, prudence, ou officiel vérifié.",
@@ -587,6 +596,9 @@ export const translations = {
     howStep3Title: "Vous recevez des preuves à transférer",
     howStep3Desc:
       "Badge, trois preuves, contacts officiels et alerte WhatsApp prête à protéger vos groupes familiaux.",
+    howFile1: "Pièce — dépôt",
+    howFile2: "Pièce — règles",
+    howFile3: "Pièce — preuves",
 
     // Accueil — anatomie d'une arnaque
     anatomyKicker: "Anatomie d'une arnaque",

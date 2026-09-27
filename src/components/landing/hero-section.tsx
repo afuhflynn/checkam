@@ -2,7 +2,9 @@
 
 import { ArrowRight, BadgeCheck } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../lib/i18n/context";
+import { translations } from "../../lib/i18n/dictionary";
 import { Button } from "../ui/button";
 
 const SPECIMEN_BULLETS_FR = [
@@ -20,11 +22,37 @@ const SPECIMEN_BULLETS_EN = [
 export function HeroSection({ onVerify }: { onVerify: () => void }) {
   const { language, t } = useTranslation();
   const specimenBullets = language === "fr" ? SPECIMEN_BULLETS_FR : SPECIMEN_BULLETS_EN;
+  // Bilingual echo: the other language's headline, set in italic serif.
+  // In a bilingual country the translation is content, not decoration.
+  const echo =
+    language === "fr" ? translations.en.heroHeading : translations.fr.heroHeading;
+  const sealRef = useRef<HTMLDivElement | null>(null);
+  const [sealed, setSealed] = useState(false);
+
+  useEffect(() => {
+    const node = sealRef.current;
+    if (!node) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setSealed(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setSealed(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <section className="relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-14 sm:pt-16 sm:pb-20 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-        {/* Editorial headline */}
+        {/* Editorial headline with bilingual echo */}
         <div className="lg:col-span-7 space-y-6">
           <p className="flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-authority-700">
             <span className="h-px w-8 bg-authority-700" aria-hidden="true" />
@@ -37,6 +65,9 @@ export function HeroSection({ onVerify }: { onVerify: () => void }) {
               {t.heroHeadingB}
             </em>
           </h1>
+          <p className="font-display text-lg sm:text-xl italic text-slate-500" lang={language === "fr" ? "en" : "fr"}>
+            {echo}
+          </p>
 
           <p className="text-base sm:text-lg text-slate-600 max-w-xl leading-relaxed">
             {t.heroLede}
@@ -71,8 +102,9 @@ export function HeroSection({ onVerify }: { onVerify: () => void }) {
           </p>
         </div>
 
-        {/* Specimen receipt */}
-        <div className="lg:col-span-5">
+        {/* Specimen receipt: badges speak the page language, the seal
+            stamps once when scrolled into view */}
+        <div className="lg:col-span-5" ref={sealRef}>
           <div className="relative mx-auto max-w-sm rotate-1 rounded-2xl border-2 border-authority-900/15 bg-white shadow-2xl overflow-hidden">
             <div className="quittance-stripes flex items-center justify-between gap-2 px-5 py-2 border-b border-slate-200 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
               <span>{t.heroReceiptTitle}</span>
@@ -81,10 +113,15 @@ export function HeroSection({ onVerify }: { onVerify: () => void }) {
             <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <span className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-white">
-                  High risk
+                  {t.heroSealRisk}
                 </span>
-                <span className="stamp-rotated inline-block rounded-md border-2 border-red-700 px-2 py-0.5 font-mono text-[11px] font-black uppercase tracking-widest text-red-700">
-                  Scam
+                <span
+                  className={`inline-block rounded-md border-2 border-red-700 px-2 py-0.5 font-mono text-[11px] font-black uppercase tracking-widest text-red-700 ${
+                    sealed ? "stamp-in" : "opacity-0"
+                  }`}
+                  aria-hidden={!sealed}
+                >
+                  {t.heroSealScam}
                 </span>
               </div>
               <div className="space-y-2.5">
