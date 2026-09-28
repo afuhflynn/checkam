@@ -1,9 +1,10 @@
 import { type OfficialInstitution, findOfficialEntity } from "./cameroon-entities";
-import { evaluateEmailLegitimacy, extractEmails } from "./email-rules";
+import { FREE_EMAIL_DOMAINS, evaluateEmailLegitimacy, extractEmails } from "./email-rules";
 import { evaluateKeywordPatterns } from "./keyword-rules";
 import { evaluateLegitimacy } from "./legitimacy-rules";
 import { evaluatePaymentChannel } from "./payment-rules";
 import { evaluateStructuralPatterns } from "./structural-rules";
+import { extractHosts, isCameroonGovHost, looksCameroonian } from "./domain-trust";
 import { extractCameroonPhoneNumbers, normalizeCameroonPhone } from "./phone-normalizer";
 
 export type VerdictStatus = "HIGH_RISK" | "CAUTION" | "VERIFIED_OFFICIAL";
@@ -105,11 +106,16 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
   if (input.emails) {
     for (const e of input.emails) {
       if (!extractedEmails.some((ee) => ee.original === e.toLowerCase())) {
+        // Same domain judgement as extractEmails. This path used to hardcode
+        // isFreeDomain true and treat any .cm as government, which flagged a
+        // real ministry address as a fake free mailbox.
+        const original = e.toLowerCase();
+        const domain = original.split("@")[1] ?? "";
         extractedEmails.push({
-          original: e.toLowerCase(),
-          domain: e.toLowerCase().split("@")[1] || "",
-          isFreeDomain: true,
-          isOfficialGovDomain: e.endsWith(".gov.cm") || e.endsWith(".cm"),
+          original,
+          domain,
+          isFreeDomain: FREE_EMAIL_DOMAINS.has(domain),
+          isOfficialGovDomain: isCameroonGovHost(domain),
         });
       }
     }
@@ -142,6 +148,17 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     patternMatch.category = keywordPatternMatch.category;
   }
 
+  // A government institution does not collect a dossier fee by Mobile Money to
+  // a personal number, whatever the wording. The official path used to be
+  // gated only on a phrase list, so "payez 25000 FCFA par Orange Money" from a
+  // real ministry address still came out green. Any payment demand aimed at a
+  // person closes the official path, whatever fee phrasing was used.
+  const PERSONAL_PAYMENT_HINT =
+    /(orange money|mtn momo|mobile money|\bmomo\b|virement|bank transfer|transfert|envoyez|transf(?:e|ère)rez)/i;
+  const MONEY_AMOUNT = /(\d[\d\s.,]*)\s*(fcfa|xaf|cfa|francs?\b|f\b)/i;
+  const asksForPayment = PERSONAL_PAYMENT_HINT.test(lower) && MONEY_AMOUNT.test(lower);
+  const paymentContradictsOfficial = Boolean(officialEntity) && asksForPayment;
+
   // 6. Tally Score & Findings
   const bulletsEn: string[] = [];
   const bulletsFr: string[] = [];
@@ -163,6 +180,17 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
       "D'autres personnes ayant reçu ce même message ont déjà signalé ce contact.",
       "warning",
     );
+  }
+
+  if (paymentContradictsOfficial) {
+    const channel = officialEntity?.authorizedPaymentChannels;
+    const trimmed = (value: string | undefined) => (value ?? "").trim().replace(/[.\s]+$/, "");
+    push(
+      `${officialEntity?.nameEn || "A government institution"} is being asked to take a payment by Mobile Money. ${trimmed(channel?.en) || "These bodies collect through the Public Treasury"}, never through a personal number.`,
+      `On demande à ${officialEntity?.nameFr || "une institution publique"} de recevoir un paiement par Mobile Money. ${trimmed(channel?.fr) || "Ces organismes encaissent via le Trésor Public"}, jamais sur un numéro personnel.`,
+      "warning",
+    );
+    riskScore += 40;
   }
 
   if (patternMatch) {
@@ -193,17 +221,43 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     push(paymentEval.evidenceBulletEn, paymentEval.evidenceBulletFr, "warning");
   }
 
-  // Official domain verification check
-  const hasLegitGovDomain =
-    extractedEmails.some((e) => e.isOfficialGovDomain) ||
-    (officialEntity?.officialDomains.some((d) => lower.includes(d)) ?? false);
+  // Official channel evidence.
+  //
+  // This used to be satisfied by the message merely *containing* an official
+  // domain, and "any .cm domain" counted as official. Both let a scammer mint
+  // a VERIFIED_OFFICIAL verdict for themselves by pasting a ministry URL or
+  // registering any .cm name, which is the worst failure this product can
+  // have: it tells a frightened reader to stop worrying.
+  //
+  // Evidence is an email address on a Cameroon government domain. Nothing
+  // weaker counts:
+  //  - a link is attacker chosen, so quoting the real ministry URL proves
+  //    nothing about who sent the message;
+  //  - an SMS sender name is trivially spoofed, so "MINFOPRA" in the sender
+  //    field is not evidence either.
+  // A genuine SMS-only notice therefore lands on CAUTION rather than
+  // VERIFIED_OFFICIAL. That is the intended trade: a false green tells a
+  // frightened reader to stop checking, so we would rather under-claim.
+  const officialDomains = (officialEntity?.officialDomains ?? []).map((d) =>
+    d.toLowerCase().replace(/^www\./, ""),
+  );
+  const messageHosts = extractHosts(text);
+  const senderIsGov = extractedEmails.some((e) => e.isOfficialGovDomain);
+  const hasLegitGovDomain = Boolean(officialEntity) && senderIsGov;
+
+  // A .cm host that is not the claimed institution's own domain. Reported so
+  // the reader learns why a convincing looking address did not count.
+  const lookalikeHost = messageHosts.find(
+    (h) => looksCameroonian(h) && !officialDomains.some((d) => h === d || h.endsWith(`.${d}`)),
+  );
 
   if (
     hasLegitGovDomain &&
     !emailEval.hasFreeEmailForGovEntity &&
     !paymentEval.hasIllicitMomoRequest &&
     !paymentEval.hasMomoReversalPattern &&
-    !patternMatch
+    !patternMatch &&
+    !paymentContradictsOfficial
   ) {
     riskScore = 5;
     push(

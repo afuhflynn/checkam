@@ -66,21 +66,58 @@ describe("CheckAm Rules Engine", () => {
     expect(result.score).toBeGreaterThanOrEqual(85);
   });
 
-  it("marks genuine MINFOPRA communiqué on official domain as VERIFIED_OFFICIAL", () => {
+  it("marks a communiqué from a government sender address as VERIFIED_OFFICIAL", () => {
     const officialText = `
       COMMUNIQUÉ DU MINFOPRA: Ouverture du concours d'entrée à l'ENAM session 2025.
-      Dépôt des dossiers et quittance du Trésor Public sur le portail officiel: http://www.minfopra.gov.cm.
+      Dépôt des dossiers et quittance du Trésor Public sur le portail officiel.
     `;
 
     const result = runRulesEngine({
       text: officialText,
       claimedEntity: "MINFOPRA",
+      emails: ["concours@minfopra.gov.cm"],
     });
 
     expect(result.verdict).toBe("VERIFIED_OFFICIAL");
     expect(result.score).toBeLessThanOrEqual(15);
     expect(result.officialEntity?.acronym).toBe("MINFOPRA");
-    expect(result.officialWebsite).toBe("http://www.minfopra.gov.cm");
+  });
+});
+
+// The old official path accepted any .cm domain and accepted a bare mention of
+// a ministry URL, so a scammer could certify himself. These pin the refusals.
+describe("Official verdict cannot be self granted", () => {
+  it("refuses a mention of a ministry URL with no sender evidence", () => {
+    const result = runRulesEngine({
+      text: "Bonjour, voici mon CV. Verifiez mon dossier sur www.minfopra.gov.cm et repondez moi sur WhatsApp.",
+      claimedEntity: "MINFOPRA",
+    });
+    expect(result.verdict).not.toBe("VERIFIED_OFFICIAL");
+  });
+
+  it("refuses a scammer who quotes the real ministry link", () => {
+    const result = runRulesEngine({
+      text: "Salut, inscription confirmee. Portail officiel: https://www.minfopra.gov.cm . Contactez la facade sur mon numero 690112233.",
+      claimedEntity: "MINFOPRA",
+    });
+    expect(result.verdict).not.toBe("VERIFIED_OFFICIAL");
+  });
+
+  it("refuses an attacker registered .cm lookalike", () => {
+    const result = runRulesEngine({
+      text: "Bonjour, votre dossier est accepte. Envoyez vos pieces a contact@recrutement-minesec.cm pour confirmation.",
+      emails: ["contact@recrutement-minesec.cm"],
+    });
+    expect(result.verdict).not.toBe("VERIFIED_OFFICIAL");
+    expect(result.evidenceBullets.en.some((b) => b.includes("recrutement-minesec.cm"))).toBe(true);
+  });
+
+  it("does not treat a plain .cm sender as a government sender", () => {
+    const result = runRulesEngine({
+      text: "E-mail officiel: contact@minesec.cm. Merci de confirmer.",
+      emails: ["contact@minesec.cm"],
+    });
+    expect(result.verdict).not.toBe("VERIFIED_OFFICIAL");
   });
 });
 
@@ -273,6 +310,22 @@ describe("Structural scam detection", () => {
     });
     expect(result.category).toBe("EDUCATION");
     expect(result.verdict).toBe("HIGH_RISK");
+  });
+  it("does not let a real ministry address carry a Mobile Money demand", () => {
+    const result = runRulesEngine({
+      text: "COMMUNIQUE MINFOPRA. Payez 25000 FCFA par Orange Money au 699123456 pour votre dossier.",
+      claimedEntity: "MINFOPRA",
+      emails: ["concours@minfopra.gov.cm"],
+    });
+    // A genuine sender address is the only thing that opens the official path,
+    // so a payment demand on top of it must close it again. No institution
+    // collects a dossier fee by Mobile Money to a person.
+    expect(result.verdict).not.toBe("VERIFIED_OFFICIAL");
+    expect(
+      result.evidenceBullets.en.some(
+        (b) => b.includes("Mobile Money") && b.includes("personal number"),
+      ),
+    ).toBe(true);
   });
 });
 

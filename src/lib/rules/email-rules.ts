@@ -1,3 +1,5 @@
+import { isCameroonGovHost } from "./domain-trust";
+
 export const FREE_EMAIL_DOMAINS = new Set([
   "gmail.com",
   "yahoo.com",
@@ -39,7 +41,7 @@ export function extractEmails(text: string): ExtractedEmail[] {
       seen.add(lower);
       const domain = lower.split("@")[1] || "";
       const isFree = FREE_EMAIL_DOMAINS.has(domain);
-      const isGov = domain.endsWith(".gov.cm") || domain.endsWith(".cm");
+      const isGov = isCameroonGovHost(domain);
 
       results.push({
         original: lower,
