@@ -49,6 +49,36 @@ const IMPERSONATED_AUTHORITY: readonly RegExp[] = [
 const CREDENTIAL_REQUEST =
   /\b(envoy(?:ez|er)?|send|donne[rz]?|share|partag(?:ez|er)|transmettez|give)\b[^.!?]{0,40}\b(otp|code de validation|verification code|code de securite|pin|secret code|code\s*otp)\b/i;
 
+// Coercive threats. Kept separate from the scam families because the right
+// response is different: the reader must not be told to negotiate or to expect
+// the demand to disappear once paid.
+const EXPOSURE_THREAT: readonly RegExp[] = [
+  // French verbs need their inflections or "je publie" misses "publier".
+  /\b(publi(?:er|e|es|ant)|diffus(?:er|e|ant)|divulg(?:uer|ue|uant)|r[eé]v[ée]l(?:er|ant)|expos(?:er|e|ant)|partag(?:er|e)|montr(?:er|e)|envoi(?:e|es|ez|er)?)\b[^.!?]{0,60}\b(tout le monde|to everyone|everyone|à tous|aux gens|au monde|public|tes proches|your family|ta famille|vos proches)\b/i,
+  /\b(je (?:vais )?(?:te |vous )?(?:publi(?:er|e|es)|diffus(?:er|e)|divulg(?:uer|ue)|r[eé]v[ée]l(?:er)|expos(?:er|e)|d[ée]nonc(?:er|e)|porter plainte|porter plainte|traqu(?:er|e)|embrass(?:er|e))|i will (?:publish|release|expose|share|leak|report you)|we will (?:publish|release|expose))\b/i,
+  /\b(videos?|photos?|images?|sextapes?|pictures?)\b[^.!?]{0,60}\b(publi(?:er|e|es)|publish|diffus(?:er|e)|partag(?:er|e)|share|sortir|r[eé]v[ée]l(?:er)|expos(?:er|e)|montr(?:er|e))\b/i,
+];
+
+const SEXUAL_COERCION: readonly RegExp[] = [
+  /\b(envoy(?:e|ez|er)?|send|photograph(?:ie|ies|iez)|photo|prends? une photo|selfie|video)\b[^.!?]{0,60}\b(nue|nues|intime|intimes|sexe|sexuel|sexual|naked|explicit|pornograph)\w*/i,
+  /\b(nue|nudes|intimate photo|photo intime|sextape)\b[^.!?]{0,60}\b(sinon|otherwise|ou alors|pour sinon)\b[^.!?]{0,40}\b(publier|publish|diffuser|share|expose|cauchemar|ruiner)\b/i,
+  /\b(menace|menaces|menacing|threat)\b[^.!?]{0,60}\b(publier|publish|diffuser|share|expose)\b/i,
+];
+
+// A demand plus a deadline plus a consequence, which is the shape of every
+// blackmail and of most advance-fee intimidation.
+const DEADLINE_WITH_THREAT: readonly RegExp[] = [
+  /\b(dans \d+ ?(?:heure|jour|minute)s?|within \d+ (?:hours?|days?|minutes?)|sous \d+\s*(?:h\b|heure|heures|hrs?|jours?)|\b\d+\s*(?:h|hr|hrs)\b|24\s*h|48\s*h|72\s*h)\b/i,
+  /\b(sinon|otherwise|publier|publish|diffuser|exposer|prison|vousclesi|arr[eê]t|police|licenci|exposed|scandale|ruiner|honn?eur)\b/i,
+];
+
+// Link and credential harvesting dressed as a bank, an operator or an employer.
+const CREDENTIAL_PAGE: readonly RegExp[] = [
+  /\b(cliquez|click|tapez|suivez|clique|visit|visitez|connectez-vous|connectez vous|log ?in|connect)\b[^.!?]{0,60}\b(ici|here|below|ce lien|this link|le lien|page)\b/i,
+  /\b(banque|bank|orange|mtn|vodacom|mobile money|op[eé]rateur|antc|antic|minist[eè]re)\b[^.!?]{0,80}\b(mot de passe|password|identifiants|credentials|code|pin|otp|carte|carte bancaire|card details)\b/i,
+  /\b(votre (?:compte|carte) (?:sera|sera) (?:bloqu[eé]|suspendu)|your (?:account|card) (?:will be|has been) (?:blocked|suspended|frozen))\b/i,
+];
+
 const RULES: StructuralRule[] = [
   {
     key: "mule-receive",
@@ -96,9 +126,52 @@ const RULES: StructuralRule[] = [
     riskLevel: "HIGH_RISK",
     all: [CREDENTIAL_REQUEST],
     evidenceBulletEn:
-      "It asks for a one-time code or a pin. Whoever needs it can move money from your account, and no bank, ministry, operator or employer will ever ask you to share one. Anyone who does already has access to your account.",
+      "It asks for a one-time code or a pin. Whoever has it can move money from your account, and no bank, ministry, operator or employer will ever ask you to share one. Anyone who does already has access to your account.",
     evidenceBulletFr:
       "Il demande un code à usage unique ou un code secret. Quiconque l'obtient peut déplacer de l'argent depuis votre compte, et aucune banque, aucun ministère, aucun opérateur ni employeur ne vous le demandera. Celui qui le demande a déjà accès à votre compte.",
+  },
+  // Sextortion is checked before plain extortion: the response for a minor or
+  // for someone being asked for intimate images needs a different route, so the
+  // category has to be the one that reaches the safety copy.
+  {
+    key: "sextortion",
+    category: "SEXTORTION",
+    riskLevel: "HIGH_RISK",
+    all: SEXUAL_COERCION.slice(0, 1),
+    evidenceBulletEn:
+      "This is a sexual demand backed by a threat of exposure. Paying does not end this, it usually escalates, and the material is often already held. Do not send anything. Do not meet anyone. Screenshot the whole conversation, the profile and the number, then report it to the police and to the ANTIC hotline on 8202.",
+    evidenceBulletFr:
+      "Il s'agit d'une demande sexuelle assortie d'une menace de diffusion. Payer n'arrête pas la situation, cela l'aggrave le plus souvent, et les contenus sont souvent déjà en possession de la personne. N'envoyez rien. Ne rencontrez personne. Faites des captures d'écran de toute la conversation, du profil et du numéro, puis signalez à la police et au numéro de l'ANTIC, le 8202.",
+  },
+  {
+    key: "sextortion-implicit",
+    category: "SEXTORTION",
+    riskLevel: "HIGH_RISK",
+    all: SEXUAL_COERCION.slice(2, 3).concat(EXPOSURE_THREAT.slice(0, 1)),
+    evidenceBulletEn:
+      "This threatens to publish private material in exchange for something. Do not send anything, and do not pay. Keep the evidence: screenshot everything including the profile, the phone number and the threats, then report it to the police and to the ANTIC hotline on 8202.",
+    evidenceBulletFr:
+      "Il menace de diffuser du contenu privé en échange de quelque chose. N'envoyez rien et ne payez pas. Conservez les preuves : capturez toute la conversation, le profil, le numéro et les menaces, puis signalez à la police et au numéro de l'ANTIC, le 8202.",
+  },
+  {
+    key: "extortion",
+    category: "EXTORTION",
+    riskLevel: "HIGH_RISK",
+    all: EXPOSURE_THREAT.slice(1, 2).concat(DEADLINE_WITH_THREAT.slice(0, 1)),
+    evidenceBulletEn:
+      "This is blackmail: a demand, a deadline, and a threat of exposure or of consequences. Paying is what these schemes run on and it rarely stops them. Do not pay and do not reply. Keep every screenshot, then report it to the police and to the ANTIC hotline on 8202.",
+    evidenceBulletFr:
+      "Il s'agit d'un chantage : une demande, un délai, et une menace de diffusion ou de conséquences. Le paiement est précisément ce qui nourrit ce mécanisme, et cela s'arrête rarement. Ne payez pas et ne répondez pas. Conservez toutes les captures d'écran, puis signalez à la police et au numéro de l'ANTIC, le 8202.",
+  },
+  {
+    key: "credential-page",
+    category: "PHISHING",
+    riskLevel: "HIGH_RISK",
+    all: CREDENTIAL_PAGE.slice(0, 1),
+    evidenceBulletEn:
+      "This sends you to a page to enter a password, a code or card details. Your bank, your operator and the government reach you first; they never arrive as a link in a message. Open the app or type the address yourself, and report the sender on 8202.",
+    evidenceBulletFr:
+      "Il vous envoie vers une page pour saisir un mot de passe, un code ou des informations de carte. Votre banque, votre opérateur et l'État vous contactent en premier ; ils ne passent jamais par un lien dans un message. Ouvrez l'application ou saisissez l'adresse vous-même, et signalez l'expéditeur au 8202.",
   },
 ];
 

@@ -23,15 +23,19 @@ Pure deterministic engine and sole verdict authority: `runRulesEngine` maps fact
 - Legit `gov.cm` domain with no signals means `VERIFIED_OFFICIAL` (score ≤ 10); everything else lands `CAUTION`.
 - Findings cap at 3 and are never padded. An empty list plus a `safetyNote` is the honest state for a message with nothing concrete in it. `evidenceTones` runs index-parallel to both language lists so a surface can colour a red flag against a fact that eased the score.
 - Absence signals (`no-payment`, `no-urgency`) lower the score but are never shown as findings; listing them is what made benign messages read as flagged.
+- `VERIFIED_OFFICIAL` is the hardest verdict to reach on purpose. It needs a sender email on a real `gov.cm` host, no red flags, and no payment demand aimed at a person. A link, a bare mention of a ministry URL, an SMS sender name, or any `.cm` domain is not evidence. See Gotchas; the bar was once trivially low.
+- `safetyNote` is category-aware. `SEXTORTION` and `EXTORTION` get do-not-pay, do-not-reply, keep the screenshots, report to the police and 8202, and a separate route to an adult and child protection if the reader is under 18. `PHISHING` gets do-not-click and rotate-your-password-if-you-already-did. A generic "confirm before you act" is useless to someone being blackmailed.
 - `structural-rules` is the shape authority, `keyword-rules` the topic authority. When both fire the category comes from the keyword group and only the evidence and score come from the structural read. A `HIGH_RISK` pattern adds 45 and is decisive; a `CAUTION` pattern adds 20 so it cannot cross the bound alone.
 - Add new scam families as a structural regex where paraphrases matter, a keyword group where the topic name matters, with tests; update `cameroon-entities.ts` and reseed together.
 - Share text is rendered twice from one source: `whatsappWarning` keeps `*bold*` for WhatsApp, `whatsappWarningPlain` drops it for Facebook, X and SMS. Keep bullet copy free of asterisks or the plain rendering leaks them.
 
 ## Gotchas
 
+- French verb inflections break naive trigger lists: "je publie" is not "publier", "je denonce" is not "denoncer". Write regexes that accept the inflected forms or the detector silently misses real threats.
 - The WhatsApp path skips the flagged DB check today; web and WhatsApp can disagree until parity lands.
 - `MINESEC` style substring matching can overfire on lookalike names; prefer exact acronym + domain checks for official verdicts.
 - Amount parsing is regex over `FCFA/XAF/CFA`; malformed amounts silently yield null.
+- `prisma db push` does not detect `ALTER TYPE ... ADD VALUE`, and then reports "already in sync". After adding a category, confirm the enum in the database or inserts will fail at runtime. The migrations under `prisma/migrations` carry the `ALTER TYPE` statements.
 - A dead model slug in the cascade is invisible: the turn silently falls back to engine copy. See `src/lib/ai/AGENTS.md`.
 
 _Drafted by /codebase-audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite it._

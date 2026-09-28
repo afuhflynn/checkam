@@ -10,6 +10,9 @@ export interface ScamPatternMatch {
     | "ROMANCE"
     | "IMPERSONATION"
     | "PRIZE"
+    | "EXTORTION"
+    | "SEXTORTION"
+    | "PHISHING"
     | "OTHER";
   riskLevel: "HIGH_RISK" | "CAUTION" | "VERIFIED_OFFICIAL";
   matchedPhrases: string[];

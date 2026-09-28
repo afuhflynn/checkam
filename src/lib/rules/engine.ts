@@ -19,6 +19,9 @@ export type ScamCategory =
   | "ROMANCE"
   | "IMPERSONATION"
   | "PRIZE"
+  | "EXTORTION"
+  | "SEXTORTION"
+  | "PHISHING"
   | "OTHER";
 
 export interface VerificationInput {
@@ -348,26 +351,50 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     riskScore = legitRelief > 0 ? Math.max(15, riskScore - legitRelief) : Math.max(riskScore, 45);
   }
 
+  // Coercive threats get their own guidance rather than a payment warning.
+  // Telling someone being blackmailed to "confirm before you act" is useless,
+  // and the one thing they must hear is that paying does not end it.
+  const COERCIVE_SAFETY = {
+    en: "Do not pay and do not reply. Paying is what these schemes depend on, it rarely stops them, and they often escalate afterwards. Do not meet anyone in person. Take screenshots of everything now: the full conversation, the profile, the phone number, and the threats. Then report it to the police and to the ANTIC hotline on 8202, and tell someone you trust so you are not carrying it alone. Nothing you send or pay can be taken back, but the evidence you keep can still be used against them.",
+    fr: "Ne payez pas et ne répondez pas. Le paiement est ce sur quoi ces mécanismes reposent, cela s'arrête rarement, et ils escaladent souvent ensuite. Ne rencontrez personne en personne. Faites tout de suite des captures d'écran : la conversation entière, le profil, le numéro et les menaces. Signalez ensuite à la police et au numéro de l'ANTIC, le 8202, et parlez-en à une personne de confiance pour ne pas porter cela seul. Rien de ce que vous envoyez ou payez ne peut être repris, mais les preuves que vous conservez peuvent encore servir contre eux.",
+  };
+  const MINOR_SAFETY = {
+    en: "If you are under 18, tell a parent, a teacher or a trusted adult today, and do not meet this person. This kind of threat against a minor is reported to child protection services, and the material being demanded is not your fault and does not make you in trouble.",
+    fr: "Si vous avez moins de 18 ans, parlez-en aujourd'hui à un parent, un enseignant ou un adulte de confiance, et ne rencontrez pas cette personne. Ce type de menace contre un mineur est signalé aux services de protection de l'enfance, et ce qu'on vous demande d'envoyer n'est pas de votre faute et ne vous met pas en difficulté.",
+  };
+
+  const PHISHING_SAFETY = {
+    en: "Do not click the link and do not enter anything on the page it opens. Your bank, your operator and the government already have your card and your phone number, so a message asking you to log in or confirm details is always fake. Open the app yourself, or type the address into your browser. If you already entered your details, change the password and call your bank now. Report the sender on the ANTIC hotline, 8202.",
+    fr: "Ne cliquez pas sur le lien et ne saisissez rien sur la page qu'il ouvre. Votre banque, votre opérateur et l'État ont déjà votre carte et votre numéro, donc un message qui vous demande de vous connecter ou de confirmer vos informations est toujours faux. Ouvrez l'application vous-même, ou saisissez l'adresse dans votre navigateur. Si vous avez déjà saisi vos informations, changez le mot de passe et appelez votre banque immédiatement. Signalez l'expéditeur au numéro de l'ANTIC, le 8202.",
+  };
+
   const safetyNote =
-    verdict === "HIGH_RISK"
+    category === "SEXTORTION" || category === "EXTORTION"
       ? {
-          en: "Do not send money, documents, or any code from a text message. If you already paid, contact your Mobile Money operator at once and report it free on the ANTIC hotline, 8202.",
-          fr: "N'envoyez ni argent, ni documents, ni aucun code à partir d'un SMS. Si vous avez déjà payé, contactez immédiatement votre opérateur Mobile Money et signalez gratuitement au numéro de l'ANTIC, le 8202.",
+          en: `${COERCIVE_SAFETY.en}\n\n${MINOR_SAFETY.en}`,
+          fr: `${COERCIVE_SAFETY.fr}\n\n${MINOR_SAFETY.fr}`,
         }
-      : verdict === "VERIFIED_OFFICIAL"
-        ? {
-            en: "This points at an official channel. Still open the institution's own website yourself instead of using the link in the message, and never send an OTP to anyone.",
-            fr: "Cela renvoie vers un canal officiel. Ouvrez vous-même le site officiel de l'institution plutôt que d'utiliser le lien du message, et n'envoyez jamais un OTP à quiconque.",
-          }
-        : finalBulletsEn.length === 0
+      : category === "PHISHING"
+        ? PHISHING_SAFETY
+        : verdict === "HIGH_RISK"
           ? {
-              en: "We found no clear signal either way, which usually means the message is too short to judge. Send the full text plus the phone number or email address it came from, and check on the organisation's own website before you act.",
-              fr: "Nous n'avons trouvé aucun indice clair dans un sens ou l'autre, ce qui signifie généralement que le message est trop court pour être jugé. Envoyez le texte complet ainsi que le numéro ou l'adresse e-mail d'origine, et vérifiez sur le site officiel de l'organisation avant d'agir.",
+              en: "Do not send money, documents, or any code from a text message. If you already paid, contact your Mobile Money operator at once and report it free on the ANTIC hotline, 8202.",
+              fr: "N'envoyez ni argent, ni documents, ni aucun code à partir d'un SMS. Si vous avez déjà payé, contactez immédiatement votre opérateur Mobile Money et signalez gratuitement au numéro de l'ANTIC, le 8202.",
             }
-          : {
-              en: "Before you act, confirm on the organisation's own website or by calling their official line. Never send an OTP, a pin, or a code to anyone who asks for it, and report it free on the ANTIC hotline, 8202.",
-              fr: "Avant d'agir, confirmez sur le site officiel de l'organisation ou en appelant leur ligne officielle. N'envoyez jamais un OTP, un code ou un PIN à quiconque vous le demande, et signalez gratuitement au numéro de l'ANTIC, le 8202.",
-            };
+          : verdict === "VERIFIED_OFFICIAL"
+            ? {
+                en: "This points at an official channel. Still open the institution's own website yourself instead of using the link in the message, and never send an OTP to anyone.",
+                fr: "Cela renvoie vers un canal officiel. Ouvrez vous-même le site officiel de l'institution plutôt que d'utiliser le lien du message, et n'envoyez jamais un OTP à quiconque.",
+              }
+            : finalBulletsEn.length === 0
+              ? {
+                  en: "We found no clear signal either way, which usually means the message is too short to judge. Send the full text plus the phone number or email address it came from, and check on the organisation's own website before you act.",
+                  fr: "Nous n'avons trouvé aucun indice clair dans un sens ou l'autre, ce qui signifie généralement que le message est trop court pour être jugé. Envoyez le texte complet ainsi que le numéro ou l'adresse e-mail d'origine, et vérifiez sur le site officiel de l'organisation avant d'agir.",
+                }
+              : {
+                  en: "Before you act, confirm on the organisation's own website or by calling their official line. Never send an OTP, a pin, or a code to anyone who asks for it, and report it free on the ANTIC hotline, 8202.",
+                  fr: "Avant d'agir, confirmez sur le site officiel de l'organisation ou en appelant leur ligne officielle. N'envoyez jamais un OTP, un code ou un PIN à quiconque vous le demande, et signalez gratuitement au numéro de l'ANTIC, le 8202.",
+                };
 
   // Format forwardable notices. Markdown for WhatsApp, plain for Facebook and
   // SMS, which render asterisks literally.

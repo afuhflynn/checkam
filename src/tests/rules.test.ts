@@ -329,6 +329,84 @@ describe("Structural scam detection", () => {
   });
 });
 
+// Blackmail, sextortion and phishing are not scams, and the reader needs
+// different advice. Telling someone being extorted to "confirm before you act"
+// is useless; the one thing they must hear is that paying does not stop it.
+describe("Coercive threats", () => {
+  const threats: [string, string, string][] = [
+    [
+      "sextortion, demand for an intimate image",
+      "Bonjour, envoie moi une photo nue et je garde ca secret. Si tu refuses je publie tout.",
+      "SEXTORTION",
+    ],
+    [
+      "sextortion, threat to publish existing photos",
+      "I have your private photos. Pay 50000 FCFA within 48 hours or I will publish them to everyone.",
+      "EXTORTION",
+    ],
+    [
+      "blackmail with a deadline",
+      "Si tu n envoies pas 200000 fcfa, je publie toutes tes photos a tout le monde sous 24h.",
+      "EXTORTION",
+    ],
+    [
+      "blackmail with a threatened report",
+      "Menace : tu ne paies pas, je te denonce a la police sous 48h.",
+      "EXTORTION",
+    ],
+    [
+      "phishing page harvesting credentials",
+      "Votre carte sera bloquee. Cliquez ici https://banque-secure.cm et saisissez vos identifiants.",
+      "PHISHING",
+    ],
+  ];
+
+  for (const [name, text, category] of threats) {
+    it(`detects ${name}`, () => {
+      const result = runRulesEngine({ text });
+      expect(result.category).toBe(category);
+      expect(result.verdict).toBe("HIGH_RISK");
+    });
+  }
+
+  it("says paying does not stop it, and to keep the evidence", () => {
+    const result = runRulesEngine({
+      text: "I have your private photos. Pay 50000 FCFA within 48 hours or I will publish them.",
+    });
+    expect(result.safetyNote.en).toContain("rarely stops them");
+    expect(result.safetyNote.en).toContain("screenshot");
+    expect(result.safetyNote.en).toContain("8202");
+  });
+
+  it("routes a minor to an adult and child protection", () => {
+    const result = runRulesEngine({
+      text: "Bonjour, envoie moi une photo nue et je garde ca secret. Sinon je publie tout.",
+    });
+    expect(result.safetyNote.en).toContain("under 18");
+    expect(result.safetyNote.en).toContain("child protection");
+    expect(result.safetyNote.fr).toContain("moins de 18 ans");
+  });
+
+  it("tells a phishing target not to use the link", () => {
+    const result = runRulesEngine({
+      text: "Votre carte sera bloquee. Cliquez ici https://banque-secure.cm et saisissez vos identifiants.",
+    });
+    expect(result.safetyNote.en).toContain("Do not click the link");
+    expect(result.safetyNote.fr).toContain("Ne cliquez pas sur le lien");
+  });
+
+  it("does not cry threat on ordinary messages", () => {
+    for (const text of [
+      "Merci pour votre message, a bientot.",
+      "Je vous propose un emploi, envoyez votre CV a jobs@entreprise.cm.",
+      "Votre dossier a bien ete recu, nous vous repondrons sous 72h.",
+      "Transfert recu, merci.",
+    ]) {
+      expect(runRulesEngine({ text }).category).not.toMatch(/EXTORTION|SEXTORTION|PHISHING/);
+    }
+  });
+});
+
 describe("Cameroon Phone Normalizer", () => {
   it("normalizes standard MTN 9-digit format", () => {
     const res = normalizeCameroonPhone("+237 677 12 34 56");
