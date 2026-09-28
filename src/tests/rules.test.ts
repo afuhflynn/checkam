@@ -106,3 +106,53 @@ describe("Cameroon Phone Normalizer", () => {
     expect(res.operator).toBe("CAMTEL");
   });
 });
+
+describe("Legitimacy relief", () => {
+  const anzishaText =
+    "Dear Flynn, Thank you for requesting your copy of the Anzisha Application Guide. Download the Application Guide in English. If you have any further questions about Anzisha, please email hello@anzisha.org and a member of the Anzisha Team will get back to you as soon as possible. The Anzisha Team";
+
+  it("scores a legit mail with matching domain well below generic caution", () => {
+    const result = runRulesEngine({
+      text: anzishaText,
+      emails: ["hello@anzisha.org"],
+    });
+
+    expect(result.verdict).toBe("CAUTION");
+    expect(result.score).toBeLessThan(45);
+    expect(
+      result.evidenceBullets.en.some((b) => b.includes("anzisha.org")),
+    ).toBe(true);
+  });
+
+  it("keeps red flags above legit softeners", () => {
+    const result = runRulesEngine({
+      text: anzishaText,
+      emails: ["hello@anzisha.org"],
+      phoneNumbers: ["699123456"],
+      isKnownFlaggedInDb: true,
+    });
+
+    expect(result.verdict).toBe("HIGH_RISK");
+    expect(result.score).toBeGreaterThanOrEqual(85);
+  });
+
+  it("passes researched sources through with unsafe urls stripped", () => {
+    const result = runRulesEngine({
+      text: anzishaText,
+      emails: ["hello@anzisha.org"],
+      webCorroboration: {
+        foundOfficialSource: true,
+        sources: [
+          { title: "Anzisha", url: "https://anzisha.org" },
+          { title: "Evil", url: "javascript:alert(1)" },
+          { title: "Anzisha", url: "https://anzisha.org" },
+        ],
+      },
+    });
+
+    expect(result.sources).toEqual([{ title: "Anzisha", url: "https://anzisha.org" }]);
+    expect(
+      result.evidenceBullets.en.some((b) => b.toLowerCase().includes("corroborated")),
+    ).toBe(true);
+  });
+});

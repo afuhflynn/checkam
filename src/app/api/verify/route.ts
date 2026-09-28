@@ -5,8 +5,10 @@ import {
   extractFactsFromTextOrImage,
   hashContent,
 } from "../../../lib/ai/extract-facts";
+import { researchTurn } from "../../../lib/agent/runner";
 import { aj } from "../../../lib/arcjet";
 import { db } from "../../../lib/db";
+import { detectMessageLanguage } from "../../../lib/i18n/detect";
 import { runRulesEngine } from "../../../lib/rules/engine";
 import { normalizeCameroonPhone } from "../../../lib/rules/phone-normalizer";
 
@@ -86,14 +88,41 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Extract structured facts via AI / Multimodal OCR (or cached extraction)
-    const extractedFacts =
-      cachedFacts ??
-      (await extractFactsFromTextOrImage({
-        text: content,
-        imageBase64,
-        mimeType,
-      }));
+    // 4. Research via the shared agent path (facts plus web corroboration
+    // plus sources), falling back to raw extraction when research fails.
+    // Same brain as chat, so both surfaces agree.
+    const locale = detectMessageLanguage(content);
+    let extractedFacts: ExtractedFacts;
+    let webCorroboration: {
+      foundOfficialSource: boolean;
+      sources: { title: string; url: string }[];
+    } | null = null;
+    try {
+      const researched = await researchTurn({ text: content, locale });
+      if (researched.facts) {
+        extractedFacts = researched.facts;
+        webCorroboration = {
+          foundOfficialSource: researched.corroborated,
+          sources: researched.sources,
+        };
+      } else {
+        extractedFacts =
+          cachedFacts ??
+          (await extractFactsFromTextOrImage({
+            text: content,
+            imageBase64,
+            mimeType,
+          }));
+      }
+    } catch {
+      extractedFacts =
+        cachedFacts ??
+        (await extractFactsFromTextOrImage({
+          text: content,
+          imageBase64,
+          mimeType,
+        }));
+    }
 
     // Check if any of the extracted phones/emails are in the flagged database
     if (!isKnownFlaggedInDb && extractedFacts.phoneNumbers.length > 0) {
@@ -118,6 +147,7 @@ export async function POST(req: NextRequest) {
       paymentMethod: extractedFacts.paymentMethod,
       isKnownFlaggedInDb,
       isKnownApprovedInDb,
+      webCorroboration,
     });
 
     // 6. Record Verification session in Database

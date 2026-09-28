@@ -142,6 +142,29 @@ body {
   transform: rotate(-8deg);
 }
 
+/* Verdict card entrance: owned keyframe so first paint never depends on
+   a utility that may arrive late. Static under reduced motion. */
+@keyframes verdict-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.verdict-in {
+  animation: verdict-in 0.3s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict-in {
+    animation: none;
+  }
+}
+
 /* Seal press: the one orchestrated motion on the landing. Static when the
    visitor prefers reduced motion. */
 @keyframes stamp-press {

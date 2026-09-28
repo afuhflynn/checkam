@@ -94,7 +94,7 @@ export function VerdictCard({ result, onReset }: VerdictCardProps) {
 
   return (
     <Card
-      className={`w-full overflow-hidden border-2 shadow-xl ${theme.border} ${theme.glow} transition-all animate-in fade-in-50 zoom-in-98 duration-300`}
+      className={`w-full overflow-hidden border-2 shadow-xl ${theme.border} ${theme.glow} verdict-in`}
     >
       {/* Quittance dossier strip — unique CheckAm authority identity */}
       <div className="quittance-stripes flex items-center justify-between px-6 sm:px-8 py-2.5 bg-white border-b border-slate-200">
@@ -185,7 +185,7 @@ export function VerdictCard({ result, onReset }: VerdictCardProps) {
           <div className="space-y-3">
             {bullets.map((bullet, idx) => (
               <div
-                key={`evidence-item-${bullet.slice(0, 30)}`}
+                key={`evidence-item-${bullet.length}-${bullet.slice(0, 40)}`}
                 className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-white hover:border-slate-300 transition-colors"
               >
                 <div className="h-6 w-6 rounded-full bg-authority-900 text-white text-xs font-extrabold flex items-center justify-center shrink-0 mt-0.5">
@@ -222,6 +222,25 @@ export function VerdictCard({ result, onReset }: VerdictCardProps) {
                 >
                   {result.officialWebsite} <ExternalLink className="h-3 w-3" />
                 </a>
+              </div>
+            )}
+            {result.sources && result.sources.length > 0 && (
+              <div className="pt-1 space-y-1">
+                <p className="font-semibold text-authority-900">{t.chatSourcesTitle}</p>
+                <ul className="space-y-1">
+                  {result.sources.map((source) => (
+                    <li key={source.url}>
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-authority-700 hover:text-authority-900 underline flex items-center gap-1"
+                      >
+                        {source.title} <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

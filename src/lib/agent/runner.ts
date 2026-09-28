@@ -33,6 +33,8 @@ export interface AgentTurn {
   traces: AgentTrace[];
   answer: string | null;
   flagged: boolean;
+  sources: { title: string; url: string }[];
+  corroborated: boolean;
 }
 
 type ToolExecute<T> = (input: T) => Promise<unknown>;
@@ -87,8 +89,12 @@ export function scrubVerdictWords(text: string): string | null {
   if (VERDICT_WORDS.test(text)) return null;
   return text;
 }
-export async function runAgentTurn(params: { text: string; locale: "en" | "fr" }): Promise<AgentTurn> {
-  const { text, locale } = params;
+export async function runAgentTurn(params: {
+  text: string;
+  locale: "en" | "fr";
+  skipAnswer?: boolean;
+}): Promise<AgentTurn> {
+  const { text, locale, skipAnswer } = params;
   const traces: AgentTrace[] = [];
   const turnStart = Date.now();
 
@@ -100,10 +106,10 @@ export async function runAgentTurn(params: { text: string; locale: "en" | "fr" }
   })) as ExtractedFacts | null;
   if (facts) traces.push({ tool: "verify", ok: true });
   if (!facts) {
-    return { facts: facts as unknown as ExtractedFacts, traces, answer: null, flagged: false };
+    return { facts: facts as unknown as ExtractedFacts, traces, answer: null, flagged: false, sources: [], corroborated: false };
   }
   if (Date.now() - turnStart > 60_000) {
-    return { facts, traces, answer: null, flagged: false };
+    return { facts, traces, answer: null, flagged: false, sources: [], corroborated: false };
   }
 
   let registry: unknown = null;
@@ -146,16 +152,16 @@ export async function runAgentTurn(params: { text: string; locale: "en" | "fr" }
 
   // Tavily fires at most twice per turn: the initial attempt plus the one
   // retry inside withTool. Budget, locale, and PII redaction live in tools.ts.
-  let passages: unknown = null;
+  let passages: { title?: string; url?: string }[] | null = null;
   if (miss) {
     const spent = await tavilySpentToday().catch(() => Number.MAX_SAFE_INTEGER);
     if (spent < tavilyBudget()) {
       try {
-        passages = await runTool(
+        passages = (await runTool(
           "tavily",
           tavilySearchTool.execute as ToolExecute<{ query: string; locale: "en" | "fr" }>,
           { query: facts.summaryClaim || text.slice(0, 200), locale },
-        );
+        )) as { title?: string; url?: string }[];
         traces.push({ tool: "tavily", ok: true });
       } catch (err: unknown) {
         traces.push({ tool: "tavily", ok: false, note: String(err) });
@@ -174,11 +180,51 @@ export async function runAgentTurn(params: { text: string; locale: "en" | "fr" }
     `Web: ${JSON.stringify(passages)}`,
     `Suspect text: ${text.slice(0, 2000)}`,
   ].join("\n");
-  const raw = await answerWithCascade(prompt.body, context);
+  const raw = skipAnswer ? null : await answerWithCascade(prompt.body, context);
   // The engine alone voices verdicts; a model that judges gets dropped to
   // engine bullets downstream.
   const answer = raw ? scrubVerdictWords(raw) : null;
-  return { facts, traces, answer, flagged };
+  const sources = collectSources(passages);
+  const corroborated = isCorroborated(sources, facts);
+  return { facts, traces, answer, flagged, sources, corroborated };
+}
+
+function collectSources(
+  passages: { title?: string; url?: string }[] | null,
+): { title: string; url: string }[] {
+  return (passages ?? [])
+    .filter((p) => typeof p.url === "string" && /^https?:\/\//i.test(p.url))
+    .slice(0, 3)
+    .map((p) => ({ title: p.title || (p.url as string), url: p.url as string }));
+}
+
+function isCorroborated(
+  sources: { title: string; url: string }[],
+  facts: ExtractedFacts,
+): boolean {
+  const senderDomains = facts.emails
+    .map((e) => e.split("@")[1]?.toLowerCase())
+    .filter((d): d is string => Boolean(d));
+  return sources.some((s) => {
+    try {
+      const host = new URL(s.url).hostname.toLowerCase();
+      return senderDomains.some((d) => host === d || host.endsWith(`.${d}`));
+    } catch {
+      return false;
+    }
+  });
+}
+
+// Research without prose for surfaces that only need facts plus sources
+// (the landing desk). Same tools, same order, no answer generation.
+export async function researchTurn(params: {
+  text: string;
+  locale: "en" | "fr";
+}): Promise<Omit<AgentTurn, "answer">> {
+  const full = await runAgentTurn({ ...params, skipAnswer: true });
+  const { answer, ...rest } = full;
+  void answer;
+  return rest;
 }
 
 // Title draft (spec 0006 AC-4, owed to 0004): after the first answer, in

@@ -1,6 +1,7 @@
 import { type OfficialInstitution, findOfficialEntity } from "./cameroon-entities";
 import { evaluateEmailLegitimacy, extractEmails } from "./email-rules";
 import { evaluateKeywordPatterns } from "./keyword-rules";
+import { evaluateLegitimacy } from "./legitimacy-rules";
 import { evaluatePaymentChannel } from "./payment-rules";
 import { extractCameroonPhoneNumbers, normalizeCameroonPhone } from "./phone-normalizer";
 
@@ -22,6 +23,15 @@ export interface VerificationInput {
   paymentMethod?: string | null;
   isKnownFlaggedInDb?: boolean;
   isKnownApprovedInDb?: boolean;
+  webCorroboration?: {
+    foundOfficialSource: boolean;
+    sources: { title: string; url: string }[];
+  } | null;
+}
+
+export interface WebSource {
+  title: string;
+  url: string;
 }
 
 export interface VerificationResult {
@@ -35,6 +45,7 @@ export interface VerificationResult {
   officialEntity: OfficialInstitution | null;
   officialWebsite: string | null;
   anticHotline: string;
+  sources: WebSource[];
   whatsappWarning: {
     en: string;
     fr: string;
@@ -171,6 +182,43 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     );
   }
 
+  // Legitimacy relief: positive evidence lowers the score and claims
+  // bullet slots before generic pads do. Never applies on the HIGH_RISK
+  // path or the official domain path. A real red flag always outranks
+  // softeners, so legit fills after risk bullets.
+  const highRiskBound =
+    riskScore >= 45 ||
+    input.isKnownFlaggedInDb ||
+    emailEval.hasFreeEmailForGovEntity ||
+    paymentEval.hasMomoReversalPattern;
+  const officialPath = hasLegitGovDomain && riskScore < 20;
+
+  let legitRelief = 0;
+  if (!highRiskBound && !officialPath) {
+    const signals = evaluateLegitimacy(
+      text,
+      extractedEmails.map((e) => ({ original: e.original, domain: e.domain })),
+    );
+    const web = input.webCorroboration;
+    const webTitles =
+      web?.foundOfficialSource && web.sources
+        ? web.sources.map((s) => s.title).filter(Boolean)
+        : [];
+    legitRelief = Math.min(30, 10 * signals.length) + (web?.foundOfficialSource ? 5 : 0);
+    legitRelief = Math.min(35, legitRelief);
+    if (legitRelief > 0) {
+      if (webTitles.length > 0) {
+        bulletsEn.push(`Corroborated online: ${webTitles.slice(0, 2).join("; ")}.`);
+        bulletsFr.push(`Confirmé en ligne : ${webTitles.slice(0, 2).join(" ; ")}.`);
+      }
+      for (const s of signals) {
+        if (bulletsEn.length >= 3) break;
+        bulletsEn.push(s.en);
+        bulletsFr.push(s.fr);
+      }
+    }
+  }
+
   // Default fallback bullets if less than 3
   if (bulletsEn.length === 0) {
     if (officialEntity) {
@@ -217,14 +265,17 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
   const finalBulletsEn = bulletsEn.slice(0, 3);
   const finalBulletsFr = bulletsFr.slice(0, 3);
 
-  // Determine Verdict Status
+  // Determine Verdict Status. Legitimacy relief only softens CAUTION;
+  // HIGH_RISK triggers and the official domain path are untouched.
+  // (legitRelief computed above, beside the bullets it produced.)
+  const cleanSources = (input.webCorroboration?.sources ?? [])
+    .filter((s) => typeof s?.url === "string" && /^https?:\/\//i.test(s.url))
+    .filter((s, i, arr) => arr.findIndex((o) => o.url === s.url) === i)
+    .slice(0, 3)
+    .map((s) => ({ title: String(s.title || s.url), url: s.url }));
+
   let verdict: VerdictStatus = "CAUTION";
-  if (
-    riskScore >= 45 ||
-    input.isKnownFlaggedInDb ||
-    emailEval.hasFreeEmailForGovEntity ||
-    paymentEval.hasMomoReversalPattern
-  ) {
+  if (highRiskBound) {
     verdict = "HIGH_RISK";
     riskScore = Math.max(riskScore, 85);
   } else if (hasLegitGovDomain && riskScore < 20) {
@@ -232,7 +283,7 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     riskScore = Math.min(riskScore, 10);
   } else {
     verdict = "CAUTION";
-    riskScore = Math.max(riskScore, 45);
+    riskScore = legitRelief > 0 ? Math.max(15, riskScore - legitRelief) : Math.max(riskScore, 45);
   }
 
   // Format WhatsApp Alerts
@@ -266,6 +317,7 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     officialEntity,
     officialWebsite: officialEntity?.officialWebsites[0] || null,
     anticHotline: "8202",
+    sources: cleanSources,
     whatsappWarning: {
       en: warningEn,
       fr: warningFr,

@@ -13,6 +13,7 @@ import {
   ConversationScrollButton,
 } from "../ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "../ai-elements/message";
+import { Source, Sources, SourcesContent, SourcesTrigger } from "../ai-elements/sources";
 import {
   PromptInput,
   PromptInputFooter,
@@ -22,6 +23,7 @@ import {
 } from "../ai-elements/prompt-input";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
+import { ChevronDownIcon } from "lucide-react";
 import type { Language } from "../../lib/i18n/dictionary";
 import { useTranslation } from "../../lib/i18n/context";
 
@@ -39,6 +41,7 @@ export interface Verdict {
   score: number;
   bullets: string[];
   verificationId: string;
+  sources?: { title: string; url: string }[];
 }
 
 export interface LookupResult {
@@ -101,6 +104,21 @@ export function DossierPane({
                 </li>
               ))}
             </ul>
+            {verdict.sources && verdict.sources.length > 0 && (
+              <Sources className="mt-3">
+                <SourcesTrigger count={verdict.sources.length}>
+                  <p className="text-sm font-semibold text-slate-700">{t.chatSourcesTitle}</p>
+                  <ChevronDownIcon className="h-4 w-4 text-slate-500" />
+                </SourcesTrigger>
+                <SourcesContent>
+                  {verdict.sources.map((source) => (
+                    <Source key={source.url} href={source.url} title={source.title}>
+                      {source.title}
+                    </Source>
+                  ))}
+                </SourcesContent>
+              </Sources>
+            )}
           </div>
         )}
         {!verdict && fallbackText && <p className="text-sm text-slate-700">{fallbackText}</p>}
@@ -502,7 +520,7 @@ export function ThreadView({
           {visiblePersisted.map((row) => (
             <Message key={row.id} from={row.role === "user" ? "user" : "assistant"}>
               <MessageContent>
-                <MessageResponse>{row.text}</MessageResponse>
+                <MessageResponse className="font-sans text-sm leading-relaxed text-slate-800">{row.text}</MessageResponse>
               </MessageContent>
             </Message>
           ))}
@@ -513,7 +531,7 @@ export function ThreadView({
                   {message.parts
                     .filter((part) => part.type === "text")
                     .map((part, index) => (
-                      <MessageResponse key={`${message.id}-${index}`}>
+                      <MessageResponse key={`${message.id}-${index}`} className="font-sans text-sm leading-relaxed text-slate-800">
                         {"text" in part ? part.text : ""}
                       </MessageResponse>
                     ))}

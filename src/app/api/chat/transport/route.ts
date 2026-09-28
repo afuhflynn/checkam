@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
               })
             : null;
           const traces: AgentTrace[] = [{ tool: "cache", ok: true }];
-          turn = { facts, traces, answer: null, flagged: Boolean(hit) };
+          turn = { facts, traces, answer: null, flagged: Boolean(hit), sources: [], corroborated: false };
         } else {
           turn = await runAgentTurn({ text, locale });
         }
@@ -138,6 +138,7 @@ export async function POST(req: NextRequest) {
           amount: facts.amount,
           paymentMethod: facts.paymentMethod,
           isKnownFlaggedInDb: turn.flagged,
+          webCorroboration: { foundOfficialSource: turn.corroborated, sources: turn.sources },
         });
         const bullets = locale === "fr" ? result.evidenceBullets.fr : result.evidenceBullets.en;
         const head =
@@ -191,6 +192,7 @@ export async function POST(req: NextRequest) {
             score: result.score,
             bullets,
             verificationId: verification.id,
+            sources: result.sources,
           },
         });
 
