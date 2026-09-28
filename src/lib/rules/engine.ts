@@ -3,6 +3,7 @@ import { evaluateEmailLegitimacy, extractEmails } from "./email-rules";
 import { evaluateKeywordPatterns } from "./keyword-rules";
 import { evaluateLegitimacy } from "./legitimacy-rules";
 import { evaluatePaymentChannel } from "./payment-rules";
+import { evaluateStructuralPatterns } from "./structural-rules";
 import { extractCameroonPhoneNumbers, normalizeCameroonPhone } from "./phone-normalizer";
 
 export type VerdictStatus = "HIGH_RISK" | "CAUTION" | "VERIFIED_OFFICIAL";
@@ -12,6 +13,11 @@ export type ScamCategory =
   | "MOBILE_MONEY"
   | "INVESTMENT_PONZI"
   | "ECOMMERCE"
+  | "EDUCATION"
+  | "MONEY_LAUNDERING"
+  | "ROMANCE"
+  | "IMPERSONATION"
+  | "PRIZE"
   | "OTHER";
 
 export interface VerificationInput {
@@ -34,6 +40,12 @@ export interface WebSource {
   url: string;
 }
 
+export type EvidenceTone = "warning" | "reassuring" | "neutral";
+
+// Legitimacy signals that describe something the message did NOT do. They
+// count towards the score, but they are never shown as findings.
+const ABSENCE_SIGNALS = new Set(["no-payment", "no-urgency"]);
+
 export interface VerificationResult {
   verdict: VerdictStatus;
   score: number; // 0 to 100
@@ -42,11 +54,27 @@ export interface VerificationResult {
     en: string[];
     fr: string[];
   };
+  // Parallel to evidenceBullets by index, so a surface can colour a red flag
+  // differently from a fact that eased the score. Absent signals are not
+  // evidence and must never be dressed up as findings.
+  evidenceTones: EvidenceTone[];
+  // Verdict-specific next step, always present. This is the only generic
+  // advice the engine emits; it used to be padded into the bullet list, which
+  // made every answer end in the same form-rejection boilerplate.
+  safetyNote: {
+    en: string;
+    fr: string;
+  };
   officialEntity: OfficialInstitution | null;
   officialWebsite: string | null;
   anticHotline: string;
   sources: WebSource[];
   whatsappWarning: {
+    en: string;
+    fr: string;
+  };
+  // Same notice without markdown, for surfaces that do not render asterisks.
+  whatsappWarningPlain: {
     en: string;
     fr: string;
   };
@@ -102,30 +130,48 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
   // 4. Evaluate payment channel
   const paymentEval = evaluatePaymentChannel(text, extractedPhones, officialEntity?.acronym);
 
-  // 5. Evaluate Cameroon scam patterns
+  // 5. Evaluate Cameroon scam patterns. Structural detectors recognise the
+  // shape of a scheme and so catch paraphrases the literal trigger list
+  // misses. The keyword layer stays the topical authority, so when both fire
+  // the category comes from the keyword group and only the evidence and score
+  // come from the structural read.
   const keywordPatternMatch = evaluateKeywordPatterns(text);
+  const structuralMatch = evaluateStructuralPatterns(text);
+  const patternMatch = structuralMatch ?? keywordPatternMatch;
+  if (patternMatch && keywordPatternMatch) {
+    patternMatch.category = keywordPatternMatch.category;
+  }
 
-  // 6. Tally Score & Bullets
+  // 6. Tally Score & Findings
   const bulletsEn: string[] = [];
   const bulletsFr: string[] = [];
+  const tones: EvidenceTone[] = [];
+  // Every finding goes through here so the tone index can never drift out of
+  // lockstep with the two language lists.
+  const push = (en: string, fr: string, tone: EvidenceTone) => {
+    bulletsEn.push(en);
+    bulletsFr.push(fr);
+    tones.push(tone);
+  };
   let riskScore = 0;
   let category: ScamCategory = "OTHER";
 
   if (input.isKnownFlaggedInDb) {
     riskScore += 95;
-    bulletsEn.push(
-      "This contact number or account has already been confirmed and reported by multiple victims in the CheckAm scam registry.",
-    );
-    bulletsFr.push(
-      "Ce numéro ou compte a déjà été confirmé et signalé par plusieurs victimes dans le registre national CheckAm.",
+    push(
+      "Other people who received this same message have already reported this contact.",
+      "D'autres personnes ayant reçu ce même message ont déjà signalé ce contact.",
+      "warning",
     );
   }
 
-  if (keywordPatternMatch) {
-    category = keywordPatternMatch.category;
-    riskScore += 45;
-    bulletsEn.push(keywordPatternMatch.evidenceBulletEn);
-    bulletsFr.push(keywordPatternMatch.evidenceBulletFr);
+  if (patternMatch) {
+    category = patternMatch.category;
+    // A pattern flagged HIGH_RISK is decisive on its own. A CAUTION pattern
+    // is only a red flag to weigh, so it must stay under the 45 point bound
+    // and let the rest of the picture decide.
+    riskScore += patternMatch.riskLevel === "HIGH_RISK" ? 45 : 20;
+    push(patternMatch.evidenceBulletEn, patternMatch.evidenceBulletFr, "warning");
   }
 
   if (
@@ -134,8 +180,7 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     emailEval.evidenceBulletFr
   ) {
     riskScore += 40;
-    bulletsEn.push(emailEval.evidenceBulletEn);
-    bulletsFr.push(emailEval.evidenceBulletFr);
+    push(emailEval.evidenceBulletEn, emailEval.evidenceBulletFr, "warning");
   }
 
   if (paymentEval.evidenceBulletEn && paymentEval.evidenceBulletFr) {
@@ -145,8 +190,7 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     } else if (paymentEval.hasIllicitMomoRequest) {
       riskScore += 35;
     }
-    bulletsEn.push(paymentEval.evidenceBulletEn);
-    bulletsFr.push(paymentEval.evidenceBulletFr);
+    push(paymentEval.evidenceBulletEn, paymentEval.evidenceBulletFr, "warning");
   }
 
   // Official domain verification check
@@ -159,27 +203,21 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     !emailEval.hasFreeEmailForGovEntity &&
     !paymentEval.hasIllicitMomoRequest &&
     !paymentEval.hasMomoReversalPattern &&
-    !keywordPatternMatch
+    !patternMatch
   ) {
     riskScore = 5;
-    bulletsEn.push(
-      `Matches official Cameroon government communication channel (${officialEntity?.acronym || "Official Institution"}).`,
+    push(
+      `The message points at a real Cameroon government channel (${officialEntity?.acronym || "official institution"}).`,
+      `Le message renvoie vers un canal gouvernemental camerounais authentique (${officialEntity?.acronym || "institution officielle"}).`,
+      "reassuring",
     );
-    bulletsFr.push(
-      `Correspond aux canaux officiels de communication du Gouvernement Camerounais (${officialEntity?.acronym || "Institution Officielle"}).`,
-    );
-    bulletsEn.push(
-      `Official verified website: ${officialEntity?.officialWebsites[0] || "https://www.prc.cm"}.`,
-    );
-    bulletsFr.push(
-      `Site web officiel vérifié : ${officialEntity?.officialWebsites[0] || "https://www.prc.cm"}.`,
-    );
-    bulletsEn.push(
-      `Payment rule: ${officialEntity?.authorizedPaymentChannels.en || "Public Treasury"}`,
-    );
-    bulletsFr.push(
-      `Règle de paiement : ${officialEntity?.authorizedPaymentChannels.fr || "Trésor Public"}`,
-    );
+    if (officialEntity?.officialWebsites[0]) {
+      push(
+        `You can check this yourself at ${officialEntity.officialWebsites[0]}.`,
+        `Vous pouvez le vérifier vous-même sur ${officialEntity.officialWebsites[0]}.`,
+        "reassuring",
+      );
+    }
   }
 
   // Legitimacy relief: positive evidence lowers the score and claims
@@ -208,62 +246,32 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     legitRelief = Math.min(35, legitRelief);
     if (legitRelief > 0) {
       if (webTitles.length > 0) {
-        bulletsEn.push(`Corroborated online: ${webTitles.slice(0, 2).join("; ")}.`);
-        bulletsFr.push(`Confirmé en ligne : ${webTitles.slice(0, 2).join(" ; ")}.`);
+        push(
+          `We found this on the web: ${webTitles.slice(0, 2).join("; ")}.`,
+          `Nous avons retrouvé cela en ligne : ${webTitles.slice(0, 2).join(" ; ")}.`,
+          "reassuring",
+        );
       }
       for (const s of signals) {
         if (bulletsEn.length >= 3) break;
-        bulletsEn.push(s.en);
-        bulletsFr.push(s.fr);
+        // Absence signals ("the message does not ask for money") soften the
+        // score but are not findings. Listing them is what made every benign
+        // message read like a linter had something to report.
+        if (ABSENCE_SIGNALS.has(s.key)) continue;
+        push(s.en, s.fr, "reassuring");
       }
     }
   }
 
-  // Default fallback bullets if less than 3
-  if (bulletsEn.length === 0) {
-    if (officialEntity) {
-      bulletsEn.push(`Claims connection to ${officialEntity.nameEn} (${officialEntity.acronym}).`);
-      bulletsFr.push(
-        `Prétend être affilié au ${officialEntity.nameFr} (${officialEntity.acronym}).`,
-      );
-    } else {
-      bulletsEn.push(
-        "Contains unverified solicitation without verifiable official registration numbers.",
-      );
-      bulletsFr.push(
-        "Contient une sollicitation non vérifiée sans numéro d'immatriculation officiel.",
-      );
-    }
-  }
-
-  if (bulletsEn.length === 1) {
-    if (officialEntity) {
-      bulletsEn.push(`Official ministerial rule: ${officialEntity.authorizedPaymentChannels.en}`);
-      bulletsFr.push(
-        `Règle ministérielle officielle : ${officialEntity.authorizedPaymentChannels.fr}`,
-      );
-    } else {
-      bulletsEn.push(
-        "Always verify through the national cybersecurity hotline (ANTIC 8202) before transferring funds.",
-      );
-      bulletsFr.push(
-        "Vérifiez toujours auprès du numéro vert de cybersécurité (ANTIC 8202) avant tout transfert.",
-      );
-    }
-  }
-
-  if (bulletsEn.length === 2) {
-    bulletsEn.push(
-      "National Cyber Security Agency (ANTIC) warning: Never send money or confidential OTPs over WhatsApp.",
-    );
-    bulletsFr.push(
-      "Alerte de l'Agence Nationale des TIC (ANTIC) : N'envoyez jamais d'argent ni de code OTP sur WhatsApp.",
-    );
-  }
-
-  // Cap at top 3 crisp evidence bullets
+  // Cap at top 3 crisp findings. Tones slice alongside the two language lists
+  // so all three stay index-aligned.
   const finalBulletsEn = bulletsEn.slice(0, 3);
   const finalBulletsFr = bulletsFr.slice(0, 3);
+  const finalTones = tones.slice(0, 3);
+
+  // No padding. A message that trips nothing yields an empty finding list and
+  // an honest "we could not tell from this" note, rather than three invented
+  // advisories dressed as evidence.
 
   // Determine Verdict Status. Legitimacy relief only softens CAUTION;
   // HIGH_RISK triggers and the official domain path are untouched.
@@ -286,24 +294,69 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     riskScore = legitRelief > 0 ? Math.max(15, riskScore - legitRelief) : Math.max(riskScore, 45);
   }
 
-  // Format WhatsApp Alerts
+  const safetyNote =
+    verdict === "HIGH_RISK"
+      ? {
+          en: "Do not send money, documents, or any code from a text message. If you already paid, contact your Mobile Money operator at once and report it free on the ANTIC hotline, 8202.",
+          fr: "N'envoyez ni argent, ni documents, ni aucun code à partir d'un SMS. Si vous avez déjà payé, contactez immédiatement votre opérateur Mobile Money et signalez gratuitement au numéro de l'ANTIC, le 8202.",
+        }
+      : verdict === "VERIFIED_OFFICIAL"
+        ? {
+            en: "This points at an official channel. Still open the institution's own website yourself instead of using the link in the message, and never send an OTP to anyone.",
+            fr: "Cela renvoie vers un canal officiel. Ouvrez vous-même le site officiel de l'institution plutôt que d'utiliser le lien du message, et n'envoyez jamais un OTP à quiconque.",
+          }
+        : finalBulletsEn.length === 0
+          ? {
+              en: "We found no clear signal either way, which usually means the message is too short to judge. Send the full text plus the phone number or email address it came from, and check on the organisation's own website before you act.",
+              fr: "Nous n'avons trouvé aucun indice clair dans un sens ou l'autre, ce qui signifie généralement que le message est trop court pour être jugé. Envoyez le texte complet ainsi que le numéro ou l'adresse e-mail d'origine, et vérifiez sur le site officiel de l'organisation avant d'agir.",
+            }
+          : {
+              en: "Before you act, confirm on the organisation's own website or by calling their official line. Never send an OTP, a pin, or a code to anyone who asks for it, and report it free on the ANTIC hotline, 8202.",
+              fr: "Avant d'agir, confirmez sur le site officiel de l'organisation ou en appelant leur ligne officielle. N'envoyez jamais un OTP, un code ou un PIN à quiconque vous le demande, et signalez gratuitement au numéro de l'ANTIC, le 8202.",
+            };
+
+  // Format forwardable notices. Markdown for WhatsApp, plain for Facebook and
+  // SMS, which render asterisks literally.
   const phoneListStr = extractedPhones.map((p) => p.normalized).join(", ");
-  const warningEn = generateWhatsAppAlert({
+  const warningEn = renderAlert({
     language: "en",
     verdict,
     category,
     bullets: finalBulletsEn,
     phones: phoneListStr,
     entity: officialEntity?.acronym || "UNOFFICIAL",
+    nextStep: safetyNote.en,
+    format: "markdown",
   });
-
-  const warningFr = generateWhatsAppAlert({
+  const warningFr = renderAlert({
     language: "fr",
     verdict,
     category,
     bullets: finalBulletsFr,
     phones: phoneListStr,
     entity: officialEntity?.acronym || "NON OFFICIEL",
+    nextStep: safetyNote.fr,
+    format: "markdown",
+  });
+  const warningEnPlain = renderAlert({
+    language: "en",
+    verdict,
+    category,
+    bullets: finalBulletsEn,
+    phones: phoneListStr,
+    entity: officialEntity?.acronym || "UNOFFICIAL",
+    nextStep: safetyNote.en,
+    format: "plain",
+  });
+  const warningFrPlain = renderAlert({
+    language: "fr",
+    verdict,
+    category,
+    bullets: finalBulletsFr,
+    phones: phoneListStr,
+    entity: officialEntity?.acronym || "NON OFFICIEL",
+    nextStep: safetyNote.fr,
+    format: "plain",
   });
 
   return {
@@ -314,14 +367,14 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
       en: finalBulletsEn,
       fr: finalBulletsFr,
     },
+    evidenceTones: finalTones,
+    safetyNote,
     officialEntity,
     officialWebsite: officialEntity?.officialWebsites[0] || null,
     anticHotline: "8202",
     sources: cleanSources,
-    whatsappWarning: {
-      en: warningEn,
-      fr: warningFr,
-    },
+    whatsappWarning: { en: warningEn, fr: warningFr },
+    whatsappWarningPlain: { en: warningEnPlain, fr: warningFrPlain },
     extractedFacts: {
       phones: extractedPhones.map((p) => p.normalized),
       emails: extractedEmails.map((e) => e.original),
@@ -331,51 +384,63 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
   };
 }
 
-function generateWhatsAppAlert(params: {
+export type AlertFormat = "markdown" | "plain";
+
+function renderAlert(params: {
   language: "en" | "fr";
   verdict: VerdictStatus;
   category: ScamCategory;
   bullets: string[];
   phones: string;
   entity: string;
+  nextStep: string;
+  format: AlertFormat;
 }): string {
-  if (params.language === "fr") {
-    const header =
-      params.verdict === "HIGH_RISK"
-        ? "🚨 *ALERTE ARNAQUE / CHECKAM CAMEROUN* 🚨"
-        : params.verdict === "CAUTION"
-          ? "⚠️ *ATTENTION - VÉRIFICATION SUSPECTE / CHECKAM* ⚠️"
-          : "✅ *COMMUNICATION OFFICIELLE VÉRIFIÉE / CHECKAM* ✅";
-
-    const bulletsFormatted = params.bullets.map((b, i) => `🔹 *${i + 1}.* ${b}`).join("\n");
-
-    return `${header}
-
-Ne vous faites pas avoir ! Ce message a été vérifié sur https://checkam.cm :
-
-${bulletsFormatted}
-
-📞 *Numéro(s) concerné(s) :* ${params.phones || "Non spécifié"}
-🛡️ *Signalez gratuitement à l'ANTIC au 8202.*
-🔄 *Faites suivre dans vos groupes WhatsApp pour protéger vos proches !*`;
-  }
+  const fr = params.language === "fr";
+  // WhatsApp honours *bold*; Facebook, X and SMS print the asterisks as
+  // literal noise, so the plain variant drops every marker.
+  const strong = (text: string) => (params.format === "markdown" ? `*${text}*` : text);
 
   const header =
     params.verdict === "HIGH_RISK"
-      ? "🚨 *SCAM ALERT / CHECKAM CAMEROON* 🚨"
+      ? fr
+        ? "🚨 ALERTE ARNAQUE / CHECKAM CAMEROUN 🚨"
+        : "🚨 SCAM ALERT / CHECKAM CAMEROUN 🚨"
       : params.verdict === "CAUTION"
-        ? "⚠️ *CAUTION - SUSPICIOUS NOTICE / CHECKAM* ⚠️"
-        : "✅ *OFFICIAL VERIFIED NOTICE / CHECKAM* ✅";
+        ? fr
+          ? "⚠️ ATTENTION, MESSAGE À VÉRIFIER / CHECKAM ⚠️"
+          : "⚠️ CAUTION, MESSAGE TO VERIFY / CHECKAM ⚠️"
+        : fr
+          ? "✅ COMMUNICATION OFFICIELLE / CHECKAM ✅"
+          : "✅ OFFICIAL COMMUNICATION / CHECKAM ✅";
 
-  const bulletsFormatted = params.bullets.map((b, i) => `🔹 *${i + 1}.* ${b}`).join("\n");
+  const intro = fr
+    ? "Ce message a été analysé sur checkam.cm :"
+    : "This message was analyzed on checkam.cm :";
 
-  return `${header}
+  // No findings is an honest state, not a formatting bug: say so rather than
+  // forward an empty numbered list.
+  const body = params.bullets.length
+    ? params.bullets.map((b, i) => `🔹 ${strong(`${i + 1}.`)} ${b}`).join("\n")
+    : fr
+      ? "Aucun indice d'arnaque clair n'a été trouvé. Restez prudent et vérifiez avant d'agir."
+      : "No clear scam signal was found. Stay cautious and verify before you act.";
 
-Verify before you pay! This notice was analyzed on https://checkam.cm :
+  const contact = fr
+    ? `📞 ${strong("Numéro concerné :")} ${params.phones || "non indiqué"}`
+    : `📞 ${strong("Number to watch:")} ${params.phones || "not given"}`;
 
-${bulletsFormatted}
+  const tail = fr
+    ? [
+        `🛡️ ${params.nextStep}`,
+        `🛡️ ${strong("Signalez gratuitement à l'ANTIC au 8202.")}`,
+        `🔄 ${strong("Faites suivre dans vos groupes WhatsApp pour protéger vos proches.")}`,
+      ]
+    : [
+        `🛡️ ${params.nextStep}`,
+        `🛡️ ${strong("Report it free on the ANTIC hotline, 8202.")}`,
+        `🔄 ${strong("Forward this to your family and groups to protect others.")}`,
+      ];
 
-📞 *Flagged Contact(s):* ${params.phones || "Not specified"}
-🛡️ *Report free to ANTIC hotline 8202.*
-🔄 *Forward to your WhatsApp family groups to protect others!*`;
+  return [strong(header), "", intro, "", body, "", contact, ...tail].join("\n");
 }

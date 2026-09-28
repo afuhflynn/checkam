@@ -18,7 +18,10 @@ export async function withTool<T>(
       return { ok: true, value };
     } catch (err) {
       if (attempt === 1) {
-        return { ok: false, note: `${name} failed: ${err instanceof Error ? err.message : "unknown"}` };
+        return {
+          ok: false,
+          note: `${name} failed: ${err instanceof Error ? err.message : "unknown"}`,
+        };
       }
     }
   }
@@ -90,8 +93,10 @@ export const tavilySearchTool = tool({
       body: JSON.stringify({
         api_key: key,
         query: redactPii(query).slice(0, 300),
-        search_depth: "basic",
-        max_results: 3,
+        // Advanced depth: a shallow single search is what made unfamiliar
+        // topics (scholarships, mule offers) come back unusable.
+        search_depth: "advanced",
+        max_results: 5,
         include_answer: false,
       }),
     });
@@ -100,7 +105,7 @@ export const tavilySearchTool = tool({
       results?: { title?: string; url?: string; content?: string }[];
     };
     void locale;
-    return (data.results ?? []).slice(0, 3).map((item) => ({
+    return (data.results ?? []).slice(0, 5).map((item) => ({
       title: item.title ?? "",
       url: item.url ?? "",
       content: (item.content ?? "").slice(0, 800),

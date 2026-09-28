@@ -1,8 +1,8 @@
 import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from "ai";
+import type { VerdictPayload } from "../../../../lib/chat/verdict-payload";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { draftTitle, runAgentTurn } from "../../../../lib/agent/runner";
-import type { AgentTrace, AgentTurn } from "../../../../lib/agent/runner";
 import type { ExtractedFacts } from "../../../../lib/ai/extract-facts";
 import { withTimeout } from "../../../../lib/agent/tools";
 import { authLimiter } from "../../../../lib/arcjet";
@@ -14,15 +14,9 @@ import { guestTriesUsed } from "../../../../lib/chat/counter";
 import { sessionScope, refuseUnverifiedWrite } from "../../../../lib/chat/scope";
 import { db } from "../../../../lib/db";
 import { runRulesEngine } from "../../../../lib/rules/engine";
+import { buildVerdictPayload } from "../../../../lib/chat/verdict-payload";
 
-type VerdictData = {
-  verdict: string;
-  score: number;
-  bullets: string[];
-  verificationId: string;
-};
-
-type ChatStreamMessage = UIMessage<{ verdict: VerdictData }>;
+type ChatStreamMessage = UIMessage<{ verdict: VerdictPayload }>;
 
 const TransportSchema = z.object({
   sessionId: z.string().cuid(),
@@ -40,7 +34,43 @@ const TransportSchema = z.object({
     .min(1),
 });
 
-function lastUserText(messages: { role: string; parts?: { type: string; text?: string }[] }[]): string {
+// Last resort when the analyst prose is unavailable: the model was cut off,
+// the circuit was open, or it tried to voice a verdict and was dropped. This
+// must read like a person, because the previous version of this path dumped
+// the numbered evidence list straight into the chat.
+function buildFallbackProse(
+  verdict: string,
+  bullets: string[],
+  safetyNote: { en: string; fr: string },
+  locale: "en" | "fr",
+): string {
+  const fr = locale === "fr";
+  const lead =
+    verdict === "HIGH_RISK"
+      ? fr
+        ? "Celui-ci porte les marques d'une arnaque."
+        : "This one carries the marks of a scam."
+      : verdict === "VERIFIED_OFFICIAL"
+        ? fr
+          ? "Ceci renvoie vers un canal officiel."
+          : "This points at an official channel."
+        : fr
+          ? "Je ne peux pas confirmer ce message d'un bout à l'autre."
+          : "I could not confirm this one either way.";
+  const strongest = bullets[0];
+  const middle = strongest
+    ? strongest.endsWith(".")
+      ? strongest
+      : `${strongest}.`
+    : fr
+      ? "Rien de concluant n'est ressorti des détails fournis."
+      : "Nothing conclusive came out of the details you shared.";
+  return `${lead} ${middle}\n\n${fr ? safetyNote.fr : safetyNote.en}`;
+}
+
+function lastUserText(
+  messages: { role: string; parts?: { type: string; text?: string }[] }[],
+): string {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i];
     if (!message || message.role !== "user") continue;
@@ -66,7 +96,9 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "invalid_transport" }, { status: 422 });
   const { sessionId, userSeq } = parsed.data;
 
-  const session = await db.chatSession.findFirst({ where: { id: sessionId, ...sessionScope(actor) } });
+  const session = await db.chatSession.findFirst({
+    where: { id: sessionId, ...sessionScope(actor) },
+  });
   if (!session) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   if (actor.kind === "guest") {
@@ -103,28 +135,21 @@ export async function POST(req: NextRequest) {
       writer.write({ type: "text-start", id: partId });
       try {
         const fileHash = hashContent(text);
-        // Extraction cache (repo rule): a repeat text reuses stored facts
-        // instead of re running the agent, but still gets a fresh answer.
-        // Flagged status rechecks cheaply since watchlists move.
+        // Extraction cache (repo rule): a repeat text reuses the stored facts
+        // instead of re-running the extractor, but still gets fresh research
+        // and a fresh written answer. The old path short circuited the whole
+        // turn on a hit, so a message checked twice came back as a bare
+        // fallback with no evidence and no sources.
         const cached = await db.scamVerification.findFirst({
           where: { fileHash },
           orderBy: { createdAt: "desc" },
           select: { extractedFacts: true },
         });
-        let turn: AgentTurn;
-        if (cached?.extractedFacts) {
-          const facts = cached.extractedFacts as unknown as ExtractedFacts;
-          const hit = facts.phoneNumbers.length
-            ? await db.flaggedIdentifier.findFirst({
-                where: { normalizedValue: { in: facts.phoneNumbers }, isActive: true },
-                select: { id: true },
-              })
-            : null;
-          const traces: AgentTrace[] = [{ tool: "cache", ok: true }];
-          turn = { facts, traces, answer: null, flagged: Boolean(hit), sources: [], corroborated: false };
-        } else {
-          turn = await runAgentTurn({ text, locale });
-        }
+        const turn = await runAgentTurn({
+          text,
+          locale,
+          preExtractedFacts: (cached?.extractedFacts as unknown as ExtractedFacts) ?? null,
+        });
         const facts = turn.facts;
         if (!facts) {
           writer.write({ type: "error", errorText: "extraction_failed" });
@@ -141,22 +166,13 @@ export async function POST(req: NextRequest) {
           webCorroboration: { foundOfficialSource: turn.corroborated, sources: turn.sources },
         });
         const bullets = locale === "fr" ? result.evidenceBullets.fr : result.evidenceBullets.en;
-        const head =
-          result.verdict === "HIGH_RISK"
-            ? locale === "fr"
-              ? "Arnaque probable. Voici pourquoi :"
-              : "Likely a scam. Here is why:"
-            : result.verdict === "VERIFIED_OFFICIAL"
-              ? locale === "fr"
-                ? "Semble officiel. Vérifiez toujours le canal :"
-                : "Looks official. Always check the channel:"
-              : locale === "fr"
-                ? "Prudence. Points à vérifier :"
-                : "Be careful. Points to check:";
+        // The chat text is the analyst's prose. Evidence lives in the dossier
+        // card, where it is colour coded and expandable, so the two are no
+        // longer concatenated. That concatenation is what made every answer
+        // end in the same numbered boilerplate.
         const grounded = turn.answer?.trim();
-        const answer = grounded
-          ? `${grounded}\n${bullets.map((bullet) => `• ${bullet}`).join("\n")}`
-          : `${head}\n${bullets.map((bullet) => `• ${bullet}`).join("\n")}`;
+        const answer =
+          grounded || buildFallbackProse(result.verdict, bullets, result.safetyNote, locale);
 
         for (const slice of answer.match(/.{1,24}/gsu) ?? [answer]) {
           writer.write({ type: "text-delta", id: partId, delta: slice });
@@ -178,6 +194,14 @@ export async function POST(req: NextRequest) {
             verdict: result.verdict,
             score: result.score,
             evidenceBullets: result.evidenceBullets as unknown as object,
+            dossier: {
+              // The turn may have been answered in French from a French message
+              // on an English page. Recording it lets a reload hand back the
+              // card in the same language as the thread it sits beside.
+              answeredIn: locale,
+              en: buildVerdictPayload({ result, locale: "en" }),
+              fr: buildVerdictPayload({ result, locale: "fr" }),
+            } as unknown as object,
             whatsappWarning:
               locale === "fr" ? result.whatsappWarning.fr : result.whatsappWarning.en,
             clientIpHash: hashIp(ip),
@@ -188,11 +212,8 @@ export async function POST(req: NextRequest) {
           type: "data-verdict",
           id: "verdict-0",
           data: {
-            verdict: result.verdict,
-            score: result.score,
-            bullets,
+            ...buildVerdictPayload({ result, locale }),
             verificationId: verification.id,
-            sources: result.sources,
           },
         });
 
@@ -232,7 +253,11 @@ export async function POST(req: NextRequest) {
         }
 
         if (session.title === "New check") {
-          const fallback = `${new Date().toLocaleDateString(locale === "fr" ? "fr-CM" : "en-CM")} · ${text.split(/\s+/).slice(0, 6).join(" ")}`.slice(0, 60);
+          const fallback =
+            `${new Date().toLocaleDateString(locale === "fr" ? "fr-CM" : "en-CM")} · ${text.split(/\s+/).slice(0, 6).join(" ")}`.slice(
+              0,
+              60,
+            );
           await db.chatSession.update({ where: { id: sessionId }, data: { title: fallback } });
           try {
             const title = await withTimeout(

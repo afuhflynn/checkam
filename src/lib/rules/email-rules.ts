@@ -76,7 +76,9 @@ export function evaluateEmailLegitimacy(
     const emailSample = first ? first.original : "unknown";
     return {
       hasFreeEmailForGovEntity: true,
-      evidenceBulletEn: `Uses an unofficial free email address (${emailSample}) instead of an authenticated government domain (*.gov.cm or *.cm).`,
+      // No asterisks: this string is forwarded to Facebook and SMS as plain
+      // text, where emphasis markers read as noise.
+      evidenceBulletEn: `Uses a free email address (${emailSample}) instead of an address on a gov.cm or cm domain.`,
       evidenceBulletFr: `Utilise une adresse email gratuite non officielle (${emailSample}) au lieu d'un domaine gouvernemental authentique (*.gov.cm ou *.cm).`,
     };
   }

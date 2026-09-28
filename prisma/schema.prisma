@@ -97,6 +97,10 @@ model ScamVerification {
   verdict         VerdictStatus
   score           Int // 0 to 100 risk score
   evidenceBullets Json // Array of string bullets in EN and FR
+  // Full chat dossier payload (tones, safety note, share texts, sources,
+  // category). Stored so a reloaded thread redraws the same card the user
+  // saw live, instead of degrading to a bare text fallback.
+  dossier        Json?
   whatsappWarning String?
   clientIpHash    String?
   createdAt       DateTime      @default(now())

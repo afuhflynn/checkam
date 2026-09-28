@@ -261,6 +261,74 @@ export const translations = {
     continueBarText: "Welcome back — your checks wait in chat.",
     continueBarBtn: "Continue to chat",
 
+    // Rebuilt Landing — Modern, Airy Hero & Sections
+    heroBadge: "National Cyber Security Hotline 8202 • Cameroon Public Utility",
+    heroMainTitle: "Verify Before You Pay",
+    heroMainSubtitle:
+      "Paste an SMS, upload a recruitment flyer, or verify a suspect phone number. CheckAm interrogates the facts against Cameroon's official rules and delivers verified receipts in seconds.",
+    heroCtaPrimary: "Start a Free Check",
+    heroCtaSecondary: "Browse Scam Registry",
+    heroPerkFree: "100% Free",
+    heroPerkNoAccount: "No account needed",
+    heroPerkInstant: "Instant response",
+    heroPerkBilingual: "Bilingual FR / EN",
+    heroSignalMinfopra: "MINFOPRA • Public Treasury quittance only",
+    heroSignalMomo: "Orange Money • Always check #150# balance",
+    heroSignalAntic: "ANTIC 8202 • Toll-Free National Hotline",
+
+    // Rebuilt Landing — Trust Strip
+    trustTitle: "Cross-referenced against verified Cameroon institutional standards",
+
+    // Rebuilt Landing — Scam Vectors Bento Grid
+    bentoKicker: "Recognize the tells",
+    bentoTitle: "Common Scam Vectors in Cameroon",
+    bentoSub:
+      "Before money leaves your hands, see how scammers exploit daily administrative, financial, and travel services in Cameroon.",
+    bento1Badge: "Civil Service & Concours",
+    bento1Title: "Fake Recruitment & Direct Hiring Flyers",
+    bento1Desc:
+      "Fake MINESEC/MINFOPRA flyers demanding 25,000 FCFA application fees via Orange Money and using @gmail.com addresses.",
+    bento1Rule:
+      "Rule: Official entry is by competitive exam (concours) or presidential decree. Application fees are strictly paid to the Public Treasury against a quittance receipt.",
+    bento2Badge: "Mobile Money & Telecom",
+    bento2Title: "Fake Reversal & Mistaken Transfer SMS",
+    bento2Desc:
+      "An SMS pretending you received 75,000 FCFA, followed by an emotional call pleading to refund the money for a hospital emergency.",
+    bento2Rule:
+      "Rule: SMS text never proves a deposit. Always check your actual balance using the official USSD code (#150# or *126#). Never refund money directly.",
+    bento3Badge: "Visas & Foreign Travel",
+    bento3Title: "Guaranteed 14-Day Express Canada Visas",
+    bento3Desc:
+      "Dream salary offers with free plane tickets, free housing, and zero language tests, demanding upfront stamp fees via MTN MoMo.",
+    bento3Rule:
+      "Rule: No embassy collects visa application fees via personal mobile money or free emails. Legitimate applications pass strictly through official diplomatic missions or certified centers (TLS/VFS).",
+
+    // Rebuilt Landing — WhatsApp Bot Spotlight
+    waSpotlightBadge: "Cameroon Community Defense",
+    waSpotlightTitle: "Verify Directly Inside WhatsApp",
+    waSpotlightSub:
+      "Forward any suspicious text, flyer image, or phone number to the CheckAm bot. Receive a rules-based verdict and verified evidence in 3 seconds without leaving your chat.",
+    waSpotlightBtn: "Chat on WhatsApp",
+    waSpotlightWebAlt: "Or verify in web chat",
+    waUserBubble:
+      "Forwarded: Urgent! MINESEC is recruiting 325 teachers. Send 25,000 FCFA to 699 12 34 56... is this genuine?",
+    waBotBubbleVerdict: "🛑 CHECKAM ALERT — HIGH RISK SCAM",
+    waBotBubbleText:
+      "1. Ministries never use @gmail.com (official: *.gov.cm).\n2. Fees are paid to the Public Treasury, never personal Orange Money.\n3. Verified with ANTIC Hotline 8202.",
+
+    // Rebuilt Landing — Stats Strip
+    statsVerifiedLabel: "Checks Analyzed",
+    statsFlaggedLabel: "Blacklisted Contacts",
+    statsCasesLabel: "Confirmed Scam Dossiers",
+    statsHotlineLabel: "ANTIC Free Hotline",
+
+    // Upgraded Verdict Card
+    verdictCertNo: "Verification Receipt Nº",
+    verdictHotlineBadge: "ANTIC Hotline: 8202 (Free)",
+    verdictShareTitle: "Protect Friends & Family on WhatsApp",
+    verdictEvidenceKicker: "Key Evidence & Rule Violations",
+    verdictCopySuccess: "Alert copied! Ready to paste into WhatsApp",
+
     // Settings
     settingsTitle: "Settings",
     settingsSub: "Your profile, language, and password in one quiet place.",
@@ -279,7 +347,8 @@ export const translations = {
 
     // WhatsApp guide trials
     guideNumberTitle: "Save the number, start trying",
-    guideNumberDesc: "Save CheckAm in your contacts, then forward a suspect message. Samples below open a trial in one tap.",
+    guideNumberDesc:
+      "Save CheckAm in your contacts, then forward a suspect message. Samples below open a trial in one tap.",
     guideSaveBtn: "Save number",
     guideSaved: "Saved — find CheckAm in your contacts.",
     guideOpenWa: "Open WhatsApp chat",
@@ -368,21 +437,38 @@ export const translations = {
     chatTriesLeft: "tries left today",
     chatSourcesTitle: "Sources checked",
     chatDossierEmpty: "Evidence from your checks lands here, sealed with its verdict.",
-    chatSampleTextFill: "MINSEC avis de recrutement des 325 instituteurs. Frais de dossier 25 000 FCFA par Orange Money au 699123456.",
+    chatRiskScore: "risk score",
+    chatWhatWeFound: "What stood out",
+    chatNextStep: "What to do now",
+    chatShareTitle: "Warn your people",
+    chatShareDesc: "Copy this and send it to your family and groups so nobody else falls for it.",
+    chatShareWhatsapp: "WhatsApp",
+    chatShareFacebook: "Facebook",
+    chatShareX: "X",
+    chatShareCopy: "Copy",
+    chatShareCopied: "Copied",
+    chatFindingWarning: "Worth knowing",
+    chatFindingReassuring: "In your favour",
+    chatShareUnavailable: "No share text for this check yet.",
+    chatSampleTextFill:
+      "MINSEC avis de recrutement des 325 instituteurs. Frais de dossier 25 000 FCFA par Orange Money au 699123456.",
     chatSamplePhoneFill: "+237 ",
 
     // Mail templates (rich HTML + plaintext twins)
     mailVerifySubject: "Verify your CheckAm account",
     mailVerifyHeadline: "One tap and your checks are yours",
-    mailVerifyBody: "Confirm this mailbox so your history and checks stay with you. The link lives 24 hours.",
+    mailVerifyBody:
+      "Confirm this mailbox so your history and checks stay with you. The link lives 24 hours.",
     mailVerifyCta: "Verify my mailbox",
     mailResetSubject: "Reset your CheckAm password",
     mailResetHeadline: "Get back into your checks",
-    mailResetBody: "Use the link within 1 hour, or type the code within 10 minutes. Never share either.",
+    mailResetBody:
+      "Use the link within 1 hour, or type the code within 10 minutes. Never share either.",
     mailResetCta: "Reset my password",
     mailWelcomeSubject: "Welcome to CheckAm — verify before you pay",
     mailWelcomeHeadline: "Your first check takes thirty seconds",
-    mailWelcomeBody: "Paste a suspect message, drop a flyer, or look up a phone. If anyone asks you to pay for a CheckAm validation, it is a scam in itself.",
+    mailWelcomeBody:
+      "Paste a suspect message, drop a flyer, or look up a phone. If anyone asks you to pay for a CheckAm validation, it is a scam in itself.",
     mailWelcomeCta: "Run your first check",
     mailCodeLabel: "Code",
     mailClosing: "The CheckAm team — verify before you pay. ANTIC hotline 8202, free.",
@@ -650,6 +736,74 @@ export const translations = {
     continueBarText: "Bon retour — vos vérifications vous attendent dans le chat.",
     continueBarBtn: "Continuer vers le chat",
 
+    // Rebuilt Landing — Modern, Airy Hero & Sections
+    heroBadge: "Hotline Nationale Cybersécurité 8202 • Utilité Publique Cameroun",
+    heroMainTitle: "Ne payez rien avant d'avoir vérifié",
+    heroMainSubtitle:
+      "Transférez un message suspect, déposez un communiqué officiel ou vérifiez un numéro MoMo. CheckAm analyse les faits face à la réglementation officielle camerounaise et vous remet des preuves en quelques secondes.",
+    heroCtaPrimary: "Commencer une vérification",
+    heroCtaSecondary: "Consulter le registre",
+    heroPerkFree: "100% Gratuit",
+    heroPerkNoAccount: "Aucun compte requis",
+    heroPerkInstant: "Résultat immédiat",
+    heroPerkBilingual: "Bilingue FR / EN",
+    heroSignalMinfopra: "MINFOPRA • Frais Trésor Public uniquement",
+    heroSignalMomo: "Orange Money • Vérifiez toujours le solde #150#",
+    heroSignalAntic: "ANTIC 8202 • Hotline Nationale Gratuite",
+
+    // Rebuilt Landing — Trust Strip
+    trustTitle: "Recoupé avec les sources et cadres réglementaires officiels du Cameroun",
+
+    // Rebuilt Landing — Scam Vectors Bento Grid
+    bentoKicker: "Repérez les signaux",
+    bentoTitle: "Les arnaques courantes au Cameroun",
+    bentoSub:
+      "Avant que votre argent ne s'envole, découvrez les mécanismes concrets exploités par les fraudeurs sur les services administratifs, bancaires et de voyage.",
+    bento1Badge: "Fonction Publique & Concours",
+    bento1Title: "Faux arrêtés de recrutement direct",
+    bento1Desc:
+      "Faux communiqués ministériels promettant une intégration directe contre 25 000 FCFA par Orange Money avec contact @gmail.com.",
+    bento1Rule:
+      "Règle : Tout recrutement s'opère par concours officiel ou décret. Les frais sont payés exclusivement au Trésor Public contre quittance.",
+    bento2Badge: "Mobile Money & Télécoms",
+    bento2Title: "SMS de faux virement & appel d'urgence",
+    bento2Desc:
+      "Un faux SMS de notification de crédit suivi d'un appel urgent prétendant une erreur d'envoi pour soigner un proche hospitalisé.",
+    bento2Rule:
+      "Règle : Un SMS ne prouve aucun virement. Tapez toujours le code USSD (#150# ou *126#) pour vérifier votre solde réel. Ne renvoyez rien.",
+    bento3Badge: "Visas & Immigration",
+    bento3Title: "Promesses de visa Canada express 14 jours",
+    bento3Desc:
+      "Offres mirobolantes avec salaires en millions, billets offerts et aucun test linguistique, exigeant des frais de timbre express par MoMo.",
+    bento3Rule:
+      "Règle : Aucune ambassade n'encaisse de frais de visa par MoMo personnel ou adresse Gmail. Tout visa passe par TLS/VFS ou consulat officiel.",
+
+    // Rebuilt Landing — WhatsApp Bot Spotlight
+    waSpotlightBadge: "Défense Communautaire",
+    waSpotlightTitle: "Vérifiez directement sur WhatsApp",
+    waSpotlightSub:
+      "Transférez un message, une capture de flyer ou un numéro suspect au bot CheckAm. Recevez un verdict officiel et des preuves en 3 secondes sans quitter WhatsApp.",
+    waSpotlightBtn: "Discuter sur WhatsApp",
+    waSpotlightWebAlt: "Ou vérifiez dans le chat web",
+    waUserBubble:
+      "Transféré : Urgent ! Recrutement direct MINESEC 325 instituteurs. Envoyer 25 000 FCFA au 699 12 34 56... c'est vrai ?",
+    waBotBubbleVerdict: "🛑 ALERTE CHECKAM — RISQUE ÉLEVÉ D'ARNAQUE",
+    waBotBubbleText:
+      "1. Aucun ministère n'utilise Gmail (officiel : *.gov.cm).\n2. Frais payés au Trésor Public, jamais sur un Orange Money personnel.\n3. Recoupé avec l'ANTIC (8202).",
+
+    // Rebuilt Landing — Stats Strip
+    statsVerifiedLabel: "Vérifications effectuées",
+    statsFlaggedLabel: "Numéros blacklistés",
+    statsCasesLabel: "Dossiers d'arnaque confirmés",
+    statsHotlineLabel: "Hotline ANTIC (Gratuit)",
+
+    // Upgraded Verdict Card
+    verdictCertNo: "Quittance de vérification Nº",
+    verdictHotlineBadge: "Hotline ANTIC : 8202 (Gratuit)",
+    verdictShareTitle: "Protégez vos proches sur WhatsApp",
+    verdictEvidenceKicker: "Preuves irréfutables & règles violées",
+    verdictCopySuccess: "Alerte copiée ! Prête à coller sur WhatsApp",
+
     // Paramètres
     settingsTitle: "Paramètres",
     settingsSub: "Votre profil, langue et mot de passe au même endroit calme.",
@@ -668,7 +822,8 @@ export const translations = {
 
     // Essais du guide WhatsApp
     guideNumberTitle: "Enregistrez le numéro, essayez",
-    guideNumberDesc: "Enregistrez CheckAm dans vos contacts, puis transférez un message suspect. Les exemples ci-dessous ouvrent un essai en un tap.",
+    guideNumberDesc:
+      "Enregistrez CheckAm dans vos contacts, puis transférez un message suspect. Les exemples ci-dessous ouvrent un essai en un tap.",
     guideSaveBtn: "Enregistrer le numéro",
     guideSaved: "Enregistré — retrouvez CheckAm dans vos contacts.",
     guideOpenWa: "Ouvrir le chat WhatsApp",
@@ -701,13 +856,15 @@ export const translations = {
     gateResendBtn: "Renvoyer le lien",
     gateResendOk: "Lien envoyé. Vérifiez votre boîte mail.",
     gateResetTitle: "Réinitialisez votre mot de passe",
-    gateResetDesc: "Nous avons envoyé un lien plus un code. Le lien vit 1 heure, le code 10 minutes.",
+    gateResetDesc:
+      "Nous avons envoyé un lien plus un code. Le lien vit 1 heure, le code 10 minutes.",
     gateOtpLabel: "Code reçu par mail",
     gateOtpPlaceholder: "Code à 6 chiffres",
     gateOtpBtn: "Confirmer le code",
     gateBackBtn: "Retour à la connexion",
     gateExpiredTitle: "Ce lien a expiré",
-    gateExpiredDesc: "Les liens meurent pour de vraies raisons comme le délai. Demandez-en un nouveau.",
+    gateExpiredDesc:
+      "Les liens meurent pour de vraies raisons comme le délai. Demandez-en un nouveau.",
     gateReissueBtn: "Envoyer un nouveau lien",
     gateDelayedTitle: "Le mail est en retard",
     gateDelayedDesc: "La file est lente. Votre lien arrive — réessayez si rien ne vient.",
@@ -757,21 +914,39 @@ export const translations = {
     chatTriesLeft: "essais restants aujourd'hui",
     chatSourcesTitle: "Sources vérifiées",
     chatDossierEmpty: "Les preuves de vos vérifications arrivent ici, scellées avec leur verdict.",
-    chatSampleTextFill: "Avis de recrutement MINESEC des 325 instituteurs. Frais de dossier 25 000 FCFA par Orange Money au 699123456.",
+    chatRiskScore: "indice de risque",
+    chatWhatWeFound: "Ce qui a sauté aux yeux",
+    chatNextStep: "Que faire maintenant",
+    chatShareTitle: "Prévenez vos proches",
+    chatShareDesc:
+      "Copiez ce message et envoyez-le à votre famille et à vos groupes pour que personne d'autre ne se fasse piéger.",
+    chatShareWhatsapp: "WhatsApp",
+    chatShareFacebook: "Facebook",
+    chatShareX: "X",
+    chatShareCopy: "Copier",
+    chatShareCopied: "Copié",
+    chatFindingWarning: "À savoir",
+    chatFindingReassuring: "Bon pour vous",
+    chatShareUnavailable: "Pas encore de texte à partager pour cette vérification.",
+    chatSampleTextFill:
+      "Avis de recrutement MINESEC des 325 instituteurs. Frais de dossier 25 000 FCFA par Orange Money au 699123456.",
     chatSamplePhoneFill: "+237 ",
 
     // Modèles de mail (HTML riche + jumeau texte)
     mailVerifySubject: "Vérifiez votre compte CheckAm",
     mailVerifyHeadline: "Un clic et vos vérifications sont à vous",
-    mailVerifyBody: "Confirmez cette boîte mail pour que votre historique et vos vérifications restent avec vous. Le lien vit 24 heures.",
+    mailVerifyBody:
+      "Confirmez cette boîte mail pour que votre historique et vos vérifications restent avec vous. Le lien vit 24 heures.",
     mailVerifyCta: "Vérifier ma boîte mail",
     mailResetSubject: "Réinitialisez votre mot de passe CheckAm",
     mailResetHeadline: "Retrouvez vos vérifications",
-    mailResetBody: "Utilisez le lien sous 1 heure, ou saisissez le code sous 10 minutes. Ne partagez ni l'un ni l'autre.",
+    mailResetBody:
+      "Utilisez le lien sous 1 heure, ou saisissez le code sous 10 minutes. Ne partagez ni l'un ni l'autre.",
     mailResetCta: "Réinitialiser mon mot de passe",
     mailWelcomeSubject: "Bienvenue sur CheckAm — vérifiez avant de payer",
     mailWelcomeHeadline: "Votre première vérification prend trente secondes",
-    mailWelcomeBody: "Collez un message suspect, déposez un flyer ou cherchez un numéro. Si quelqu'un vous demande de payer pour une validation CheckAm, c'est une arnaque en soi.",
+    mailWelcomeBody:
+      "Collez un message suspect, déposez un flyer ou cherchez un numéro. Si quelqu'un vous demande de payer pour une validation CheckAm, c'est une arnaque en soi.",
     mailWelcomeCta: "Lancer ma première vérification",
     mailCodeLabel: "Code",
     mailClosing: "L'équipe CheckAm — vérifiez avant de payer. Hotline ANTIC 8202, gratuit.",

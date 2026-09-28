@@ -1,49 +1,82 @@
 "use client";
 
+import { FileSearch, MessageSquareWarning, ShieldCheck } from "lucide-react";
 import { useTranslation } from "../../lib/i18n/context";
 
 export function HowSection() {
   const { t } = useTranslation();
 
-  // Filed exhibits, not countdown numerals: the order is a real process
-  // (deposit, then rules, then receipts), so the filing labels carry it.
   const steps = [
-    { file: t.howFile1, title: t.howStep1Title, desc: t.howStep1Desc },
-    { file: t.howFile2, title: t.howStep2Title, desc: t.howStep2Desc },
-    { file: t.howFile3, title: t.howStep3Title, desc: t.howStep3Desc },
+    {
+      num: "01",
+      icon: FileSearch,
+      title: t.howStep1Title,
+      desc: t.howStep1Desc,
+    },
+    {
+      num: "02",
+      icon: ShieldCheck,
+      title: t.howStep2Title,
+      desc: t.howStep2Desc,
+    },
+    {
+      num: "03",
+      icon: MessageSquareWarning,
+      title: t.howStep3Title,
+      desc: t.howStep3Desc,
+    },
   ];
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
-      <div className="max-w-2xl space-y-3 mb-10">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-authority-700">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
+      <div className="max-w-3xl space-y-4 mb-14 sm:mb-16">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-authority-700">
           {t.howKicker}
         </p>
-        <h2 className="font-display text-3xl sm:text-4xl font-black tracking-tight text-ink text-balance">
+        <h2 className="font-display text-3xl sm:text-5xl font-black tracking-tight text-ink text-balance leading-tight">
           {t.howTitle}
         </h2>
-        <p className="text-sm sm:text-base text-slate-600">{t.howSub}</p>
+        <p className="font-sans text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl">
+          {t.howSub}
+        </p>
       </div>
 
-      <ol className="grid grid-cols-1 md:grid-cols-3 gap-5 list-none">
-        {steps.map((step, idx) => (
-          <li
-            key={step.file}
-            className="relative overflow-hidden rounded-2xl border border-authority-900/10 bg-white shadow-sm"
-          >
-            <div className="quittance-stripes border-b border-slate-200/80 px-6 sm:px-7 py-2.5">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                {step.file}
-              </span>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+        {steps.map((step) => {
+          const Icon = step.icon;
+          return (
+            <div
+              key={step.num}
+              className="flex flex-col justify-between rounded-3xl border border-slate-200/90 bg-white p-7 sm:p-9 shadow-sm hover:shadow-xl hover:border-authority-300 transition-all duration-300 group"
+            >
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-3xl font-black text-slate-300 group-hover:text-authority-900 transition-colors">
+                    {step.num}
+                  </span>
+                  <div className="h-11 w-11 rounded-2xl bg-authority-50 text-authority-900 flex items-center justify-center shrink-0 group-hover:bg-authority-950 group-hover:text-white transition-colors">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-display text-xl sm:text-2xl font-black text-ink leading-snug">
+                    {step.title}
+                  </h3>
+                  <p className="font-sans text-sm sm:text-base leading-relaxed text-slate-600">
+                    {step.desc}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-slate-100 flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>ANTIC Verified Standards</span>
+              </div>
             </div>
-            <div className="p-6 sm:p-7 pt-5">
-              <span className="sr-only">{`${idx + 1} / ${steps.length}`}</span>
-              <h3 className="text-lg font-bold text-ink">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.desc}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
+          );
+        })}
+      </div>
     </section>
   );
 }

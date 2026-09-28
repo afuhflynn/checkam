@@ -8,7 +8,8 @@ import {
   isAiCircuitOpen,
   isCreditOrLimitError,
   openAiCircuit,
-  openrouter,
+  MAX_OUTPUT_TOKENS,
+  chatModel,
 } from "./openrouter";
 
 export const ExtractedFactsSchema = z.object({
@@ -75,7 +76,7 @@ export async function extractFactsFromTextOrImage(params: {
       if (imageBase64) {
         const dataUrl = `data:${mimeType || "image/jpeg"};base64,${imageBase64}`;
         const { object } = await generateObject({
-          model: openrouter(modelName),
+          model: chatModel(modelName),
           schema: ExtractedFactsSchema,
           system: systemPrompt,
           messages: [
@@ -91,16 +92,18 @@ export async function extractFactsFromTextOrImage(params: {
             },
           ],
           temperature: 0.1,
+          maxOutputTokens: MAX_OUTPUT_TOKENS.extraction,
         });
         return object;
       }
 
       const { object } = await generateObject({
-        model: openrouter(modelName),
+        model: chatModel(modelName),
         schema: ExtractedFactsSchema,
         system: systemPrompt,
         prompt: `Extract structured facts from the following text:\n\n${text ?? ""}`,
         temperature: 0.1,
+        maxOutputTokens: MAX_OUTPUT_TOKENS.extraction,
       });
 
       return object;

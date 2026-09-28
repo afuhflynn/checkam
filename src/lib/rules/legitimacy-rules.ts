@@ -35,9 +35,7 @@ export function evaluateLegitimacy(
   const signals: LegitSignal[] = [];
   const lower = text.toLowerCase();
 
-  const established = emails.filter(
-    (e) => e.domain && !FREE_PROVIDERS.has(e.domain.toLowerCase()),
-  );
+  const established = emails.filter((e) => e.domain && !FREE_PROVIDERS.has(e.domain.toLowerCase()));
   if (established.length > 0) {
     const domains = [...new Set(established.map((e) => e.domain.toLowerCase()))];
     const mentioned = domains.filter((d) => {
@@ -47,14 +45,14 @@ export function evaluateLegitimacy(
     if (mentioned.length > 0) {
       signals.push({
         key: "domain-match",
-        en: `Sender domain matches the organization named in the message (${mentioned.join(", ")}).`,
-        fr: `Le domaine expéditeur correspond à l'organisation citée dans le message (${mentioned.join(", ")}).`,
+        en: `The message came from ${mentioned.join(", ")}, the same domain it names.`,
+        fr: `Le message est arrivé de ${mentioned.join(", ")}, le même domaine qu'il cite.`,
       });
     } else {
       signals.push({
         key: "established-domain",
-        en: `Sent from an established domain (${domains.join(", ")}), not a free mailbox.`,
-        fr: `Envoyé depuis un domaine établi (${domains.join(", ")}), pas une boîte gratuite.`,
+        en: `It was sent from ${domains.join(", ")} rather than a free mailbox like Gmail.`,
+        fr: `Il a été envoyé depuis ${domains.join(", ")} plutôt que depuis une boîte gratuite comme Gmail.`,
       });
     }
   }
@@ -62,16 +60,16 @@ export function evaluateLegitimacy(
   if (!PAYMENT_HINT.test(text)) {
     signals.push({
       key: "no-payment",
-      en: "No payment request found: no amount, no MoMo number, no transfer instruction.",
-      fr: "Aucune demande de paiement : ni montant, ni numéro MoMo, ni instruction de transfert.",
+      en: "The message does not ask you for money or bank details.",
+      fr: "Le message ne vous demande ni argent ni coordonnées bancaires.",
     });
   }
 
   if (!URGENCY_PATTERN.test(text)) {
     signals.push({
       key: "no-urgency",
-      en: "No urgency pressure found: no deadline threat pushing a fast decision.",
-      fr: "Aucune pression d'urgence : aucune menace de délai qui force une décision rapide.",
+      en: "There is no deadline or pressure pushing you to decide quickly.",
+      fr: "Aucun délai ni aucune pression pour décider vite.",
     });
   }
 

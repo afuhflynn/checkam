@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Banknote, Calendar, Phone } from "lucide-react";
+import { ArrowRight, Banknote, Calendar, Phone, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "../../lib/i18n/context";
 import type { TranslationDictionary } from "../../lib/i18n/dictionary";
@@ -42,18 +42,27 @@ export function RegistryPreview({ reports }: { reports: PreviewReport[] }) {
   if (reports.length === 0) return null;
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-        <div className="max-w-2xl space-y-3">
-          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-authority-700">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
+      {/* Section Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12 sm:mb-16">
+        <div className="max-w-2xl space-y-4">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-authority-700">
             {t.regKicker}
           </p>
-          <h2 className="font-display text-3xl sm:text-4xl font-black tracking-tight text-ink text-balance">
+          <h2 className="font-display text-3xl sm:text-5xl font-black tracking-tight text-ink text-balance leading-tight">
             {t.regTitle}
           </h2>
-          <p className="text-sm text-slate-600">{t.regSub}</p>
+          <p className="font-sans text-base sm:text-lg text-slate-600 leading-relaxed">
+            {t.regSub}
+          </p>
         </div>
-        <Button asChild variant="outline" className="shrink-0 font-bold gap-1.5">
+
+        <Button
+          asChild
+          variant="outline"
+          size="lg"
+          className="shrink-0 font-sans font-bold gap-2 rounded-2xl border-slate-300 px-6 py-5 text-sm"
+        >
           <Link href="/directory">
             {t.regCta}
             <ArrowRight className="h-4 w-4" />
@@ -61,48 +70,54 @@ export function RegistryPreview({ reports }: { reports: PreviewReport[] }) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {/* Reports Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
         {reports.map((report) => (
           <Card
             key={report.slug}
-            className="flex flex-col justify-between border border-authority-900/10 bg-white hover:border-authority-400 hover:shadow-md transition-all"
+            className="flex flex-col justify-between rounded-3xl border border-slate-200/90 bg-white hover:border-authority-300 hover:shadow-xl transition-all duration-300 overflow-hidden group"
           >
-            <CardContent className="p-5 sm:p-6 space-y-3">
+            <CardContent className="p-7 sm:p-8 space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-red-700 bg-red-50 border border-red-200 rounded-full px-3 py-1">
                   {categoryLabel(report.category, t)}
                 </span>
                 {report.targetEntity && (
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     {report.targetEntity}
                   </span>
                 )}
               </div>
-              <h3 className="font-bold text-ink leading-snug line-clamp-2">{report.title}</h3>
-              <div className="font-mono text-xs text-slate-500 space-y-1.5 pt-1">
+
+              <h3 className="font-display text-lg sm:text-xl font-black text-ink leading-snug line-clamp-2 group-hover:text-authority-900 transition-colors">
+                {report.title}
+              </h3>
+
+              <div className="font-mono text-xs text-slate-500 space-y-2 pt-2">
                 {report.contactPhone && (
-                  <p className="flex items-center gap-1.5">
+                  <p className="flex items-center gap-2">
                     <Phone className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-                    {report.contactPhone}
+                    <span>{report.contactPhone}</span>
                   </p>
                 )}
                 {report.amountRequested && (
-                  <p className="flex items-center gap-1.5">
+                  <p className="flex items-center gap-2">
                     <Banknote className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-                    {report.amountRequested}
+                    <span className="text-red-700 font-bold">{report.amountRequested}</span>
                   </p>
                 )}
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                <span className="flex items-center gap-1 text-[11px] text-slate-400">
+
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <span className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400">
                   <Calendar className="h-3 w-3" />
                   {new Date(report.publishedAt ?? report.createdAt).toLocaleDateString(locale)}
                 </span>
                 <Link
                   href={`/scam/${report.slug}`}
-                  className="text-xs font-bold text-authority-800 hover:text-authority-950 inline-flex items-center gap-1"
+                  className="font-sans text-xs font-bold text-authority-800 hover:text-authority-950 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
                 >
-                  {t.regViewDossier}
+                  <span>{t.regViewDossier}</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>

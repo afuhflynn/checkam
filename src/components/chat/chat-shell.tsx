@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authClient } from "../../lib/auth-client";
@@ -34,8 +34,25 @@ interface SessionRow {
   updatedAt: string;
 }
 
-export function ChatShell({ locale, trial }: { locale: Language; trial: string | null }) {
-  const { t } = useTranslation();
+const ACTIVE_SESSION_KEY = "checkam-active-session";
+
+function readActiveSession(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeActiveSession(id: string): void {
+  try {
+    localStorage.setItem(ACTIVE_SESSION_KEY, id);
+  } catch {
+    // A blocked storage quota just means we reopen the newest check instead.
+  }
+}
+
+export function ChatShell({ locale, trial }: { locale: Language; trial: string | null }) {  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -50,10 +67,18 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const [lookup, setLookup] = useState<LookupResult | null>(null);
   const [fallback, setFallback] = useState<string | null>(null);
   const [capped, setCapped] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<{ kind: "session" | "folder"; id: string; count?: number } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    kind: "session" | "folder";
+    id: string;
+    count?: number;
+  } | null>(null);
   const [newFolder, setNewFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
-  const [renaming, setRenaming] = useState<{ kind: "session" | "folder"; id: string; title: string } | null>(null);
+  const [renaming, setRenaming] = useState<{
+    kind: "session" | "folder";
+    id: string;
+    title: string;
+  } | null>(null);
   const [pendingSend, setPendingSend] = useState<string | null>(null);
   const [emptyDraft, setEmptyDraft] = useState(trial ?? "");
 
@@ -99,6 +124,26 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   }, [pageData]);
 
   const nextCursor = sessionsQuery.data?.nextCursor ?? null;
+
+  // Reopen the thread on load. activeId used to start null and only ever got
+  // set by clicking the rail or creating a check, so every page load dropped
+  // the reader back on the empty state with an empty dossier, even mid
+  // conversation. The last opened check is remembered; otherwise the most
+  // recent one is picked so a reload never looks like data loss.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current || activeId || !sessions.length) return;
+    restoredRef.current = true;
+    const remembered = readActiveSession();
+    const target = remembered && sessions.some((s) => s.id === remembered)
+      ? remembered
+      : sessions[0]?.id;
+    if (target) setActiveId(target);
+  }, [sessions, activeId]);
+
+  useEffect(() => {
+    if (activeId) writeActiveSession(activeId);
+  }, [activeId]);
 
   function resetRail() {
     setCursor(null);
@@ -150,7 +195,9 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const deleteMutation = useMutation({
     mutationFn: async (target: { kind: "session" | "folder"; id: string }) => {
       const res = await fetch(
-        target.kind === "session" ? `/api/chat/sessions/${target.id}` : `/api/chat/folders/${target.id}`,
+        target.kind === "session"
+          ? `/api/chat/sessions/${target.id}`
+          : `/api/chat/folders/${target.id}`,
         { method: "DELETE" },
       );
       if (!res.ok) throw new Error("delete_failed");
@@ -198,7 +245,9 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
     // Kind rides the rename state so a folder id absent from the rail can
     // never misroute to the session endpoint.
     const isSession = renaming.kind === "session";
-    const url = isSession ? `/api/chat/sessions/${renaming.id}` : `/api/chat/folders/${renaming.id}`;
+    const url = isSession
+      ? `/api/chat/sessions/${renaming.id}`
+      : `/api/chat/folders/${renaming.id}`;
     const body = isSession ? { title: renaming.title.trim() } : { name: renaming.title.trim() };
     const res = await fetch(url, {
       method: "PATCH",
@@ -289,7 +338,12 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
           {t.chatFolders}
         </p>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setNewFolder((open) => !open)}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setNewFolder((open) => !open)}
+        >
           {t.chatNewFolder}
         </Button>
       </div>
@@ -301,7 +355,11 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
             void submitFolder();
           }}
         >
-          <Input value={folderName} onChange={(event) => setFolderName(event.target.value)} maxLength={80} />
+          <Input
+            value={folderName}
+            onChange={(event) => setFolderName(event.target.value)}
+            maxLength={80}
+          />
           <Button type="submit" size="sm">
             OK
           </Button>
@@ -321,7 +379,9 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                 >
                   <Input
                     value={renaming.title}
-                    onChange={(event) => setRenaming({ kind: "folder", id: folder.id, title: event.target.value })}
+                    onChange={(event) =>
+                      setRenaming({ kind: "folder", id: folder.id, title: event.target.value })
+                    }
                     maxLength={80}
                   />
                   <Button type="submit" size="sm">
@@ -355,7 +415,9 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                     variant="ghost"
                     size="sm"
                     aria-label={t.chatRename}
-                    onClick={() => setRenaming({ kind: "folder", id: folder.id, title: folder.name })}
+                    onClick={() =>
+                      setRenaming({ kind: "folder", id: folder.id, title: folder.name })
+                    }
                   >
                     ✎
                   </Button>
@@ -450,144 +512,162 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   return (
     <div className="flex h-dvh w-full flex-col bg-paper">
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-authority-900/10 px-3 md:hidden">
-        <Button type="button" variant="outline" size="sm" onClick={() => setRailOpen((open) => !open)}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setRailOpen((open) => !open)}
+        >
           ☰
         </Button>
-        <p className="flex-1 truncate text-center font-display text-base font-black text-ink">CheckAm</p>
-        <Button type="button" variant="outline" size="sm" onClick={() => setDossierOpen((open) => !open)}>
+        <p className="flex-1 truncate text-center font-display text-base font-black text-ink">
+          CheckAm
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setDossierOpen((open) => !open)}
+        >
           ❖
         </Button>
       </div>
       <div className="flex min-h-0 flex-1 gap-0 md:gap-3 md:p-3">
-      <aside
-        className={`${railOpen ? "fixed inset-y-0 left-0 z-40 w-72 border-r border-authority-900/10 bg-paper p-4" : "hidden"} md:static md:block md:w-64 md:shrink-0`}
-        aria-label={t.chatFolders}
-      >
-        {rail}
-      </aside>
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-white md:rounded-2xl md:border md:border-authority-900/10">
-        {!activeId ? (
-          <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
-              {t.gateKicker}
-            </p>
-            <p className="font-display text-3xl font-black tracking-tight text-ink sm:text-4xl">{t.chatEmptyTitle}</p>
-            <p className="max-w-md text-sm text-slate-500">{t.chatEmptySub}</p>
-            <div className="w-full">
-              <PromptInput
-                onSubmit={(message) => {
-                  if (message.text.trim()) void startWithText(message.text.trim());
-                }}
-              >
-                <PromptInputTextarea
-                  value={emptyDraft}
-                  onChange={(event) => setEmptyDraft(event.target.value)}
-                  placeholder={t.chatComposerPh}
-                />
-                <PromptInputFooter>
-                  <span className="font-mono text-[11px] text-slate-400">
-                    {!wallCapped && counterQuery.data
-                      ? `${counterQuery.data.triesLeft} ${t.chatTriesLeft}`
-                      : ""}
-                  </span>
-                  <PromptInputSubmit disabled={!emptyDraft.trim()} />
-                </PromptInputFooter>
-              </PromptInput>
+        <aside
+          className={`${railOpen ? "fixed inset-y-0 left-0 z-40 w-72 border-r border-authority-900/10 bg-paper p-4" : "hidden"} md:static md:block md:w-64 md:shrink-0`}
+          aria-label={t.chatFolders}
+        >
+          {rail}
+        </aside>
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-white md:rounded-2xl md:border md:border-authority-900/10">
+          {!activeId ? (
+            <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                {t.gateKicker}
+              </p>
+              <p className="font-display text-3xl font-black tracking-tight text-ink sm:text-4xl">
+                {t.chatEmptyTitle}
+              </p>
+              <p className="max-w-md text-sm text-slate-500">{t.chatEmptySub}</p>
+              <div className="w-full">
+                <PromptInput
+                  onSubmit={(message) => {
+                    if (message.text.trim()) void startWithText(message.text.trim());
+                  }}
+                >
+                  <PromptInputTextarea
+                    value={emptyDraft}
+                    onChange={(event) => setEmptyDraft(event.target.value)}
+                    placeholder={t.chatComposerPh}
+                  />
+                  <PromptInputFooter>
+                    <span className="font-mono text-[11px] text-slate-400">
+                      {!wallCapped && counterQuery.data
+                        ? `${counterQuery.data.triesLeft} ${t.chatTriesLeft}`
+                        : ""}
+                    </span>
+                    <PromptInputSubmit disabled={!emptyDraft.trim()} />
+                  </PromptInputFooter>
+                </PromptInput>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => startWithText(t.chatSampleTextFill)}
+                >
+                  {t.chatSampleText}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => createSession()}>
+                  {t.chatSampleFlyer}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => startWithText(t.chatSamplePhoneFill)}
+                >
+                  {t.chatSamplePhone}
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => startWithText(t.chatSampleTextFill)}
-              >
-                {t.chatSampleText}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => createSession()}>
-                {t.chatSampleFlyer}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => startWithText(t.chatSamplePhoneFill)}
-              >
-                {t.chatSamplePhone}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <ThreadView
-            key={activeId}
-            sessionId={activeId}
-            locale={locale}
-            initialDraft={trial}
-            pendingSend={pendingSend}
-            onPendingSent={() => setPendingSend(null)}
-            wallCapped={wallCapped}
-            onWall={() => {
-              setCapped(true);
-              refresh();
-            }}
-            onVerdict={(next, nextSealed) => {
-              setVerdict(next);
-              setSealed(nextSealed);
-            }}
-            onLookup={setLookup}
-            onFallback={setFallback}
-          />
-        )}
-        {activeSession && (
-          <p className="border-t border-authority-900/5 px-4 py-1.5 font-mono text-[11px] text-slate-400">
-            {activeSession.title}
-          </p>
-        )}
-      </main>
-      <aside
-        className={`${dossierOpen ? "fixed inset-y-0 right-0 z-40 w-80 overflow-y-auto border-l border-authority-900/10 bg-paper p-4" : "hidden"} lg:static lg:block lg:w-80 lg:shrink-0`}
-        aria-label={t.chatDossierTitle}
-      >
-        <DossierPane verdict={verdict} sealed={sealed} fallbackText={fallback} lookup={lookup} />
-        {!verdict && !fallback && !lookup && (
-          <div className="rounded-xl border border-dashed border-authority-900/20 bg-white/60 p-4">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-              {t.chatDossierTitle}
+          ) : (
+            <ThreadView
+              key={activeId}
+              sessionId={activeId}
+              locale={locale}
+              initialDraft={trial}
+              pendingSend={pendingSend}
+              onPendingSent={() => setPendingSend(null)}
+              wallCapped={wallCapped}
+              onWall={() => {
+                setCapped(true);
+                refresh();
+              }}
+              verdict={verdict}
+              onVerdict={(next, nextSealed) => {
+                setVerdict(next);
+                setSealed(nextSealed);
+              }}
+              onLookup={setLookup}
+              onFallback={setFallback}
+            />
+          )}
+          {activeSession && (
+            <p className="border-t border-authority-900/5 px-4 py-1.5 font-mono text-[11px] text-slate-400">
+              {activeSession.title}
             </p>
-            <p className="mt-1.5 text-sm text-slate-500">{t.chatDossierEmpty}</p>
-          </div>
-        )}
-      </aside>
+          )}
+        </main>
+        <aside
+          className={`${dossierOpen ? "fixed inset-y-0 right-0 z-40 w-80 overflow-y-auto border-l border-authority-900/10 bg-paper p-4" : "hidden"} lg:static lg:block lg:w-80 lg:shrink-0`}
+          aria-label={t.chatDossierTitle}
+        >
+          <DossierPane verdict={verdict} sealed={sealed} fallbackText={fallback} lookup={lookup} />
+          {!verdict && !fallback && !lookup && (
+            <div className="rounded-xl border border-dashed border-authority-900/20 bg-white/60 p-4">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                {t.chatDossierTitle}
+              </p>
+              <p className="mt-1.5 text-sm text-slate-500">{t.chatDossierEmpty}</p>
+            </div>
+          )}
+        </aside>
 
-      <Dialog.Root open={confirmDelete !== null} onOpenChange={(open) => !open && setConfirmDelete(null)}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2">
-            <Card>
-              <CardContent className="space-y-3 p-5">
-                <Dialog.Title className="font-display text-lg font-black text-ink">
-                  {confirmDelete?.kind === "folder" ? t.chatDeleteFolder : t.chatDeleteSession}
-                </Dialog.Title>
-                {confirmDelete?.kind === "folder" && (
-                  <Dialog.Description className="text-sm text-slate-500">
-                    {confirmDelete.count ?? 0} checks
-                  </Dialog.Description>
-                )}
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setConfirmDelete(null)}>
-                    {t.chatCancel}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => confirmDelete && deleteMutation.mutate(confirmDelete)}
-                  >
-                    {t.chatConfirmDelete}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+        <Dialog.Root
+          open={confirmDelete !== null}
+          onOpenChange={(open) => !open && setConfirmDelete(null)}
+        >
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+            <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2">
+              <Card>
+                <CardContent className="space-y-3 p-5">
+                  <Dialog.Title className="font-display text-lg font-black text-ink">
+                    {confirmDelete?.kind === "folder" ? t.chatDeleteFolder : t.chatDeleteSession}
+                  </Dialog.Title>
+                  {confirmDelete?.kind === "folder" && (
+                    <Dialog.Description className="text-sm text-slate-500">
+                      {confirmDelete.count ?? 0} checks
+                    </Dialog.Description>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setConfirmDelete(null)}>
+                      {t.chatCancel}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => confirmDelete && deleteMutation.mutate(confirmDelete)}
+                    >
+                      {t.chatConfirmDelete}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       </div>
     </div>
   );
@@ -630,7 +710,11 @@ function SessionRowView({
             onRenameSubmit();
           }}
         >
-          <Input value={renaming} onChange={(event) => onRenameChange(event.target.value)} maxLength={120} />
+          <Input
+            value={renaming}
+            onChange={(event) => onRenameChange(event.target.value)}
+            maxLength={120}
+          />
           <Button type="submit" size="sm">
             OK
           </Button>

@@ -84,6 +84,198 @@ describe("CheckAm Rules Engine", () => {
   });
 });
 
+describe("Topic coverage beyond jobs", () => {
+  it("flags a scholarship that demands a release fee", () => {
+    const result = runRulesEngine({
+      text: "Félicitations, vous êtes sélectionné pour une bourse. Frais de traitement de la bourse : payez 120 000 FCFA pour libérer les fonds avant le 15 mars.",
+      emails: ["awards@university-intl.com"],
+    });
+
+    expect(result.category).toBe("EDUCATION");
+    expect(result.verdict).toBe("HIGH_RISK");
+  });
+
+  it("flags being recruited to receive and forward other people's money", () => {
+    const result = runRulesEngine({
+      text: "Recois l'argent sur mon compte, garde 10 pour cent et transfere le reste au tiers. Commission de 5% par transfert.",
+      phoneNumbers: ["691234567"],
+    });
+
+    expect(result.category).toBe("MONEY_LAUNDERING");
+    expect(result.verdict).toBe("HIGH_RISK");
+  });
+
+  it("treats an impersonation claim as a caution on its own, not a slam dunk", () => {
+    const result = runRulesEngine({
+      text: "Bonjour, je suis le ministre. Merci de me rappeler.",
+    });
+
+    expect(result.category).toBe("IMPERSONATION");
+    // Impersonation language alone must not cross the decisive 45 point bound,
+    // or every ministry mention would be a HIGH_RISK.
+    expect(result.verdict).toBe("CAUTION");
+  });
+
+  it("flags a prize with a delivery fee", () => {
+    const result = runRulesEngine({
+      text: "Felicitations! Vous avez gagne la loterie. Payez les frais de livraison du lot.",
+    });
+
+    expect(result.category).toBe("PRIZE");
+  });
+});
+
+describe("Evidence separated from generic advice", () => {
+  it("does not pad the finding list with advisories", () => {
+    const result = runRulesEngine({
+      text: "Bonjour, pouvez-vous me rappeler demain ?",
+    });
+
+    // Nothing concrete was found, so the honest answer is an empty list plus a
+    // next step, not three invented findings.
+    expect(result.evidenceBullets.en).toHaveLength(0);
+    expect(result.safetyNote.en).toContain("too short to judge");
+  });
+
+  it("keeps the tone index aligned with the finding lists", () => {
+    const result = runRulesEngine({
+      text: "AVIS DE RECRUTEMENT SPECIAL DES 325 INSTITUTEURS AU MINESEC 2025. Frais de dossier de 25 000 FCFA par Orange Money au 699 12 34 56.",
+      claimedEntity: "MINESEC",
+      emails: ["minesec.recrutement2025@gmail.com"],
+    });
+
+    expect(result.evidenceTones).toHaveLength(result.evidenceBullets.en.length);
+    expect(result.evidenceTones.every((tone) => tone === "warning")).toBe(true);
+  });
+
+  it("marks facts that eased the score as reassuring", () => {
+    const result = runRulesEngine({
+      text: "Dear Flynn, Thank you for requesting your copy of the Anzisha Application Guide. Contact hello@anzisha.org if you have questions.",
+      emails: ["hello@anzisha.org"],
+    });
+
+    expect(result.evidenceTones).toContain("reassuring");
+  });
+
+  it("gives a HIGH_RISK check a stop-and-report note", () => {
+    const result = runRulesEngine({
+      text: "Transfert réussi. Vous avez reçu 75 000 FCFA de NKODO PIERRE (698001122). Pardon mon frère, c'est une erreur de transfert, veuillez renvoyer les 75000 FCFA sur ce numéro s'il vous plaît.",
+      phoneNumbers: ["698001122"],
+    });
+
+    expect(result.verdict).toBe("HIGH_RISK");
+    expect(result.safetyNote.en).toContain("8202");
+    expect(result.safetyNote.fr).toContain("8202");
+  });
+});
+
+describe("Forwardable notices", () => {
+  const result = runRulesEngine({
+    text: "AVIS DE RECRUTEMENT DES 325 INSTITUTEURS MINESEC. Frais de dossier 25 000 FCFA par Orange Money au 699 12 34 56.",
+    claimedEntity: "MINESEC",
+    emails: ["recrutement@gmail.com"],
+    phoneNumbers: ["699123456"],
+  });
+
+  it("marks the WhatsApp rendering and leaves the plain one bare", () => {
+    expect(result.whatsappWarning.en).toContain("*");
+    expect(result.whatsappWarningPlain.en).not.toContain("*");
+  });
+
+  it("carries the verdict header and the next step in both renderings", () => {
+    for (const text of [result.whatsappWarning.en, result.whatsappWarningPlain.en]) {
+      expect(text).toContain("SCAM ALERT");
+      expect(text).toContain("8202");
+      expect(text).toContain("699123456");
+    }
+  });
+
+  it("says so plainly when there was nothing to forward", () => {
+    const thin = runRulesEngine({ text: "Bonjour, merci." });
+    expect(thin.whatsappWarningPlain.en).toContain("No clear scam signal");
+  });
+});
+
+// The literal trigger list cannot cover every phrasing. These tests pin the
+// structural layer, which recognises the shape of a scheme: a rewrite of the
+// same scam must still be caught, and ordinary messages must not be.
+describe("Structural scam detection", () => {
+  const caught = [
+    {
+      name: "mule offer, reworded away from the literal triggers",
+      text: "Bonjour, on me propose de recevoir des transferts sur mon compte Mobile Money et de garder 10 pour cent. Est-ce legitime ?",
+      category: "MONEY_LAUNDERING",
+      verdict: "HIGH_RISK",
+    },
+    {
+      name: "mule offer in English",
+      text: "We would like you to receive client payments on your personal account and forward the rest to us. You keep 5 percent per transfer.",
+      category: "MONEY_LAUNDERING",
+      verdict: "HIGH_RISK",
+    },
+    {
+      name: "fee demanded before a release, with no topic word to name it",
+      text: "Votre dossier est retenu. Envoyez les frais de dossier pour obtenir la liberation de vos fonds.",
+      category: "OTHER",
+      verdict: "HIGH_RISK",
+    },
+    {
+      name: "someone speaking for the national cyber agency",
+      text: "Je vous appelle au nom de l'ANTIC. Merci de confirmer votre identité.",
+      category: "IMPERSONATION",
+      verdict: "CAUTION",
+    },
+    {
+      name: "asking for a one time code",
+      text: "Bonjour, pour valider votre dossier, envoyez moi le code OTP que vous venez de recevoir.",
+      category: "MOBILE_MONEY",
+      verdict: "HIGH_RISK",
+    },
+  ];
+
+  for (const { name, text, category, verdict } of caught) {
+    it(`catches ${name}`, () => {
+      const result = runRulesEngine({ text });
+      expect(result.category).toBe(category);
+      expect(result.verdict).toBe(verdict);
+    });
+  }
+
+  // A structural layer is only worth having if it stays quiet on ordinary
+  // traffic. Every message here once passed as a low-stakes CAUTION.
+  const innocent = [
+    "Merci pour votre message, je vous réponds demain matin.",
+    "Dear Flynn, here is the Anzisha Application Guide you asked for. Contact hello@anzisha.org with questions.",
+    "Votre demande de bourse a été enregistrée. Vous recevrez une réponse par e-mail officiel.",
+    "Bonjour, pouvez-vous me rappeler demain vers 15h ?",
+    "I would like to apply for the position. Please send me the application form.",
+  ];
+
+  for (const text of innocent) {
+    it(`does not invent a scheme: ${text.slice(0, 44)}`, () => {
+      const result = runRulesEngine({ text });
+      expect(result.verdict).not.toBe("HIGH_RISK");
+    });
+  }
+
+  it("does not let a money mule read as reassuring", () => {
+    const result = runRulesEngine({
+      text: "Un ami me propose de recevoir de l'argent sur mon compte et d'en garder 10 pour cent avant de transferer le reste.",
+    });
+    // Legitimacy relief must not soften a real scheme into a low score.
+    expect(result.score).toBeGreaterThanOrEqual(45);
+  });
+
+  it("lets the topical layer name the category when both layers fire", () => {
+    // The structural layer sees the shape, the keyword layer knows the topic.
+    const result = runRulesEngine({
+      text: "Bourse d'études garantie. Frais de traitement de la bourse : envoyez 120 000 FCFA pour obtenir la liberation des fonds.",
+    });
+    expect(result.category).toBe("EDUCATION");
+    expect(result.verdict).toBe("HIGH_RISK");
+  });
+});
+
 describe("Cameroon Phone Normalizer", () => {
   it("normalizes standard MTN 9-digit format", () => {
     const res = normalizeCameroonPhone("+237 677 12 34 56");
@@ -119,9 +311,7 @@ describe("Legitimacy relief", () => {
 
     expect(result.verdict).toBe("CAUTION");
     expect(result.score).toBeLessThan(45);
-    expect(
-      result.evidenceBullets.en.some((b) => b.includes("anzisha.org")),
-    ).toBe(true);
+    expect(result.evidenceBullets.en.some((b) => b.includes("anzisha.org"))).toBe(true);
   });
 
   it("keeps red flags above legit softeners", () => {
@@ -152,7 +342,7 @@ describe("Legitimacy relief", () => {
 
     expect(result.sources).toEqual([{ title: "Anzisha", url: "https://anzisha.org" }]);
     expect(
-      result.evidenceBullets.en.some((b) => b.toLowerCase().includes("corroborated")),
+      result.evidenceBullets.en.some((b) => b.toLowerCase().includes("found this on the web")),
     ).toBe(true);
   });
 });
