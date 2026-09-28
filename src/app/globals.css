@@ -14,7 +14,7 @@
   --color-authority-900: #0b192c;
   --color-authority-950: #060d18;
 
-  /* Gazette paper + ink — the CheckAm bureau identity */
+  /* Gazette paper + ink - the CheckAm bureau identity */
   --color-paper: #f6f2e9;
   --color-paper-deep: #efe9da;
   --color-ink: #101828;
@@ -127,7 +127,7 @@ body {
   text-wrap: balance;
 }
 
-/* CheckAm Stamp + Quittance texture — unique authority dossier identity */
+/* CheckAm Stamp + Quittance texture - unique authority dossier identity */
 .quittance-stripes {
   background-image: repeating-linear-gradient(
     -45deg,
@@ -237,7 +237,11 @@ body {
 
 /* Ambient Radial Energy & Concentric Orbits */
 .bg-ambient-radial {
-  background: radial-gradient(circle at 50% 20%, rgba(36, 67, 113, 0.07) 0%, rgba(248, 250, 252, 0) 75%);
+  background: radial-gradient(
+    circle at 50% 20%,
+    rgba(36, 67, 113, 0.07) 0%,
+    rgba(248, 250, 252, 0) 75%
+  );
 }
 
 .orbit-ring {
@@ -249,4 +253,3 @@ body {
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
-

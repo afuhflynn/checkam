@@ -9,7 +9,12 @@ interface WhatsAppMessage {
   type: string;
   text?: { body?: string };
   image?: { id?: string; mime_type?: string; caption?: string };
-  document?: { id?: string; mime_type?: string; caption?: string; filename?: string };
+  document?: {
+    id?: string;
+    mime_type?: string;
+    caption?: string;
+    filename?: string;
+  };
 }
 
 interface WhatsAppPayload {
@@ -34,14 +39,18 @@ export async function GET(req: NextRequest) {
   const challenge = searchParams.get("hub.challenge");
 
   const expectedToken =
-    process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || "checkam_verify_token_secure_cm";
+    process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ||
+    "checkam_verify_token_secure_cm";
 
   if (mode === "subscribe" && token === expectedToken) {
     console.log("[WhatsApp Webhook] Verification successful!");
     return new NextResponse(challenge, { status: 200 });
   }
 
-  return NextResponse.json({ error: "Forbidden - Invalid verification token" }, { status: 403 });
+  return NextResponse.json(
+    { error: "Forbidden - Invalid verification token" },
+    { status: 403 },
+  );
 }
 
 // POST: Inbound WhatsApp Event Receiver
@@ -61,7 +70,10 @@ export async function POST(req: NextRequest) {
         .digest("hex")}`;
 
       if (signature !== expectedSignature) {
-        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+        return NextResponse.json(
+          { error: "Invalid signature" },
+          { status: 401 },
+        );
       }
     }
 
@@ -71,16 +83,26 @@ export async function POST(req: NextRequest) {
     // Parse Meta WhatsApp Cloud API event schema
     const message = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
-    if (!message || typeof message.id !== "string" || typeof message.from !== "string") {
+    if (
+      !message ||
+      typeof message.id !== "string" ||
+      typeof message.from !== "string"
+    ) {
       // Status update or delivery receipt, return 200 OK
-      return NextResponse.json({ status: "IGNORED_STATUS_UPDATE" }, { status: 200 });
+      return NextResponse.json(
+        { status: "IGNORED_STATUS_UPDATE" },
+        { status: 200 },
+      );
     }
 
     const messageId: string = message.id;
     const fromNumber: string = message.from;
     const rawType: string = message.type;
     if (!isSupportedType(rawType)) {
-      return NextResponse.json({ status: "IGNORED_UNSUPPORTED_TYPE" }, { status: 200 });
+      return NextResponse.json(
+        { status: "IGNORED_UNSUPPORTED_TYPE" },
+        { status: 200 },
+      );
     }
     const messageType = rawType;
 
@@ -118,7 +140,7 @@ export async function POST(req: NextRequest) {
           ? String((error as { code?: unknown }).code)
           : "";
       if (code === "P2002") {
-        isFirstSeen = false; // Duplicate delivery — acknowledge without reprocessing
+        isFirstSeen = false; // Duplicate delivery - acknowledge without reprocessing
       } else {
         throw error;
       }
@@ -140,9 +162,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Respond fast HTTP 200 OK within Meta's timeout
-    return NextResponse.json({ status: "RECEIVED", messageId }, { status: 200 });
+    return NextResponse.json(
+      { status: "RECEIVED", messageId },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("[WhatsApp Webhook Error]:", error);
-    return NextResponse.json({ error: "Failed to process webhook" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to process webhook" },
+      { status: 500 },
+    );
   }
 }

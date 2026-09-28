@@ -31,8 +31,8 @@ const CASES: AnatomyCase[] = [
     id: "minesec",
     message: [
       {
-        en: "OFFICIAL NOTICE — Direct recruitment of 325 teachers (MINESEC), session 2025. ",
-        fr: "COMMUNIQUÉ — Recrutement direct de 325 instituteurs (MINESEC), session 2025. ",
+        en: "OFFICIAL NOTICE - Direct recruitment of 325 teachers (MINESEC), session 2025. ",
+        fr: "COMMUNIQUÉ - Recrutement direct de 325 instituteurs (MINESEC), session 2025. ",
         flag: 3,
       },
       {
@@ -68,9 +68,9 @@ const CASES: AnatomyCase[] = [
         titleEn: "An official fee to a personal MoMo",
         titleFr: "Un frais officiel vers un MoMo personnel",
         descEn:
-          "Concours fees are paid to the Public Treasury against a quittance — never to a personal Orange Money number.",
+          "Concours fees are paid to the Public Treasury against a quittance - never to a personal Orange Money number.",
         descFr:
-          "Les frais de concours se paient au Trésor Public contre quittance — jamais vers un numéro Orange Money personnel.",
+          "Les frais de concours se paient au Trésor Public contre quittance - jamais vers un numéro Orange Money personnel.",
         ruleEn: "Treasury-only payments",
         ruleFr: "Paiements au Trésor uniquement",
       },
@@ -79,9 +79,9 @@ const CASES: AnatomyCase[] = [
         titleEn: "“Direct recruitment”, no concours",
         titleFr: "« Recrutement direct », sans concours",
         descEn:
-          "Civil-service entry is by competitive exam or presidential decree — announced on CRTV, never WhatsApp.",
+          "Civil-service entry is by competitive exam or presidential decree - announced on CRTV, never WhatsApp.",
         descFr:
-          "L'entrée à la fonction publique se fait par concours ou décret présidentiel — annoncé à la CRTV, jamais sur WhatsApp.",
+          "L'entrée à la fonction publique se fait par concours ou décret présidentiel - annoncé à la CRTV, jamais sur WhatsApp.",
         ruleEn: "Concours-only entry",
         ruleFr: "Entrée par concours uniquement",
       },
@@ -107,8 +107,8 @@ const CASES: AnatomyCase[] = [
         flag: 1,
       },
       {
-        en: "Forgive me my brother, a mistaken transfer for my mother's medicine — ",
-        fr: "Pardon mon frère, erreur de transfert pour les médicaments de ma mère — ",
+        en: "Forgive me my brother, a mistaken transfer for my mother's medicine - ",
+        fr: "Pardon mon frère, erreur de transfert pour les médicaments de ma mère - ",
         flag: 2,
       },
       {
@@ -123,9 +123,9 @@ const CASES: AnatomyCase[] = [
         titleEn: "An unverifiable receipt",
         titleFr: "Un reçu invérifiable",
         descEn:
-          "Only your real operator balance — #150# or *126# — proves a transfer. SMS text proves nothing.",
+          "Only your real operator balance - #150# or *126# - proves a transfer. SMS text proves nothing.",
         descFr:
-          "Seul votre solde réel chez l'opérateur — #150# ou *126# — prouve un transfert. Un SMS ne prouve rien.",
+          "Seul votre solde réel chez l'opérateur - #150# ou *126# - prouve un transfert. Un SMS ne prouve rien.",
         ruleEn: "Balance-check rule",
         ruleFr: "Règle du solde réel",
       },
@@ -134,9 +134,9 @@ const CASES: AnatomyCase[] = [
         titleEn: "An emotional emergency",
         titleFr: "Une urgence émotionnelle",
         descEn:
-          "Sick relatives, accidents, blessings — the story exists to switch off your suspicion.",
+          "Sick relatives, accidents, blessings - the story exists to switch off your suspicion.",
         descFr:
-          "Parents malades, accidents, bénédictions — l'histoire existe pour éteindre votre méfiance.",
+          "Parents malades, accidents, bénédictions - l'histoire existe pour éteindre votre méfiance.",
         ruleEn: "Emotion-bait pattern",
         ruleFr: "Motif d'appât émotionnel",
       },
@@ -157,8 +157,8 @@ const CASES: AnatomyCase[] = [
     id: "visa",
     message: [
       {
-        en: "EXPRESS CANADA VISA IN 14 DAYS — GUARANTEED. ",
-        fr: "VISA CANADA EXPRESS EN 14 JOURS — GARANTI. ",
+        en: "EXPRESS CANADA VISA IN 14 DAYS - GUARANTEED. ",
+        fr: "VISA CANADA EXPRESS EN 14 JOURS - GARANTI. ",
         flag: 1,
       },
       {
@@ -167,8 +167,8 @@ const CASES: AnatomyCase[] = [
         flag: 2,
       },
       {
-        en: "Express stamp fee: 150,000 FCFA via MTN MoMo to 677 44 55 66 — visa.canada.immigration.express@gmail.com.",
-        fr: "Frais de timbre express : 150 000 FCFA par MTN MoMo au 677 44 55 66 — visa.canada.immigration.express@gmail.com.",
+        en: "Express stamp fee: 150,000 FCFA via MTN MoMo to 677 44 55 66 - visa.canada.immigration.express@gmail.com.",
+        fr: "Frais de timbre express : 150 000 FCFA par MTN MoMo au 677 44 55 66 - visa.canada.immigration.express@gmail.com.",
         flag: 3,
       },
     ],
@@ -189,9 +189,9 @@ const CASES: AnatomyCase[] = [
         titleEn: "The too-perfect bundle",
         titleFr: "L'offre trop parfaite",
         descEn:
-          "Dream salary, free flight, free housing, zero requirements — every extra gift lowers your guard.",
+          "Dream salary, free flight, free housing, zero requirements - every extra gift lowers your guard.",
         descFr:
-          "Salaire de rêve, vol offert, logement gratuit, zéro exigence — chaque cadeau supplémentaire abaisse votre garde.",
+          "Salaire de rêve, vol offert, logement gratuit, zéro exigence - chaque cadeau supplémentaire abaisse votre garde.",
         ruleEn: "Too-good-to-be-true",
         ruleFr: "Trop beau pour être vrai",
       },
@@ -269,7 +269,7 @@ export function AnatomySection() {
           {/* The message, with numbered exhibits */}
           <div className="rounded-2xl border border-authority-900/10 bg-white p-6 sm:p-7 shadow-sm">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">
-              Exhibit A — {tabs.find((x) => x.id === activeCase)?.label}
+              Exhibit A - {tabs.find((x) => x.id === activeCase)?.label}
             </p>
             <p className="font-mono text-[13px] leading-[2] text-slate-800">
               {current.message.map((seg) => (
@@ -290,7 +290,9 @@ export function AnatomySection() {
                   }`}
                 >
                   {pick(language, seg.en, seg.fr)}
-                  {seg.flag != null && <sup className="ml-0.5 font-bold">{seg.flag}</sup>}
+                  {seg.flag != null && (
+                    <sup className="ml-0.5 font-bold">{seg.flag}</sup>
+                  )}
                 </button>
               ))}
             </p>
@@ -329,7 +331,8 @@ export function AnatomySection() {
                     {pick(language, flag.descEn, flag.descFr)}
                   </p>
                   <p className="mt-2 font-mono text-[11px] font-bold uppercase tracking-wider text-red-700">
-                    {t.anatomyRuleLabel}: {pick(language, flag.ruleEn, flag.ruleFr)}
+                    {t.anatomyRuleLabel}:{" "}
+                    {pick(language, flag.ruleEn, flag.ruleFr)}
                   </p>
                 </button>
               );

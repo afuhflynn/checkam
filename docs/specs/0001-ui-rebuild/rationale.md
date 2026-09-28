@@ -1,4 +1,4 @@
-# 0001 rationale — UI rebuild
+# 0001 rationale - UI rebuild
 
 ## Context
 

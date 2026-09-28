@@ -5,13 +5,17 @@ export async function generateMetadata(): Promise<Metadata> {
   const cookie = (await headers()).get("cookie") ?? "";
   const en = /(?:^|;\s*)checkam_lang=en/.test(cookie);
   return {
-  title: en ? "Settings — CheckAm" : "Paramètres — CheckAm",
-  description: "Profile, language, and password for your CheckAm account.",
-  alternates: { canonical: "/settings" },
-  robots: { index: false, follow: false },
-};
+    title: en ? "Settings - CheckAm" : "Paramètres - CheckAm",
+    description: "Profile, language, and password for your CheckAm account.",
+    alternates: { canonical: "/settings" },
+    robots: { index: false, follow: false },
+  };
 }
 
-export default function SettingsLayout({ children }: { children: React.ReactNode }) {
+export default function SettingsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return children;
 }

@@ -19,7 +19,7 @@ export function CtaSection() {
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32 text-center space-y-6">
         <p className="inline-flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-400">
           <ShieldCheck className="h-3.5 w-3.5" />
-          <span>CheckAm — Cameroun</span>
+          <span>CheckAm - Cameroun</span>
         </p>
 
         <h2 className="font-display text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white text-balance leading-tight">

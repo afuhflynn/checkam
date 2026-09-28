@@ -1,17 +1,17 @@
-# WhatsApp Channel — Meta Cloud API Go-Live
+# WhatsApp Channel - Meta Cloud API Go-Live
 
 Stage 2 is built and testable without credentials (mock dispatch logs to console).
 To go live you need WhatsApp Business credentials from Meta (or a BSP).
 
 ## What exists
 
-- `GET /api/public/whatsapp/webhook` — Meta subscription verification
+- `GET /api/public/whatsapp/webhook` - Meta subscription verification
   (`hub.mode` / `hub.verify_token` / `hub.challenge` against `WHATSAPP_WEBHOOK_VERIFY_TOKEN`).
-- `POST /api/public/whatsapp/webhook` — HMAC-SHA256 check (`x-hub-signature-256` vs
+- `POST /api/public/whatsapp/webhook` - HMAC-SHA256 check (`x-hub-signature-256` vs
   `WHATSAPP_APP_SECRET`, skipped while the secret is a placeholder), typed payload parsing,
   single-flight idempotent inbox on `messageId` (Prisma `P2002` = duplicate delivery),
   fast `200` then `inngest.send("whatsapp/message.received")`.
-- `src/inngest/functions/process-whatsapp-message.ts` — dedupe → fact extraction
+- `src/inngest/functions/process-whatsapp-message.ts` - dedupe → fact extraction
   (text direct; image/document fetched from Graph API with `WHATSAPP_API_TOKEN`) → rules
   engine verdict → reply via `POST /{PHONE_NUMBER_ID}/messages` (sender's language,
   auto-detected FR/EN, French default) →
@@ -37,5 +37,5 @@ To go live you need WhatsApp Business credentials from Meta (or a BSP).
 
 - Unsupported message types are acknowledged (`IGNORED_UNSUPPORTED_TYPE`) without error.
 - Status/delivery receipts are acknowledged (`IGNORED_STATUS_UPDATE`).
-- When AI credits are exhausted the circuit opens for 60s and heuristics answer instead —
+- When AI credits are exhausted the circuit opens for 60s and heuristics answer instead -
   rules still decide the verdict.

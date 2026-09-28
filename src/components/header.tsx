@@ -29,7 +29,7 @@ export function Header() {
             {language === "fr" ? "Cybersécurité ANTIC" : "ANTIC Cyber Security"}
             <span className="text-emerald-400 font-bold">
               {" "}
-              — 8202 ({language === "fr" ? "gratuit" : "free"})
+              - 8202 ({language === "fr" ? "gratuit" : "free"})
             </span>
           </p>
           <div className="flex items-center font-mono text-[11px] font-bold">
@@ -38,7 +38,9 @@ export function Header() {
               onClick={() => setLanguage("fr")}
               aria-pressed={language === "fr"}
               className={`px-2 py-0.5 transition-colors ${
-                language === "fr" ? "text-white" : "text-slate-500 hover:text-slate-200"
+                language === "fr"
+                  ? "text-white"
+                  : "text-slate-500 hover:text-slate-200"
               }`}
             >
               FR
@@ -51,7 +53,9 @@ export function Header() {
               onClick={() => setLanguage("en")}
               aria-pressed={language === "en"}
               className={`px-2 py-0.5 transition-colors ${
-                language === "en" ? "text-white" : "text-slate-500 hover:text-slate-200"
+                language === "en"
+                  ? "text-white"
+                  : "text-slate-500 hover:text-slate-200"
               }`}
             >
               EN
@@ -62,7 +66,11 @@ export function Header() {
 
       {/* Masthead */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
-        <Link href="/" className="flex items-baseline gap-2 shrink-0" aria-label="CheckAm — home">
+        <Link
+          href="/"
+          className="flex items-baseline gap-2 shrink-0"
+          aria-label="CheckAm - home"
+        >
           <span className="font-display text-[26px] leading-none font-black tracking-tight text-ink">
             CheckAm
           </span>
@@ -71,7 +79,7 @@ export function Header() {
           </span>
         </Link>
 
-        {/* Desktop nav — text only, active marked with an emerald rule */}
+        {/* Desktop nav - text only, active marked with an emerald rule */}
         <nav className="hidden md:flex items-center gap-7" aria-label="Primary">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
@@ -101,29 +109,29 @@ export function Header() {
           <UserButton />
         </div>
 
-        {/* Mobile trigger — CSS hamburger, no icon font */}
+        {/* Mobile trigger - CSS hamburger, no icon font */}
         <div className="flex items-center gap-2 md:hidden">
           <UserButton />
           <button
-          type="button"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={t.toggleMenu}
-          aria-expanded={mobileMenuOpen}
-          className="md:hidden flex flex-col items-center justify-center gap-1.5 h-10 w-10 rounded-lg hover:bg-authority-900/5"
-        >
-          <span
-            aria-hidden="true"
-            className={`block h-0.5 w-5 bg-ink transition-transform duration-300 ${
-              mobileMenuOpen ? "translate-y-[4px] rotate-45" : ""
-            }`}
-          />
-          <span
-            aria-hidden="true"
-            className={`block h-0.5 w-5 bg-ink transition-transform duration-300 ${
-              mobileMenuOpen ? "-translate-y-[4px] -rotate-45" : ""
-            }`}
-          />
-        </button>
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={t.toggleMenu}
+            aria-expanded={mobileMenuOpen}
+            className="md:hidden flex flex-col items-center justify-center gap-1.5 h-10 w-10 rounded-lg hover:bg-authority-900/5"
+          >
+            <span
+              aria-hidden="true"
+              className={`block h-0.5 w-5 bg-ink transition-transform duration-300 ${
+                mobileMenuOpen ? "translate-y-[4px] rotate-45" : ""
+              }`}
+            />
+            <span
+              aria-hidden="true"
+              className={`block h-0.5 w-5 bg-ink transition-transform duration-300 ${
+                mobileMenuOpen ? "-translate-y-[4px] -rotate-45" : ""
+              }`}
+            />
+          </button>
         </div>
       </div>
 
@@ -148,7 +156,9 @@ export function Header() {
                 <span className="font-mono text-[11px] font-bold text-emerald-700">
                   {String(idx + 1).padStart(2, "0")}
                 </span>
-                <span className="font-display text-xl font-bold">{link.label}</span>
+                <span className="font-display text-xl font-bold">
+                  {link.label}
+                </span>
                 {isActive && (
                   <span
                     className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500"

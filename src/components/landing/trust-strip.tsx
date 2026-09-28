@@ -41,7 +41,7 @@ export function TrustStrip() {
 
         <div className="pt-2 flex items-center justify-center gap-2 text-xs font-mono text-emerald-800 font-bold">
           <ShieldCheck className="h-4 w-4 text-emerald-600" />
-          <span>ANTIC 8202 — {t.heroPerkFree}</span>
+          <span>ANTIC 8202 - {t.heroPerkFree}</span>
         </div>
       </div>
     </section>

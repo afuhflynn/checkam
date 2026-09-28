@@ -5,7 +5,9 @@ import nodemailer, { type Transporter } from "nodemailer";
 let cached: Transporter | null = null;
 
 export function mailReady(): boolean {
-  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+  return Boolean(
+    process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS,
+  );
 }
 
 export function assertMailReady(): void {
@@ -53,6 +55,6 @@ export async function sendMail(message: {
 
 if (process.env.NODE_ENV !== "production" && !mailReady()) {
   console.error(
-    "[mail] SMTP is not configured — mail jobs will fail loud until SMTP_* is set (see .env.example).",
+    "[mail] SMTP is not configured - mail jobs will fail loud until SMTP_* is set (see .env.example).",
   );
 }

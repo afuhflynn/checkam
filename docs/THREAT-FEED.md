@@ -1,6 +1,6 @@
-# Public Threat Feed — Telco / Bank Integration
+# Public Threat Feed - Telco / Bank Integration
 
-`GET /api/public/threat-feed` — structured feed of newly flagged numbers and accounts.
+`GET /api/public/threat-feed` - structured feed of newly flagged numbers and accounts.
 Rate-limited (Arcjet), cacheable (`s-maxage=300, stale-while-revalidate=600`), max 500 rows.
 
 ## Usage
@@ -42,7 +42,7 @@ curl "https://checkam.cm/api/public/threat-feed?format=json&category=MOBILE_MONE
 }
 ```
 
-Phones are E.164 (`+237…`), emails lowercase. Only `isActive: true` rows appear —
+Phones are E.164 (`+237…`), emails lowercase. Only `isActive: true` rows appear -
 identifiers activate **only** when a moderator approves the linked report, so polling this
 feed never picks up unreviewed public accusations.
 

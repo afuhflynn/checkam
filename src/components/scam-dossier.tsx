@@ -36,21 +36,33 @@ interface ScamDossierProps {
   report: DossierReport;
   verification: Pick<
     VerificationResult,
-    "verdict" | "score" | "category" | "evidenceBullets" | "whatsappWarning" | "officialWebsite"
+    | "verdict"
+    | "score"
+    | "category"
+    | "evidenceBullets"
+    | "whatsappWarning"
+    | "officialWebsite"
   >;
 }
 
 export function ScamDossier({ report, verification }: ScamDossierProps) {
   const { language, t } = useTranslation();
   const bullets =
-    language === "fr" ? verification.evidenceBullets.fr : verification.evidenceBullets.en;
+    language === "fr"
+      ? verification.evidenceBullets.fr
+      : verification.evidenceBullets.en;
   const whatsappAlert =
-    language === "fr" ? verification.whatsappWarning.fr : verification.whatsappWarning.en;
+    language === "fr"
+      ? verification.whatsappWarning.fr
+      : verification.whatsappWarning.en;
   const locale = language === "fr" ? "fr-CM" : "en-CM";
-  const publishedLabel = new Date(report.publishedAt ?? report.createdAt).toLocaleDateString(
-    locale,
-    { year: "numeric", month: "long", day: "numeric" },
-  );
+  const publishedLabel = new Date(
+    report.publishedAt ?? report.createdAt,
+  ).toLocaleDateString(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -73,13 +85,16 @@ export function ScamDossier({ report, verification }: ScamDossierProps) {
       <Card className="border-2 border-red-300 bg-white shadow-xl overflow-hidden">
         <div className="quittance-stripes flex items-center justify-between px-6 sm:px-8 py-2 bg-white border-b border-slate-200 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
           <span className="truncate">
-            {t.dossierBadge} — Nº {report.slug.slice(0, 18).toUpperCase()}
+            {t.dossierBadge} - Nº {report.slug.slice(0, 18).toUpperCase()}
           </span>
           <span className="whitespace-nowrap pl-3">ANTIC 8202</span>
         </div>
         <CardHeader className="bg-red-50/80 p-6 sm:p-8 border-b border-red-200 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Badge variant="scam" className="text-xs px-3 py-1 uppercase tracking-wide">
+            <Badge
+              variant="scam"
+              className="text-xs px-3 py-1 uppercase tracking-wide"
+            >
               <AlertOctagon className="h-4 w-4 mr-1.5 inline" />
               {t.dossierBadge}
             </Badge>
@@ -99,7 +114,9 @@ export function ScamDossier({ report, verification }: ScamDossierProps) {
           {report.targetEntity && (
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-800">
               <span>{t.dossierEntityImpersonated}</span>
-              <span className="text-red-700 font-extrabold">{report.targetEntity}</span>
+              <span className="text-red-700 font-extrabold">
+                {report.targetEntity}
+              </span>
             </div>
           )}
         </CardHeader>
@@ -142,7 +159,8 @@ export function ScamDossier({ report, verification }: ScamDossierProps) {
             {report.amountRequested && (
               <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200 space-y-1">
                 <span className="text-xs font-bold text-amber-800 uppercase flex items-center gap-1.5">
-                  <CreditCard className="h-3.5 w-3.5" /> {t.dossierAmountDemanded}
+                  <CreditCard className="h-3.5 w-3.5" />{" "}
+                  {t.dossierAmountDemanded}
                 </span>
                 <p className="text-base font-mono font-bold text-slate-950">
                   {report.amountRequested}
@@ -167,7 +185,9 @@ export function ScamDossier({ report, verification }: ScamDossierProps) {
                   <div className="h-6 w-6 rounded-full bg-red-600 text-white text-xs font-extrabold flex items-center justify-center shrink-0 mt-0.5">
                     {idx + 1}
                   </div>
-                  <p className="text-sm font-medium text-slate-800 leading-relaxed">{bullet}</p>
+                  <p className="text-sm font-medium text-slate-800 leading-relaxed">
+                    {bullet}
+                  </p>
                 </div>
               ))}
             </div>

@@ -8,7 +8,8 @@ export const translations = {
     heroHeading: "Stop Cameroon Scams Before You Send Money",
     heroSubheading:
       "Paste a suspicious message, upload a recruitment flyer or search any phone number/email. Get an instant, evidence-backed verdict and a ready-to-forward WhatsApp alert.",
-    anticBanner: "Official National Cyber Security Hotline: Call 8202 (Free / ANTIC)",
+    anticBanner:
+      "Official National Cyber Security Hotline: Call 8202 (Free / ANTIC)",
     navHome: "Verify",
     navChat: "Chat",
     navDirectory: "Scam Registry",
@@ -36,13 +37,14 @@ export const translations = {
     demoCase3Title: "🛑 Express Canada Work Visa Flyer",
 
     // Verdict Card & Receipts
-    verdictHighRisk: "HIGH RISK — SCAM DETECTED",
-    verdictCaution: "CAUTION — SUSPICIOUS NOTICE",
-    verdictOfficial: "AUTHENTIC — OFFICIAL NOTICE",
+    verdictHighRisk: "HIGH RISK - SCAM DETECTED",
+    verdictCaution: "CAUTION - SUSPICIOUS NOTICE",
+    verdictOfficial: "AUTHENTIC - OFFICIAL NOTICE",
     riskScoreLabel: "Risk Assessment Score",
     evidenceTitle: "Key Evidence Points (Receipts)",
     officialContactsTitle: "Official Verification Channel & Hotline",
-    anticCallout: "National Cyber Security Agency (ANTIC): Call 8202 free of charge.",
+    anticCallout:
+      "National Cyber Security Agency (ANTIC): Call 8202 free of charge.",
     forwardAlertTitle: "Forward This Warning on WhatsApp",
     forwardAlertDesc:
       "Copy and paste this verified alert to protect family, friends, and community WhatsApp groups.",
@@ -56,7 +58,8 @@ export const translations = {
     directoryTitle: "Cameroon Scam Registry",
     directorySubtitle:
       "Search confirmed and verified scam cases, blacklisted phone numbers, and fraudulent campaigns reported across Cameroon.",
-    searchDirectoryPlaceholder: "Search by phone number, email, acronym, or keywords...",
+    searchDirectoryPlaceholder:
+      "Search by phone number, email, acronym, or keywords...",
     categoryAll: "All Categories",
     categoryCivilService: "Civil Service & Concours",
     categoryVisa: "Visas & Foreign Travel",
@@ -72,7 +75,8 @@ export const translations = {
     reportSubtitle:
       "Help protect other Cameroonians by reporting fraudulent phone numbers, fake recruitment notices, or illicit money demands. All submissions are moderated before publishing.",
     reportFormTitleLabel: "Report Title / Summary",
-    reportFormTitlePlaceholder: "e.g. Fake Douala Port Customs Car Auction on Facebook",
+    reportFormTitlePlaceholder:
+      "e.g. Fake Douala Port Customs Car Auction on Facebook",
     reportCategoryLabel: "Category",
     reportEntityLabel: "Target Entity Impersonated (Optional)",
     reportEntityPlaceholder: "e.g. MINFOPRA, Orange Money, Canadian Embassy",
@@ -113,7 +117,8 @@ export const translations = {
     dossierAmountDemanded: "Amount Demanded / Extorted",
     dossierEvidenceTitle: "CheckAm Evidence & Legal Analysis",
     dossierAnticTitle: "Report this number to ANTIC",
-    dossierAnticDesc: "Call 8202 toll-free so authorities can block this contact.",
+    dossierAnticDesc:
+      "Call 8202 toll-free so authorities can block this contact.",
     dossierHotlineBadge: "Hotline 8202 (Free)",
     dossierAlertTitle: "Warn Your Loved Ones on WhatsApp",
     dossierAlertDesc:
@@ -123,7 +128,8 @@ export const translations = {
     // Admin moderation
     adminBadge: "Administration & Moderation Portal",
     adminTitle: "CheckAm Moderation Queue",
-    adminSubtitle: "Review citizen submissions before publication to avoid false accusations.",
+    adminSubtitle:
+      "Review citizen submissions before publication to avoid false accusations.",
     adminPending: "Pending Review",
     adminPendingHint: "New reports to verify",
     adminApproved: "Published Scams",
@@ -163,27 +169,28 @@ export const translations = {
       "The public webhook endpoint implements Meta HMAC-SHA256 signature verification, an idempotent event inbox, and async Inngest queue processing with circuit breaker.",
 
     // Errors, toasts, misc
-    verifyRateLimit: "Too many checks — wait a minute and try again.",
+    verifyRateLimit: "Too many checks - wait a minute and try again.",
     verifyDenied: "Blocked by security shield. Try again shortly.",
     verifyFailed: "Verification failed. Please try again.",
-    reportRateLimit: "Too many reports — please wait before submitting another.",
+    reportRateLimit:
+      "Too many reports - please wait before submitting another.",
     reportFailed: "Failed to submit report. Please try again.",
     copyFailed: "Failed to copy to clipboard",
     toggleMenu: "Toggle menu",
 
-    // Landing — bulletin ticker
+    // Landing - bulletin ticker
     bulletinLive: "Live registry",
     bulletinVerified: "messages verified",
     bulletinBlacklisted: "numbers blacklisted",
     bulletinCases: "confirmed cases",
     bulletinFlaggedPrefix: "Flagged",
 
-    // Landing — hero
-    heroKicker: "Independent anti-scam bureau — Cameroon",
+    // Landing - hero
+    heroKicker: "Independent anti-scam bureau - Cameroon",
     heroHeadingA: "Before you send the money,",
     heroHeadingB: "send us the message.",
     heroLede:
-      "Paste the SMS, upload the flyer, search the number. CheckAm interrogates it against Cameroon's official rules and the confirmed scam registry — and hands you receipts you can forward.",
+      "Paste the SMS, upload the flyer, search the number. CheckAm interrogates it against Cameroon's official rules and the confirmed scam registry - and hands you receipts you can forward.",
     heroCtaVerify: "Verify a message",
     heroCtaChat: "Start a check",
     heroTrialTitle: "Or try a real case:",
@@ -192,22 +199,23 @@ export const translations = {
     heroNoteFree: "Free",
     heroNoteNoAccount: "No account needed",
     heroNoteBilingual: "EN / FR",
-    heroReceiptTitle: "Specimen — verification receipt",
+    heroReceiptTitle: "Specimen - verification receipt",
     heroTrustLabel: "Cross-checked with",
     heroSealScam: "Scam",
     heroSealRisk: "High risk",
 
-    // Landing — verification desk
+    // Landing - verification desk
     deskKicker: "The verification desk",
     deskFileNo: "Counter Nº 1",
     deskTitle: "Drop it here. Verdict in seconds.",
-    deskSub: "Three ways in, one clear answer out: high risk, caution, or verified official.",
+    deskSub:
+      "Three ways in, one clear answer out: high risk, caution, or verified official.",
 
-    // Landing — how it works
+    // Landing - how it works
     howKicker: "How a verdict is built",
     howTitle: "Rules first. AI second. Receipts always.",
     howSub:
-      "No black box. Every verdict cites the exact rule it broke — and the official channel that proves it.",
+      "No black box. Every verdict cites the exact rule it broke - and the official channel that proves it.",
     howStep1Title: "You bring the evidence",
     howStep1Desc:
       "A WhatsApp forward, a concours flyer, a strange MoMo SMS, a phone number from a stranger. Paste it, snap it, or search it.",
@@ -217,11 +225,11 @@ export const translations = {
     howStep3Title: "You get receipts to forward",
     howStep3Desc:
       "Badge, three evidence bullets, official contacts, and a WhatsApp warning ready to protect your family groups.",
-    howFile1: "Exhibit — intake",
-    howFile2: "Exhibit — rules",
-    howFile3: "Exhibit — receipts",
+    howFile1: "Exhibit - intake",
+    howFile2: "Exhibit - rules",
+    howFile3: "Exhibit - receipts",
 
-    // Landing — anatomy of a scam
+    // Landing - anatomy of a scam
     anatomyKicker: "Anatomy of a scam",
     anatomyTitle: "Learn the tells. Every flag is a rule.",
     anatomySub:
@@ -231,37 +239,37 @@ export const translations = {
     anatomyTabVisa: "Canada visa",
     anatomyRuleLabel: "Rule",
 
-    // Landing — registry preview
+    // Landing - registry preview
     regKicker: "From the public registry",
     regTitle: "Recently confirmed cases",
     regSub: "Every entry below was reviewed by a moderator before publication.",
     regCta: "Open the full registry",
     regViewDossier: "Dossier",
 
-    // Landing — FAQ
+    // Landing - FAQ
     faqKicker: "Questions, answered",
     faqTitle: "Before you ask",
     faqQ1: "Is CheckAm really free?",
     faqA1:
-      "Yes. Verification, the registry, and the WhatsApp bot are free. If anyone asks you to pay for a 'CheckAm clearance', that itself is a scam — report it.",
+      "Yes. Verification, the registry, and the WhatsApp bot are free. If anyone asks you to pay for a 'CheckAm clearance', that itself is a scam - report it.",
     faqQ2: "What should I never do?",
     faqA2:
-      "Never send Mobile Money to a personal number for an official fee — concours and stamp duties are paid against a Public Treasury receipt. Never share OTP codes. When in doubt, call ANTIC at 8202 first.",
+      "Never send Mobile Money to a personal number for an official fee - concours and stamp duties are paid against a Public Treasury receipt. Never share OTP codes. When in doubt, call ANTIC at 8202 first.",
     faqQ3: "I already sent money. What now?",
     faqA3:
       "Act fast: call your operator (MTN 8788, Orange 950), then report to ANTIC at 8202, then file a report here so the number gets flagged for others.",
     faqQ4: "Who runs CheckAm?",
     faqA4:
-      "An independent civic utility for Cameroon. Official facts are cross-checked with the Presidency, government ministries, and ANTIC — never with the sender.",
+      "An independent civic utility for Cameroon. Official facts are cross-checked with the Presidency, government ministries, and ANTIC - never with the sender.",
 
-    // Landing — final CTA
+    // Landing - final CTA
     ctaTitle: "Got a suspicious message right now?",
     ctaSub: "Thirty seconds of verification beats months of regret.",
     ctaBtn: "Verify it now",
-    continueBarText: "Welcome back — your checks wait in chat.",
+    continueBarText: "Welcome back - your checks wait in chat.",
     continueBarBtn: "Continue to chat",
 
-    // Rebuilt Landing — Modern, Airy Hero & Sections
+    // Rebuilt Landing - Modern, Airy Hero & Sections
     heroBadge: "National Cyber Security Hotline 8202 • Cameroon Public Utility",
     heroMainTitle: "Verify Before You Pay",
     heroMainSubtitle:
@@ -276,10 +284,11 @@ export const translations = {
     heroSignalMomo: "Orange Money • Always check #150# balance",
     heroSignalAntic: "ANTIC 8202 • Toll-Free National Hotline",
 
-    // Rebuilt Landing — Trust Strip
-    trustTitle: "Cross-referenced against verified Cameroon institutional standards",
+    // Rebuilt Landing - Trust Strip
+    trustTitle:
+      "Cross-referenced against verified Cameroon institutional standards",
 
-    // Rebuilt Landing — Scam Vectors Bento Grid
+    // Rebuilt Landing - Scam Vectors Bento Grid
     bentoKicker: "Recognize the tells",
     bentoTitle: "Common Scam Vectors in Cameroon",
     bentoSub:
@@ -303,7 +312,7 @@ export const translations = {
     bento3Rule:
       "Rule: No embassy collects visa application fees via personal mobile money or free emails. Legitimate applications pass strictly through official diplomatic missions or certified centers (TLS/VFS).",
 
-    // Rebuilt Landing — WhatsApp Bot Spotlight
+    // Rebuilt Landing - WhatsApp Bot Spotlight
     waSpotlightBadge: "Cameroon Community Defense",
     waSpotlightTitle: "Verify Directly Inside WhatsApp",
     waSpotlightSub:
@@ -312,11 +321,11 @@ export const translations = {
     waSpotlightWebAlt: "Or verify in web chat",
     waUserBubble:
       "Forwarded: Urgent! MINESEC is recruiting 325 teachers. Send 25,000 FCFA to 699 12 34 56... is this genuine?",
-    waBotBubbleVerdict: "🛑 CHECKAM ALERT — HIGH RISK SCAM",
+    waBotBubbleVerdict: "🛑 CHECKAM ALERT - HIGH RISK SCAM",
     waBotBubbleText:
       "1. Ministries never use @gmail.com (official: *.gov.cm).\n2. Fees are paid to the Public Treasury, never personal Orange Money.\n3. Verified with ANTIC Hotline 8202.",
 
-    // Rebuilt Landing — Stats Strip
+    // Rebuilt Landing - Stats Strip
     statsVerifiedLabel: "Checks Analyzed",
     statsFlaggedLabel: "Blacklisted Contacts",
     statsCasesLabel: "Confirmed Scam Dossiers",
@@ -350,7 +359,7 @@ export const translations = {
     guideNumberDesc:
       "Save CheckAm in your contacts, then forward a suspect message. Samples below open a trial in one tap.",
     guideSaveBtn: "Save number",
-    guideSaved: "Saved — find CheckAm in your contacts.",
+    guideSaved: "Saved - find CheckAm in your contacts.",
     guideOpenWa: "Open WhatsApp chat",
     guideWaPrefill: "WhatsApp with message",
     guideUseWebChat: "Try in web chat instead",
@@ -368,9 +377,9 @@ export const translations = {
     gateEmailPlaceholder: "you@example.com",
     gatePasswordLabel: "Password",
     gatePasswordPlaceholder: "8 characters or more",
-    gatePasswordHintWeak: "Weak — longer is stronger",
-    gatePasswordHintFair: "Fair — add variety",
-    gatePasswordHintStrong: "Strong — good to go",
+    gatePasswordHintWeak: "Weak - longer is stronger",
+    gatePasswordHintFair: "Fair - add variety",
+    gatePasswordHintStrong: "Strong - good to go",
     gateSignInBtn: "Sign in",
     gateSignUpBtn: "Create account",
     gateHaveAccount: "Already have an account?",
@@ -381,20 +390,24 @@ export const translations = {
     gateResendBtn: "Resend link",
     gateResendOk: "Link sent. Check your mailbox.",
     gateResetTitle: "Reset your password",
-    gateResetDesc: "We sent a link plus a code. The link lives 1 hour, the code 10 minutes.",
+    gateResetDesc:
+      "We sent a link plus a code. The link lives 1 hour, the code 10 minutes.",
     gateOtpLabel: "Code from the mail",
     gateOtpPlaceholder: "6 digit code",
     gateOtpBtn: "Confirm code",
     gateBackBtn: "Back to sign in",
     gateExpiredTitle: "This link expired",
-    gateExpiredDesc: "Links die for real reasons like delay. Request a fresh one.",
+    gateExpiredDesc:
+      "Links die for real reasons like delay. Request a fresh one.",
     gateReissueBtn: "Send a fresh link",
     gateDelayedTitle: "Mail is delayed",
-    gateDelayedDesc: "The queue is slow. Your link is coming — retry if nothing lands.",
+    gateDelayedDesc:
+      "The queue is slow. Your link is coming - retry if nothing lands.",
     gateRetryBtn: "Retry",
     gateUnverifiedTitle: "Verify first",
     gateUnverifiedDesc: "Chat needs a proved mailbox. Verify, then come back.",
-    gateGoogleKept: "Google step cancelled. Your mail form is kept — continue here.",
+    gateGoogleKept:
+      "Google step cancelled. Your mail form is kept - continue here.",
     gateRateLimited: "Too many tries. Wait a little, then retry.",
     gateFailed: "Something failed. Check the field and retry.",
     gateUserMenuSettings: "Settings",
@@ -436,12 +449,14 @@ export const translations = {
     chatUnpin: "Unpin",
     chatTriesLeft: "tries left today",
     chatSourcesTitle: "Sources checked",
-    chatDossierEmpty: "Evidence from your checks lands here, sealed with its verdict.",
+    chatDossierEmpty:
+      "Evidence from your checks lands here, sealed with its verdict.",
     chatRiskScore: "risk score",
     chatWhatWeFound: "What stood out",
     chatNextStep: "What to do now",
     chatShareTitle: "Warn your people",
-    chatShareDesc: "Copy this and send it to your family and groups so nobody else falls for it.",
+    chatShareDesc:
+      "Copy this and send it to your family and groups so nobody else falls for it.",
     chatShareWhatsapp: "WhatsApp",
     chatShareFacebook: "Facebook",
     chatShareX: "X",
@@ -465,22 +480,25 @@ export const translations = {
     mailResetBody:
       "Use the link within 1 hour, or type the code within 10 minutes. Never share either.",
     mailResetCta: "Reset my password",
-    mailWelcomeSubject: "Welcome to CheckAm — verify before you pay",
+    mailWelcomeSubject: "Welcome to CheckAm - verify before you pay",
     mailWelcomeHeadline: "Your first check takes thirty seconds",
     mailWelcomeBody:
       "Paste a suspect message, drop a flyer, or look up a phone. If anyone asks you to pay for a CheckAm validation, it is a scam in itself.",
     mailWelcomeCta: "Run your first check",
     mailCodeLabel: "Code",
-    mailClosing: "The CheckAm team — verify before you pay. ANTIC hotline 8202, free.",
+    mailClosing:
+      "The CheckAm team - verify before you pay. ANTIC hotline 8202, free.",
   },
   fr: {
     // Brand & Header
     siteTitle: "CheckAm",
     tagline: "Vérifiez avant de payer",
-    heroHeading: "Bloquez les arnaques au Cameroun avant d'envoyer votre argent",
+    heroHeading:
+      "Bloquez les arnaques au Cameroun avant d'envoyer votre argent",
     heroSubheading:
       "Collez un message suspect, déposez un flyer de concours ou cherchez un numéro/email. Obtenez un verdict immédiat avec preuves irréfutables et une alerte WhatsApp prête à transférer.",
-    anticBanner: "Numéro vert national de cybersécurité : Appelez le 8202 (Gratuit / ANTIC)",
+    anticBanner:
+      "Numéro vert national de cybersécurité : Appelez le 8202 (Gratuit / ANTIC)",
     navHome: "Vérifier",
     navChat: "Chat",
     navDirectory: "Registre des Arnaques",
@@ -508,13 +526,14 @@ export const translations = {
     demoCase3Title: "🛑 Faux visa Canada express 14 jours",
 
     // Verdict Card & Receipts
-    verdictHighRisk: "RISQUE ÉLEVÉ — ARNAQUE CONFIRMÉE",
-    verdictCaution: "ATTENTION — AVIS SUSPECT / PRUDENCE",
-    verdictOfficial: "AUTHENTIQUE — DOCUMENT OFFICIEL VÉRIFIÉ",
+    verdictHighRisk: "RISQUE ÉLEVÉ - ARNAQUE CONFIRMÉE",
+    verdictCaution: "ATTENTION - AVIS SUSPECT / PRUDENCE",
+    verdictOfficial: "AUTHENTIQUE - DOCUMENT OFFICIEL VÉRIFIÉ",
     riskScoreLabel: "Score d'évaluation du risque",
     evidenceTitle: "Preuves & Faits Relevés (Les Reçus)",
     officialContactsTitle: "Canaux Officiels & Assistance",
-    anticCallout: "Agence Nationale des TIC (ANTIC) : Appelez gratuitement le 8202.",
+    anticCallout:
+      "Agence Nationale des TIC (ANTIC) : Appelez gratuitement le 8202.",
     forwardAlertTitle: "Transférer Cette Alerte sur WhatsApp",
     forwardAlertDesc:
       "Copiez et partagez cette alerte vérifiée pour protéger vos groupes WhatsApp familiaux et professionnels.",
@@ -528,7 +547,8 @@ export const translations = {
     directoryTitle: "Registre National des Arnaques",
     directorySubtitle:
       "Consultez les arnaques confirmées, numéros blacklistés et faux avis signalés à travers le Cameroun.",
-    searchDirectoryPlaceholder: "Rechercher par numéro, email, ministère ou mot-clé...",
+    searchDirectoryPlaceholder:
+      "Rechercher par numéro, email, ministère ou mot-clé...",
     categoryAll: "Toutes les catégories",
     categoryCivilService: "Fonction Publique & Concours",
     categoryVisa: "Visas & Voyages à l'étranger",
@@ -572,7 +592,8 @@ export const translations = {
     // Footer
     footerDisclaimer:
       "CheckAm est un service d'utilité publique indépendant au Cameroun. Les informations officielles sont recoupées avec la Présidence de la République, les Ministères et l'ANTIC.",
-    footerHotline: "Numéro Vert Cybersécurité ANTIC : 8202 (Appel gratuit au Cameroun)",
+    footerHotline:
+      "Numéro Vert Cybersécurité ANTIC : 8202 (Appel gratuit au Cameroun)",
     footerRights: "CheckAm Cameroun. Tous droits réservés.",
 
     // Dossier d'affaire (/scam/[slug])
@@ -586,7 +607,8 @@ export const translations = {
     dossierAmountDemanded: "Montant Demandé / Extorqué",
     dossierEvidenceTitle: "Preuves & Analyse Juridique CheckAm",
     dossierAnticTitle: "Signalez ce numéro à l'ANTIC",
-    dossierAnticDesc: "Appelez sans frais le 8202 pour faire bloquer ce contact par les autorités.",
+    dossierAnticDesc:
+      "Appelez sans frais le 8202 pour faire bloquer ce contact par les autorités.",
     dossierHotlineBadge: "Hotline 8202 (Gratuit)",
     dossierAlertTitle: "Alertez Vos Proches sur WhatsApp",
     dossierAlertDesc:
@@ -637,27 +659,29 @@ export const translations = {
       "Le endpoint public de webhook implémente la vérification de signature cryptographique HMAC-SHA256 Meta, l'inbox d'événements idempotents et le traitement asynchrone par file d'attente Inngest avec disjoncteur (circuit-breaker).",
 
     // Erreurs, toasts, divers
-    verifyRateLimit: "Trop de vérifications — patientez une minute et réessayez.",
+    verifyRateLimit:
+      "Trop de vérifications - patientez une minute et réessayez.",
     verifyDenied: "Bloqué par le bouclier de sécurité. Réessayez bientôt.",
     verifyFailed: "La vérification a échoué. Veuillez réessayer.",
-    reportRateLimit: "Trop de signalements — patientez avant d'en envoyer un autre.",
+    reportRateLimit:
+      "Trop de signalements - patientez avant d'en envoyer un autre.",
     reportFailed: "Échec de l'envoi du signalement. Veuillez réessayer.",
     copyFailed: "Échec de la copie dans le presse-papiers",
     toggleMenu: "Ouvrir le menu",
 
-    // Accueil — bandeau registre
+    // Accueil - bandeau registre
     bulletinLive: "Registre en direct",
     bulletinVerified: "messages vérifiés",
     bulletinBlacklisted: "numéros blacklistés",
     bulletinCases: "cas confirmés",
     bulletinFlaggedPrefix: "Signalé",
 
-    // Accueil — hero
-    heroKicker: "Bureau indépendant anti-arnaque — Cameroun",
+    // Accueil - hero
+    heroKicker: "Bureau indépendant anti-arnaque - Cameroun",
     heroHeadingA: "Avant d'envoyer l'argent,",
     heroHeadingB: "envoyez-nous le message.",
     heroLede:
-      "Collez le SMS, déposez le flyer, cherchez le numéro. CheckAm l'interroge face aux règles officielles camerounaises et au registre des arnaques confirmées — et vous remet des preuves à transférer.",
+      "Collez le SMS, déposez le flyer, cherchez le numéro. CheckAm l'interroge face aux règles officielles camerounaises et au registre des arnaques confirmées - et vous remet des preuves à transférer.",
     heroCtaVerify: "Vérifier un message",
     heroCtaChat: "Lancer une vérification",
     heroTrialTitle: "Ou essayez un cas réel :",
@@ -666,23 +690,23 @@ export const translations = {
     heroNoteFree: "Gratuit",
     heroNoteNoAccount: "Sans compte",
     heroNoteBilingual: "EN / FR",
-    heroReceiptTitle: "Spécimen — reçu de vérification",
+    heroReceiptTitle: "Spécimen - reçu de vérification",
     heroTrustLabel: "Recoupé avec",
     heroSealScam: "Arnaque",
     heroSealRisk: "Risque élevé",
 
-    // Accueil — guichet de vérification
+    // Accueil - guichet de vérification
     deskKicker: "Le guichet de vérification",
     deskFileNo: "Guichet Nº 1",
     deskTitle: "Déposez-le ici. Verdict en quelques secondes.",
     deskSub:
       "Trois voies d'entrée, une réponse claire : risque élevé, prudence, ou officiel vérifié.",
 
-    // Accueil — méthode
+    // Accueil - méthode
     howKicker: "Comment un verdict est construit",
     howTitle: "Les règles d'abord. L'IA ensuite. Les preuves toujours.",
     howSub:
-      "Aucune boîte noire. Chaque verdict cite la règle exacte qui a été violée — et le canal officiel qui le prouve.",
+      "Aucune boîte noire. Chaque verdict cite la règle exacte qui a été violée - et le canal officiel qui le prouve.",
     howStep1Title: "Vous apportez la preuve",
     howStep1Desc:
       "Un message WhatsApp transféré, un flyer de concours, un SMS MoMo étrange, le numéro d'un inconnu. Collez-le, photographiez-le ou cherchez-le.",
@@ -692,11 +716,11 @@ export const translations = {
     howStep3Title: "Vous recevez des preuves à transférer",
     howStep3Desc:
       "Badge, trois preuves, contacts officiels et alerte WhatsApp prête à protéger vos groupes familiaux.",
-    howFile1: "Pièce — dépôt",
-    howFile2: "Pièce — règles",
-    howFile3: "Pièce — preuves",
+    howFile1: "Pièce - dépôt",
+    howFile2: "Pièce - règles",
+    howFile3: "Pièce - preuves",
 
-    // Accueil — anatomie d'une arnaque
+    // Accueil - anatomie d'une arnaque
     anatomyKicker: "Anatomie d'une arnaque",
     anatomyTitle: "Apprenez les signaux. Chaque drapeau est une règle.",
     anatomySub:
@@ -706,38 +730,42 @@ export const translations = {
     anatomyTabVisa: "Visa Canada",
     anatomyRuleLabel: "Règle",
 
-    // Accueil — aperçu du registre
+    // Accueil - aperçu du registre
     regKicker: "Extrait du registre public",
     regTitle: "Cas récemment confirmés",
-    regSub: "Chaque dossier ci-dessous a été examiné par un modérateur avant publication.",
+    regSub:
+      "Chaque dossier ci-dessous a été examiné par un modérateur avant publication.",
     regCta: "Ouvrir le registre complet",
     regViewDossier: "Dossier",
 
-    // Accueil — FAQ
+    // Accueil - FAQ
     faqKicker: "Vos questions",
     faqTitle: "Avant de demander",
     faqQ1: "CheckAm est-il vraiment gratuit ?",
     faqA1:
-      "Oui. La vérification, le registre et le bot WhatsApp sont gratuits. Si quelqu'un vous demande de payer pour une « validation CheckAm », c'est une arnaque en soi — signalez-la.",
+      "Oui. La vérification, le registre et le bot WhatsApp sont gratuits. Si quelqu'un vous demande de payer pour une « validation CheckAm », c'est une arnaque en soi - signalez-la.",
     faqQ2: "Que ne faut-il jamais faire ?",
     faqA2:
-      "Ne versez jamais de Mobile Money vers un numéro personnel pour un frais officiel — concours et timbres se paient contre quittance du Trésor Public. Ne partagez jamais vos codes OTP. Dans le doute, appelez d'abord l'ANTIC au 8202.",
+      "Ne versez jamais de Mobile Money vers un numéro personnel pour un frais officiel - concours et timbres se paient contre quittance du Trésor Public. Ne partagez jamais vos codes OTP. Dans le doute, appelez d'abord l'ANTIC au 8202.",
     faqQ3: "J'ai déjà envoyé de l'argent. Et maintenant ?",
     faqA3:
       "Agissez vite : appelez votre opérateur (MTN 8788, Orange 950), signalez à l'ANTIC au 8202, puis déposez un signalement ici pour faire bloquer ce numéro.",
     faqQ4: "Qui gère CheckAm ?",
     faqA4:
-      "Un service indépendant d'utilité publique pour le Cameroun. Les faits officiels sont recoupés avec la Présidence, les ministères et l'ANTIC — jamais avec l'expéditeur.",
+      "Un service indépendant d'utilité publique pour le Cameroun. Les faits officiels sont recoupés avec la Présidence, les ministères et l'ANTIC - jamais avec l'expéditeur.",
 
-    // Accueil — appel final
+    // Accueil - appel final
     ctaTitle: "Un message suspect sous les yeux ?",
-    ctaSub: "Trente secondes de vérification valent mieux que des mois de regrets.",
+    ctaSub:
+      "Trente secondes de vérification valent mieux que des mois de regrets.",
     ctaBtn: "Vérifiez-le maintenant",
-    continueBarText: "Bon retour — vos vérifications vous attendent dans le chat.",
+    continueBarText:
+      "Bon retour - vos vérifications vous attendent dans le chat.",
     continueBarBtn: "Continuer vers le chat",
 
-    // Rebuilt Landing — Modern, Airy Hero & Sections
-    heroBadge: "Hotline Nationale Cybersécurité 8202 • Utilité Publique Cameroun",
+    // Rebuilt Landing - Modern, Airy Hero & Sections
+    heroBadge:
+      "Hotline Nationale Cybersécurité 8202 • Utilité Publique Cameroun",
     heroMainTitle: "Ne payez rien avant d'avoir vérifié",
     heroMainSubtitle:
       "Transférez un message suspect, déposez un communiqué officiel ou vérifiez un numéro MoMo. CheckAm analyse les faits face à la réglementation officielle camerounaise et vous remet des preuves en quelques secondes.",
@@ -751,10 +779,11 @@ export const translations = {
     heroSignalMomo: "Orange Money • Vérifiez toujours le solde #150#",
     heroSignalAntic: "ANTIC 8202 • Hotline Nationale Gratuite",
 
-    // Rebuilt Landing — Trust Strip
-    trustTitle: "Recoupé avec les sources et cadres réglementaires officiels du Cameroun",
+    // Rebuilt Landing - Trust Strip
+    trustTitle:
+      "Recoupé avec les sources et cadres réglementaires officiels du Cameroun",
 
-    // Rebuilt Landing — Scam Vectors Bento Grid
+    // Rebuilt Landing - Scam Vectors Bento Grid
     bentoKicker: "Repérez les signaux",
     bentoTitle: "Les arnaques courantes au Cameroun",
     bentoSub:
@@ -778,7 +807,7 @@ export const translations = {
     bento3Rule:
       "Règle : Aucune ambassade n'encaisse de frais de visa par MoMo personnel ou adresse Gmail. Tout visa passe par TLS/VFS ou consulat officiel.",
 
-    // Rebuilt Landing — WhatsApp Bot Spotlight
+    // Rebuilt Landing - WhatsApp Bot Spotlight
     waSpotlightBadge: "Défense Communautaire",
     waSpotlightTitle: "Vérifiez directement sur WhatsApp",
     waSpotlightSub:
@@ -787,11 +816,11 @@ export const translations = {
     waSpotlightWebAlt: "Ou vérifiez dans le chat web",
     waUserBubble:
       "Transféré : Urgent ! Recrutement direct MINESEC 325 instituteurs. Envoyer 25 000 FCFA au 699 12 34 56... c'est vrai ?",
-    waBotBubbleVerdict: "🛑 ALERTE CHECKAM — RISQUE ÉLEVÉ D'ARNAQUE",
+    waBotBubbleVerdict: "🛑 ALERTE CHECKAM - RISQUE ÉLEVÉ D'ARNAQUE",
     waBotBubbleText:
       "1. Aucun ministère n'utilise Gmail (officiel : *.gov.cm).\n2. Frais payés au Trésor Public, jamais sur un Orange Money personnel.\n3. Recoupé avec l'ANTIC (8202).",
 
-    // Rebuilt Landing — Stats Strip
+    // Rebuilt Landing - Stats Strip
     statsVerifiedLabel: "Vérifications effectuées",
     statsFlaggedLabel: "Numéros blacklistés",
     statsCasesLabel: "Dossiers d'arnaque confirmés",
@@ -825,7 +854,7 @@ export const translations = {
     guideNumberDesc:
       "Enregistrez CheckAm dans vos contacts, puis transférez un message suspect. Les exemples ci-dessous ouvrent un essai en un tap.",
     guideSaveBtn: "Enregistrer le numéro",
-    guideSaved: "Enregistré — retrouvez CheckAm dans vos contacts.",
+    guideSaved: "Enregistré - retrouvez CheckAm dans vos contacts.",
     guideOpenWa: "Ouvrir le chat WhatsApp",
     guideWaPrefill: "WhatsApp avec message",
     guideUseWebChat: "Essayer dans le chat web",
@@ -836,23 +865,25 @@ export const translations = {
     // Permis (connexion)
     gateKicker: "Permis CheckAm",
     gateTitle: "Connectez-vous à vos vérifications",
-    gateSub: "Un seul permis pour tout. Votre historique vous attend de l'autre côté.",
+    gateSub:
+      "Un seul permis pour tout. Votre historique vous attend de l'autre côté.",
     gateGoogleBtn: "Continuer avec Google",
     gateOrDivider: "ou avec mot de passe",
     gateEmailLabel: "E-mail",
     gateEmailPlaceholder: "vous@exemple.com",
     gatePasswordLabel: "Mot de passe",
     gatePasswordPlaceholder: "8 caractères ou plus",
-    gatePasswordHintWeak: "Faible — plus long, c'est plus fort",
-    gatePasswordHintFair: "Correct — ajoutez de la variété",
-    gatePasswordHintStrong: "Fort — c'est bon",
+    gatePasswordHintWeak: "Faible - plus long, c'est plus fort",
+    gatePasswordHintFair: "Correct - ajoutez de la variété",
+    gatePasswordHintStrong: "Fort - c'est bon",
     gateSignInBtn: "Se connecter",
     gateSignUpBtn: "Créer un compte",
     gateHaveAccount: "Déjà un compte ?",
     gateNoAccount: "Nouveau sur CheckAm ?",
     gateForgotBtn: "Mot de passe oublié ?",
     gateVerifyTitle: "Vérifiez votre boîte mail",
-    gateVerifyDesc: "Nous avons envoyé un lien de vérification. Il vit 24 heures.",
+    gateVerifyDesc:
+      "Nous avons envoyé un lien de vérification. Il vit 24 heures.",
     gateResendBtn: "Renvoyer le lien",
     gateResendOk: "Lien envoyé. Vérifiez votre boîte mail.",
     gateResetTitle: "Réinitialisez votre mot de passe",
@@ -867,11 +898,14 @@ export const translations = {
       "Les liens meurent pour de vraies raisons comme le délai. Demandez-en un nouveau.",
     gateReissueBtn: "Envoyer un nouveau lien",
     gateDelayedTitle: "Le mail est en retard",
-    gateDelayedDesc: "La file est lente. Votre lien arrive — réessayez si rien ne vient.",
+    gateDelayedDesc:
+      "La file est lente. Votre lien arrive - réessayez si rien ne vient.",
     gateRetryBtn: "Réessayer",
     gateUnverifiedTitle: "Vérifiez d'abord",
-    gateUnverifiedDesc: "Le chat exige une boîte mail prouvée. Vérifiez, puis revenez.",
-    gateGoogleKept: "Étape Google annulée. Votre formulaire est conservé — continuez ici.",
+    gateUnverifiedDesc:
+      "Le chat exige une boîte mail prouvée. Vérifiez, puis revenez.",
+    gateGoogleKept:
+      "Étape Google annulée. Votre formulaire est conservé - continuez ici.",
     gateRateLimited: "Trop de tentatives. Attendez un peu, puis réessayez.",
     gateFailed: "Quelque chose a échoué. Vérifiez le champ et réessayez.",
     gateUserMenuSettings: "Paramètres",
@@ -913,7 +947,8 @@ export const translations = {
     chatUnpin: "Désépingler",
     chatTriesLeft: "essais restants aujourd'hui",
     chatSourcesTitle: "Sources vérifiées",
-    chatDossierEmpty: "Les preuves de vos vérifications arrivent ici, scellées avec leur verdict.",
+    chatDossierEmpty:
+      "Les preuves de vos vérifications arrivent ici, scellées avec leur verdict.",
     chatRiskScore: "indice de risque",
     chatWhatWeFound: "Ce qui a sauté aux yeux",
     chatNextStep: "Que faire maintenant",
@@ -927,7 +962,8 @@ export const translations = {
     chatShareCopied: "Copié",
     chatFindingWarning: "À savoir",
     chatFindingReassuring: "Bon pour vous",
-    chatShareUnavailable: "Pas encore de texte à partager pour cette vérification.",
+    chatShareUnavailable:
+      "Pas encore de texte à partager pour cette vérification.",
     chatSampleTextFill:
       "Avis de recrutement MINESEC des 325 instituteurs. Frais de dossier 25 000 FCFA par Orange Money au 699123456.",
     chatSamplePhoneFill: "+237 ",
@@ -943,13 +979,14 @@ export const translations = {
     mailResetBody:
       "Utilisez le lien sous 1 heure, ou saisissez le code sous 10 minutes. Ne partagez ni l'un ni l'autre.",
     mailResetCta: "Réinitialiser mon mot de passe",
-    mailWelcomeSubject: "Bienvenue sur CheckAm — vérifiez avant de payer",
+    mailWelcomeSubject: "Bienvenue sur CheckAm - vérifiez avant de payer",
     mailWelcomeHeadline: "Votre première vérification prend trente secondes",
     mailWelcomeBody:
       "Collez un message suspect, déposez un flyer ou cherchez un numéro. Si quelqu'un vous demande de payer pour une validation CheckAm, c'est une arnaque en soi.",
     mailWelcomeCta: "Lancer ma première vérification",
     mailCodeLabel: "Code",
-    mailClosing: "L'équipe CheckAm — vérifiez avant de payer. Hotline ANTIC 8202, gratuit.",
+    mailClosing:
+      "L'équipe CheckAm - vérifiez avant de payer. Hotline ANTIC 8202, gratuit.",
   },
 } as const;
 

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { aj } from "../../../lib/arcjet";
 import { db } from "../../../lib/db";
 
-// Public landing stats — counts only, no personal data.
+// Public landing stats - counts only, no personal data.
 export async function GET(req: NextRequest) {
   try {
     const decision = await aj.protect(req, { requested: 1 });
@@ -32,6 +32,9 @@ export async function GET(req: NextRequest) {
     );
   } catch (error) {
     console.error("[Stats API Error]:", error);
-    return NextResponse.json({ error: "Failed to load stats" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load stats" },
+      { status: 500 },
+    );
   }
 }

@@ -1,4 +1,4 @@
-# Moderation — Admin Workflow & Safety Rules
+# Moderation - Admin Workflow & Safety Rules
 
 `/admin` + `/api/admin/reports` are gated by `requireModerator()` (`src/lib/auth.ts`):
 Better-Auth session with `role` = `ADMIN` or `MODERATOR`. Local dev may set
@@ -23,7 +23,7 @@ Moderator identity is recorded (`moderatedById`, `moderatorNotes`).
 ## Safety rules (do not bypass)
 
 1. **Never publish without review.** Public `GET /api/reports` and `/directory` serve
-   `APPROVED` rows only — this protects innocent people from false accusations.
+   `APPROVED` rows only - this protects innocent people from false accusations.
 2. **Verify before approving**: call back official numbers (`.gov.cm` sites, ANTIC 8202),
    never the suspect number in the report.
 3. **Seeded roles**: `admin@checkam.cm` is ADMIN. Promote trusted reviewers to MODERATOR;

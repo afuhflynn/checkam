@@ -65,7 +65,7 @@ Signed out on `/settings` or `/admin` to `/signin?next=<path>`; signed in on `/s
 **API surface**:
 | Endpoint | Method | Key inputs | Key outputs | Auth | Key errors |
 |---|---|---|---|---|---|
-| `proxy.ts` matcher | edge | path, session cookie | rewrite or redirect | cookie session | — |
+| `proxy.ts` matcher | edge | path, session cookie | rewrite or redirect | cookie session | - |
 
 **Value sourcing**:
 | Action | Value produced / displayed | Source |

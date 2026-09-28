@@ -19,8 +19,12 @@ export const ExtractedFactsSchema = z.object({
     .describe(
       "Name or acronym of the organization, ministry, embassy, or company claimed (e.g. MINESEC, MINFOPRA, Orange Money, Canadian Embassy).",
     ),
-  phoneNumbers: z.array(z.string()).describe("All phone numbers found in the document or message."),
-  emails: z.array(z.string()).describe("All email addresses found in the document or message."),
+  phoneNumbers: z
+    .array(z.string())
+    .describe("All phone numbers found in the document or message."),
+  emails: z
+    .array(z.string())
+    .describe("All email addresses found in the document or message."),
   paymentMethod: z
     .string()
     .nullable()
@@ -30,11 +34,15 @@ export const ExtractedFactsSchema = z.object({
   amount: z
     .string()
     .nullable()
-    .describe("Any financial amount requested or promised (e.g. '25 000 FCFA', '75000 XAF')."),
+    .describe(
+      "Any financial amount requested or promised (e.g. '25 000 FCFA', '75000 XAF').",
+    ),
   deadline: z
     .string()
     .nullable()
-    .describe("Any urgency deadline or timeline claimed (e.g. 'Avant le 15 Mars', 'In 14 days')."),
+    .describe(
+      "Any urgency deadline or timeline claimed (e.g. 'Avant le 15 Mars', 'In 14 days').",
+    ),
   suspiciousPhrases: z
     .array(z.string())
     .describe(
@@ -42,7 +50,9 @@ export const ExtractedFactsSchema = z.object({
     ),
   summaryClaim: z
     .string()
-    .describe("A one sentence factual summary of what the notice offers or demands."),
+    .describe(
+      "A one sentence factual summary of what the notice offers or demands.",
+    ),
 });
 
 export type ExtractedFacts = z.infer<typeof ExtractedFactsSchema>;
@@ -127,10 +137,13 @@ export async function extractFactsFromTextOrImage(params: {
 
       return object;
     } catch (error) {
-      console.warn(`[AI SDK] Fallback triggered from model ${modelName}:`, error);
+      console.warn(
+        `[AI SDK] Fallback triggered from model ${modelName}:`,
+        error,
+      );
       if (isCreditOrLimitError(error)) {
         openAiCircuit();
-        break; // No point trying more models — credits/limits exhausted
+        break; // No point trying more models - credits/limits exhausted
       }
       // Continue to next model in cascade
     }
@@ -148,7 +161,8 @@ function runHeuristicExtractor(text: string): ExtractedFacts {
   let claimedEntity: string | null = null;
   if (lower.includes("minesec")) claimedEntity = "MINESEC";
   else if (lower.includes("minfopra")) claimedEntity = "MINFOPRA";
-  else if (lower.includes("douane") || lower.includes("customs")) claimedEntity = "DOUANES";
+  else if (lower.includes("douane") || lower.includes("customs"))
+    claimedEntity = "DOUANES";
   else if (lower.includes("orange money")) claimedEntity = "Orange Money";
   else if (lower.includes("mtn momo") || lower.includes("mtn mobile money"))
     claimedEntity = "MTN MoMo";
@@ -158,18 +172,24 @@ function runHeuristicExtractor(text: string): ExtractedFacts {
 
   let paymentMethod: string | null = null;
   if (lower.includes("orange money")) paymentMethod = "Orange Money";
-  else if (lower.includes("mtn momo") || lower.includes("momo")) paymentMethod = "MTN MoMo";
+  else if (lower.includes("mtn momo") || lower.includes("momo"))
+    paymentMethod = "MTN MoMo";
   else if (lower.includes("trésor public") || lower.includes("tresor public"))
     paymentMethod = "Trésor Public";
 
   // Match amount (e.g. 25 000 FCFA, 75.000 FCFA, 150000 XAF)
-  const amountMatch = text.match(/\b\d{1,3}(?:[.,\s]\d{3})*\s*(?:FCFA|XAF|CFA|F\s?CFA|francs?)\b/i);
+  const amountMatch = text.match(
+    /\b\d{1,3}(?:[.,\s]\d{3})*\s*(?:FCFA|XAF|CFA|F\s?CFA|francs?)\b/i,
+  );
   const amount = amountMatch ? amountMatch[0] : null;
 
   const suspiciousPhrases: string[] = [];
-  if (lower.includes("frais de dossier")) suspiciousPhrases.push("frais de dossier");
-  if (lower.includes("quittance express")) suspiciousPhrases.push("quittance express");
-  if (lower.includes("transfert par erreur")) suspiciousPhrases.push("transfert par erreur");
+  if (lower.includes("frais de dossier"))
+    suspiciousPhrases.push("frais de dossier");
+  if (lower.includes("quittance express"))
+    suspiciousPhrases.push("quittance express");
+  if (lower.includes("transfert par erreur"))
+    suspiciousPhrases.push("transfert par erreur");
   if (lower.includes("visa express")) suspiciousPhrases.push("visa express");
 
   return {

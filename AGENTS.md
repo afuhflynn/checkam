@@ -1,4 +1,4 @@
-# CheckAm — Verify Before You Pay
+# CheckAm - Verify Before You Pay
 
 Bilingual (FR default, EN toggle) scam verification for Cameroon. Paste text, upload a flyer, or look up a phone or email, get a rules decided verdict with evidence plus a forwardable WhatsApp warning.
 

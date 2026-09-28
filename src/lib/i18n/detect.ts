@@ -1,6 +1,6 @@
 import type { Language } from "./dictionary";
 
-// Distinctive stopwords — matched as whole words, never substrings.
+// Distinctive stopwords - matched as whole words, never substrings.
 const FRENCH_WORDS = new Set([
   "le",
   "la",
@@ -71,7 +71,9 @@ const ENGLISH_WORDS = new Set([
  * English so the bot can reply in the sender's language. Defaults to French
  * (majority language in Cameroon) when there is no usable signal.
  */
-export function detectMessageLanguage(text: string | undefined | null): Language {
+export function detectMessageLanguage(
+  text: string | undefined | null,
+): Language {
   if (!text) return "fr";
   const lower = text.toLowerCase();
   // French diacritics are a near-certain signal

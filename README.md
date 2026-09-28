@@ -1,7 +1,7 @@
-# CheckAm — Verify Before You Pay 🇨🇲
+# CheckAm - Verify Before You Pay 🇨🇲
 
 A bilingual (English/Français) scam-verification platform for Cameroon. People paste a message,
-upload a flyer, or search a phone number — and get a clear verdict with hard evidence, plus a
+upload a flyer, or search a phone number - and get a clear verdict with hard evidence, plus a
 ready-to-forward WhatsApp warning.
 
 > **Mission:** stop MINESEC/MINFOPRA recruitment scams, Orange/MTN Mobile Money fraud, fake
@@ -14,10 +14,10 @@ ready-to-forward WhatsApp warning.
 
 | Stage | What |
 | ----- | ---- |
-| **1 — Verification engine + site** | Intake hub (paste text / upload flyer-PDF / lookup phone-email), 3 one-tap demo cases, deterministic rules engine, AI fact extraction, Receipts card (badge + 3 evidence bullets + official website + ANTIC 8202 + copyable WhatsApp warning) |
-| **2 — WhatsApp channel** | Meta webhook (`GET` verify + `POST` HMAC-signed receiver), idempotent event inbox, Inngest async processing, media fetch + same-engine verdict, short WhatsApp reply |
-| **3 — Registry + data feed** | Public scam directory (`/directory`), permanent dossiers (`/scam/$slug`), public reporting with moderation queue, gated admin dashboard, structured threat feed (JSON/CSV) for telcos/banks |
-| **4 — Accounts + chat (new)** | Permit gate at `/signin` (password + Google, email verify, reset link + OTP, resend caps), avatar menu, `/chat` atelier (folders, streaming threads, evidence dossier, Verdict Seal), guest tries (2/day) with sign-in wall, persistent history with undo restore, agent tools (registry, flagged, verify, Tavily web search, title drafts) behind versioned prompts, Nodemailer mail (verify/reset/welcome) via Inngest, lean `/settings`, WhatsApp trials guide, bilingual SEO + sitemap |
+| **1 - Verification engine + site** | Intake hub (paste text / upload flyer-PDF / lookup phone-email), 3 one-tap demo cases, deterministic rules engine, AI fact extraction, Receipts card (badge + 3 evidence bullets + official website + ANTIC 8202 + copyable WhatsApp warning) |
+| **2 - WhatsApp channel** | Meta webhook (`GET` verify + `POST` HMAC-signed receiver), idempotent event inbox, Inngest async processing, media fetch + same-engine verdict, short WhatsApp reply |
+| **3 - Registry + data feed** | Public scam directory (`/directory`), permanent dossiers (`/scam/$slug`), public reporting with moderation queue, gated admin dashboard, structured threat feed (JSON/CSV) for telcos/banks |
+| **4 - Accounts + chat (new)** | Permit gate at `/signin` (password + Google, email verify, reset link + OTP, resend caps), avatar menu, `/chat` atelier (folders, streaming threads, evidence dossier, Verdict Seal), guest tries (2/day) with sign-in wall, persistent history with undo restore, agent tools (registry, flagged, verify, Tavily web search, title drafts) behind versioned prompts, Nodemailer mail (verify/reset/welcome) via Inngest, lean `/settings`, WhatsApp trials guide, bilingual SEO + sitemap |
 
 Bilingual throughout: browser-language detection with persisted EN | FR switch. Mobile-first.
 
@@ -51,7 +51,7 @@ pnpm db:seed
 pnpm dev          # http://localhost:3000
 ```
 
-Seeded admin: `admin@checkam.cm` (role ADMIN — set its password via your auth flow, or
+Seeded admin: `admin@checkam.cm` (role ADMIN - set its password via your auth flow, or
 promote a signed-up user in `psql`/Studio). Seeded scams: fake MINESEC-325 flyer, 75 000 FCFA
 Orange Money reversal SMS, express Canada visa, Douala-port auction.
 
@@ -73,7 +73,7 @@ Copy the keys in `.env` and fill real values for production:
 | `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Meta webhook `GET` verification |
 | `WHATSAPP_API_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID` / `WHATSAPP_APP_SECRET` | Meta Cloud API media fetch + replies + HMAC check |
 | `NEXT_PUBLIC_APP_URL` | Canonical URL (share links, OpenRouter referer) |
-| `CHECKAM_ADMIN_BYPASS="true"` | **Local dev only** — skips moderator sign-in on `/api/admin`. Never set in production. |
+| `CHECKAM_ADMIN_BYPASS="true"` | **Local dev only** - skips moderator sign-in on `/api/admin`. Never set in production. |
 
 ---
 
@@ -126,9 +126,9 @@ reversal-SMS patterns.
 
 ## 📚 Docs
 
-- [`docs/WHATSAPP.md`](docs/WHATSAPP.md) — Meta Cloud API go-live checklist
-- [`docs/THREAT-FEED.md`](docs/THREAT-FEED.md) — telco/bank integration
-- [`docs/ADMIN.md`](docs/ADMIN.md) — moderation workflow + safety rules
+- [`docs/WHATSAPP.md`](docs/WHATSAPP.md) - Meta Cloud API go-live checklist
+- [`docs/THREAT-FEED.md`](docs/THREAT-FEED.md) - telco/bank integration
+- [`docs/ADMIN.md`](docs/ADMIN.md) - moderation workflow + safety rules
 
 ---
 
@@ -137,7 +137,7 @@ reversal-SMS patterns.
 ```bash
 pnpm typecheck   # tsc --noEmit (strict, no any)
 pnpm check       # biome check
-pnpm test        # vitest — rules engine (7 tests: 3 demos + official + phones)
+pnpm test        # vitest - rules engine (7 tests: 3 demos + official + phones)
 pnpm build       # production build (15 routes)
 ```
 
@@ -147,7 +147,7 @@ Smoke-tested: MINESEC demo → `HIGH_RISK / 100 / CIVIL_SERVICE`; threat feed �
 
 ## 🛡 Safety & abuse notes
 
-- Nothing is published until a moderator approves it — reports sit in `PENDING`, flagged
+- Nothing is published until a moderator approves it - reports sit in `PENDING`, flagged
   identifiers stay `isActive: false` until APPROVE.
 - Approve auto-creates flagged phone/email identifiers; Reject deactivates them.
 - Report submissions rate-limited (5/hour/IP); verify + uploads + threat feed behind Arcjet.

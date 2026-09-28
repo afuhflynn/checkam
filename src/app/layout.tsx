@@ -27,12 +27,14 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  title: "CheckAm — Verify before you pay | Plateforme Anti-Arnaque Cameroun",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  ),
+  title: "CheckAm - Verify before you pay | Plateforme Anti-Arnaque Cameroun",
   description:
     "Bilingual scam-verification platform for Cameroon. Verify recruitment flyers, Mobile Money transfers, civil service concours, and visa offers with hard evidence.",
   openGraph: {
-    title: "CheckAm — Verify before you pay (Cameroun)",
+    title: "CheckAm - Verify before you pay (Cameroun)",
     description:
       "Vérifiez les avis de concours, faux virements Mobile Money et faux visas avant d'envoyer votre argent.",
     url: "https://checkam.cm",

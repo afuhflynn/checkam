@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { ChatShell } from "../../../components/chat/chat-shell";
 
 export const metadata = {
-  title: "Chat — CheckAm",
+  title: "Chat - CheckAm",
 };
 
 export default async function ChatPage({
@@ -14,6 +14,7 @@ export default async function ChatPage({
   const match = cookie.match(/(?:^|;\s*)checkam_lang=(en|fr)/);
   const params = await searchParams;
   const q = params?.q;
-  const trial = typeof q === "string" && q.trim() ? q.trim().slice(0, 500) : null;
+  const trial =
+    typeof q === "string" && q.trim() ? q.trim().slice(0, 500) : null;
   return <ChatShell locale={match?.[1] === "en" ? "en" : "fr"} trial={trial} />;
 }

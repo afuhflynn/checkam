@@ -12,8 +12,17 @@ import {
   ConversationEmptyState,
   ConversationScrollButton,
 } from "../ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "../ai-elements/message";
-import { Source, Sources, SourcesContent, SourcesTrigger } from "../ai-elements/sources";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "../ai-elements/message";
+import {
+  Source,
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+} from "../ai-elements/sources";
 import {
   PromptInput,
   PromptInputFooter,
@@ -68,7 +77,11 @@ const OFFLINE_KEY = "checkam-offline-queue";
 
 // Binds the StickToBottom scroll element out to a ref so paging can read
 // heights and hold position across prepends.
-function ScrollBinder({ target }: { target: React.RefObject<HTMLElement | null> }) {
+function ScrollBinder({
+  target,
+}: {
+  target: React.RefObject<HTMLElement | null>;
+}) {
   const { scrollRef } = useStickToBottomContext();
   useEffect(() => {
     target.current = scrollRef.current;
@@ -134,7 +147,10 @@ function verdictTheme(verdict: string) {
   };
 }
 
-const VERDICT_LABEL: Record<string, "verdictHighRisk" | "verdictCaution" | "verdictOfficial"> = {
+const VERDICT_LABEL: Record<
+  string,
+  "verdictHighRisk" | "verdictCaution" | "verdictOfficial"
+> = {
   HIGH_RISK: "verdictHighRisk",
   CAUTION: "verdictCaution",
   VERIFIED_OFFICIAL: "verdictOfficial",
@@ -146,7 +162,8 @@ function ShareBlock({ verdict }: { verdict: Verdict }) {
   const shareText = verdict.shareText;
   if (!shareText) return null;
 
-  const open = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
+  const open = (url: string) =>
+    window.open(url, "_blank", "noopener,noreferrer");
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(shareText);
@@ -167,7 +184,9 @@ function ShareBlock({ verdict }: { verdict: Verdict }) {
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
           {t.chatShareTitle}
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-slate-600">{t.chatShareDesc}</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-600">
+          {t.chatShareDesc}
+        </p>
       </div>
       <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-3 font-sans text-xs leading-relaxed text-slate-700">
         {shareText}
@@ -178,7 +197,9 @@ function ShareBlock({ verdict }: { verdict: Verdict }) {
           size="sm"
           variant="whatsapp"
           className="gap-1.5 font-sans font-semibold"
-          onClick={() => open(`https://wa.me/?text=${encodeURIComponent(shareText)}`)}
+          onClick={() =>
+            open(`https://wa.me/?text=${encodeURIComponent(shareText)}`)
+          }
         >
           <MessageCircleIcon className="h-4 w-4" />
           {t.chatShareWhatsapp}
@@ -189,7 +210,9 @@ function ShareBlock({ verdict }: { verdict: Verdict }) {
           variant="outline"
           className="gap-1.5 font-sans font-semibold"
           onClick={() =>
-            open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(plain)}`)
+            open(
+              `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(plain)}`,
+            )
           }
         >
           <FacebookIcon className="h-4 w-4" />
@@ -209,8 +232,18 @@ function ShareBlock({ verdict }: { verdict: Verdict }) {
           <Share2Icon className="h-4 w-4" />
           {t.chatShareX}
         </Button>
-        <Button type="button" size="sm" variant="ghost" className="gap-1.5" onClick={copy}>
-          {copied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="gap-1.5"
+          onClick={copy}
+        >
+          {copied ? (
+            <CheckIcon className="h-4 w-4" />
+          ) : (
+            <CopyIcon className="h-4 w-4" />
+          )}
           {copied ? t.chatShareCopied : t.chatShareCopy}
         </Button>
       </div>
@@ -239,10 +272,13 @@ export function DossierPane({
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
             {t.chatDossierTitle}
           </p>
-          <p className="text-sm leading-relaxed text-slate-700">{fallbackText}</p>
+          <p className="text-sm leading-relaxed text-slate-700">
+            {fallbackText}
+          </p>
           {lookup && (
             <p className="text-sm text-slate-700">
-              {lookup.normalized} — {lookup.flagged ? lookup.flagged.riskLevel : "clean"}
+              {lookup.normalized} -{" "}
+              {lookup.flagged ? lookup.flagged.riskLevel : "clean"}
             </p>
           )}
         </CardContent>
@@ -275,7 +311,9 @@ export function DossierPane({
             {t[labelKey]}
           </span>
           <div className="shrink-0 text-right">
-            <div className={`font-display text-2xl font-black leading-none ${theme.score}`}>
+            <div
+              className={`font-display text-2xl font-black leading-none ${theme.score}`}
+            >
               {verdict.score}
             </div>
             <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-slate-500">
@@ -293,16 +331,23 @@ export function DossierPane({
               {verdict.bullets.map((bullet, index) => {
                 const tone = verdict.tones?.[index] ?? "warning";
                 return (
-                  <li key={`${index}-${bullet.slice(0, 24)}`} className="flex gap-2 text-sm">
+                  <li
+                    key={`${index}-${bullet.slice(0, 24)}`}
+                    className="flex gap-2 text-sm"
+                  >
                     <span
                       aria-hidden="true"
                       className={`mt-0.5 font-mono text-xs font-bold ${
-                        tone === "reassuring" ? "text-verdict-verified-badge" : "text-slate-400"
+                        tone === "reassuring"
+                          ? "text-verdict-verified-badge"
+                          : "text-slate-400"
                       }`}
                     >
                       {tone === "reassuring" ? "✓" : "•"}
                     </span>
-                    <span className="leading-relaxed text-slate-700">{bullet}</span>
+                    <span className="leading-relaxed text-slate-700">
+                      {bullet}
+                    </span>
                   </li>
                 );
               })}
@@ -315,14 +360,18 @@ export function DossierPane({
             <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
               {t.chatNextStep}
             </p>
-            <p className="mt-1 text-sm leading-relaxed text-slate-700">{verdict.safetyNote}</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-700">
+              {verdict.safetyNote}
+            </p>
           </div>
         )}
 
         {verdict.sources && verdict.sources.length > 0 && (
           <Sources>
             <SourcesTrigger count={verdict.sources.length}>
-              <p className="text-sm font-semibold text-slate-700">{t.chatSourcesTitle}</p>
+              <p className="text-sm font-semibold text-slate-700">
+                {t.chatSourcesTitle}
+              </p>
               <ChevronDownIcon className="h-4 w-4 text-slate-500" />
             </SourcesTrigger>
             <SourcesContent>
@@ -339,7 +388,8 @@ export function DossierPane({
 
         {lookup && (
           <p className="text-sm text-slate-700">
-            {lookup.normalized} — {lookup.flagged ? lookup.flagged.riskLevel : "clean"}
+            {lookup.normalized} -{" "}
+            {lookup.flagged ? lookup.flagged.riskLevel : "clean"}
           </p>
         )}
       </CardContent>
@@ -361,7 +411,8 @@ export function InlineVerdict({ verdict }: { verdict: Verdict | null }) {
   if (!shareText) return null;
   const plain = verdict.shareTextPlain || shareText;
 
-  const open = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
+  const open = (url: string) =>
+    window.open(url, "_blank", "noopener,noreferrer");
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(shareText);
@@ -381,7 +432,9 @@ export function InlineVerdict({ verdict }: { verdict: Verdict | null }) {
         >
           {t[labelKey]}
         </span>
-        <span className={`font-display text-xl font-black leading-none ${theme.score}`}>
+        <span
+          className={`font-display text-xl font-black leading-none ${theme.score}`}
+        >
           {verdict.score}
           <span className="ml-1 font-sans text-[10px] font-semibold uppercase tracking-wide text-slate-500">
             {t.chatRiskScore}
@@ -394,7 +447,9 @@ export function InlineVerdict({ verdict }: { verdict: Verdict | null }) {
           size="sm"
           variant="whatsapp"
           className="gap-1.5 font-sans font-semibold"
-          onClick={() => open(`https://wa.me/?text=${encodeURIComponent(shareText)}`)}
+          onClick={() =>
+            open(`https://wa.me/?text=${encodeURIComponent(shareText)}`)
+          }
         >
           <MessageCircleIcon className="h-4 w-4" />
           {t.chatShareWhatsapp}
@@ -405,7 +460,9 @@ export function InlineVerdict({ verdict }: { verdict: Verdict | null }) {
           variant="outline"
           className="gap-1.5 bg-white font-sans font-semibold"
           onClick={() =>
-            open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(plain)}`)
+            open(
+              `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(plain)}`,
+            )
           }
         >
           <FacebookIcon className="h-4 w-4" />
@@ -425,8 +482,18 @@ export function InlineVerdict({ verdict }: { verdict: Verdict | null }) {
           <Share2Icon className="h-4 w-4" />
           {t.chatShareX}
         </Button>
-        <Button type="button" size="sm" variant="ghost" className="gap-1.5" onClick={copy}>
-          {copied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="gap-1.5"
+          onClick={copy}
+        >
+          {copied ? (
+            <CheckIcon className="h-4 w-4" />
+          ) : (
+            <CopyIcon className="h-4 w-4" />
+          )}
           {copied ? t.chatShareCopied : t.chatShareCopy}
         </Button>
       </div>
@@ -475,7 +542,13 @@ export function ThreadView({
     failedCopy: t.gateFailed,
     initialDraft,
   });
-  callbacks.current = { onVerdict, onLookup, onFallback, failedCopy: t.gateFailed, initialDraft };
+  callbacks.current = {
+    onVerdict,
+    onLookup,
+    onFallback,
+    failedCopy: t.gateFailed,
+    initialDraft,
+  };
   // Sequence of the persisted user turn, handed to the transport so the
   // wall recount excludes the current turn instead of charging it twice.
   const turnSeq = useRef<number | undefined>(undefined);
@@ -519,14 +592,19 @@ export function ThreadView({
   const oldestSeq = mounted.length ? (mounted[0]?.seq ?? null) : null;
 
   const fetchPage = useCallback(
-    async (before: number | null): Promise<{ rows: ThreadItem[]; more: boolean }> => {
+    async (
+      before: number | null,
+    ): Promise<{ rows: ThreadItem[]; more: boolean }> => {
       const params = new URLSearchParams();
       if (before !== null) params.set("before", String(before));
       const res = await fetch(
         `/api/chat/sessions/${sessionId}/messages${params.size ? `?${params}` : ""}`,
       );
       if (!res.ok) throw new Error("thread_failed");
-      const data = (await res.json()) as { messages: ThreadItem[]; hasMore: boolean };
+      const data = (await res.json()) as {
+        messages: ThreadItem[];
+        hasMore: boolean;
+      };
       return { rows: data.messages, more: data.hasMore };
     },
     [sessionId],
@@ -539,13 +617,19 @@ export function ThreadView({
       setPages([rows]);
       setHasMoreUp(more);
       setFullyLoaded(!more);
-      const lastAssistant = [...rows].reverse().find((row) => row.role === "assistant");
+      const lastAssistant = [...rows]
+        .reverse()
+        .find((row) => row.role === "assistant");
       callbacks.current.onFallback(lastAssistant ? lastAssistant.text : null);
       // Without this the pane sat on the raw text fallback until the next
       // message was sent, so a reload silently lost a verdict the user had
       // already been shown.
       if (lastAssistant?.verificationId) {
-        void rehydrateVerdict(sessionId, lastAssistant.verificationId, locale).then((payload) => {
+        void rehydrateVerdict(
+          sessionId,
+          lastAssistant.verificationId,
+          locale,
+        ).then((payload) => {
           // Only overwrite if the fetch landed, so the text card stays visible
           // instead of flashing empty on a slow round trip.
           if (payload) callbacks.current.onVerdict(payload, false);
@@ -597,7 +681,9 @@ export function ThreadView({
     if (!sessionId) return;
     try {
       const params = new URLSearchParams({ after: String(newestSeq.current) });
-      const res = await fetch(`/api/chat/sessions/${sessionId}/messages?${params}`);
+      const res = await fetch(
+        `/api/chat/sessions/${sessionId}/messages?${params}`,
+      );
       if (!res.ok) return;
       const data = (await res.json()) as { messages: ThreadItem[] };
       if (!data.messages.length) return;
@@ -610,11 +696,17 @@ export function ThreadView({
         last[last.length - 1] = [...(last[last.length - 1] ?? []), ...fresh];
         return last;
       });
-      const lastAssistant = [...data.messages].reverse().find((row) => row.role === "assistant");
+      const lastAssistant = [...data.messages]
+        .reverse()
+        .find((row) => row.role === "assistant");
       if (lastAssistant) {
         callbacks.current.onFallback(lastAssistant.text);
         if (lastAssistant.verificationId) {
-          void rehydrateVerdict(sessionId, lastAssistant.verificationId, locale).then((payload) => {
+          void rehydrateVerdict(
+            sessionId,
+            lastAssistant.verificationId,
+            locale,
+          ).then((payload) => {
             if (payload) callbacks.current.onVerdict(payload, true);
           });
         }
@@ -769,12 +861,19 @@ export function ThreadView({
           const form = new FormData();
           form.append("sessionId", sessionId);
           form.append("file", blob, "flyer");
-          const res = await fetch("/api/chat/upload", { method: "POST", body: form });
+          const res = await fetch("/api/chat/upload", {
+            method: "POST",
+            body: form,
+          });
           if (!res.ok) throw new Error("upload_failed");
           const data = (await res.json()) as {
             file: { key: string; mimeType: string; bytes: number };
           };
-          keys.push({ key: data.file.key, mime: data.file.mimeType, bytes: data.file.bytes });
+          keys.push({
+            key: data.file.key,
+            mime: data.file.mimeType,
+            bytes: data.file.bytes,
+          });
         }
         await submitTurnWithAttachments(text, keys);
       } catch {
@@ -817,7 +916,9 @@ export function ThreadView({
   async function handleLookup() {
     if (!draft.trim()) return;
     try {
-      const res = await fetch(`/api/chat/lookup?phone=${encodeURIComponent(draft.trim())}`);
+      const res = await fetch(
+        `/api/chat/lookup?phone=${encodeURIComponent(draft.trim())}`,
+      );
       if (!res.ok) throw new Error("lookup_failed");
       const data = (await res.json()) as LookupResult;
       onLookup(data);
@@ -827,7 +928,9 @@ export function ThreadView({
   }
 
   const visiblePersisted =
-    inFlightSeq === null ? mounted : mounted.filter((row) => row.seq < inFlightSeq);
+    inFlightSeq === null
+      ? mounted
+      : mounted.filter((row) => row.seq < inFlightSeq);
   const streaming = status === "streaming" || status === "submitted";
 
   return (
@@ -837,18 +940,34 @@ export function ThreadView({
         <ConversationContent className="items-center">
           <div className="flex w-full max-w-3xl flex-col gap-8">
             {hasMoreUp && mounted.length > 0 && (
-              <div ref={sentinelRef} aria-hidden="true" className="flex justify-center py-2">
-                {loadingUp && <span className="font-mono text-[11px] text-slate-400">···</span>}
+              <div
+                ref={sentinelRef}
+                aria-hidden="true"
+                className="flex justify-center py-2"
+              >
+                {loadingUp && (
+                  <span className="font-mono text-[11px] text-slate-400">
+                    ···
+                  </span>
+                )}
               </div>
             )}
             {visiblePersisted.length === 0 && !streaming && (
-              <ConversationEmptyState title={t.chatEmptyTitle} description={t.chatEmptySub} />
+              <ConversationEmptyState
+                title={t.chatEmptyTitle}
+                description={t.chatEmptySub}
+              />
             )}
             {visiblePersisted.map((row, rowIndex) => {
               const isLastAssistant =
-                row.role === "assistant" && rowIndex === visiblePersisted.length - 1 && !streaming;
+                row.role === "assistant" &&
+                rowIndex === visiblePersisted.length - 1 &&
+                !streaming;
               return (
-                <Message key={row.id} from={row.role === "user" ? "user" : "assistant"}>
+                <Message
+                  key={row.id}
+                  from={row.role === "user" ? "user" : "assistant"}
+                >
                   <MessageContent>
                     <MessageResponse className="font-sans text-sm leading-relaxed text-slate-800">
                       {row.text}
@@ -860,7 +979,10 @@ export function ThreadView({
             })}
             {streaming &&
               messages.map((message) => (
-                <Message key={message.id} from={message.role === "user" ? "user" : "assistant"}>
+                <Message
+                  key={message.id}
+                  from={message.role === "user" ? "user" : "assistant"}
+                >
                   <MessageContent>
                     {message.parts
                       .filter((part) => part.type === "text")
@@ -884,18 +1006,25 @@ export function ThreadView({
         <div className="mx-auto w-full max-w-3xl">
           {!online && (
             <output className="mb-2 block rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
-              <span className="font-bold">{t.chatOfflineTitle}.</span> {t.chatOfflineDesc}
+              <span className="font-bold">{t.chatOfflineTitle}.</span>{" "}
+              {t.chatOfflineDesc}
             </output>
           )}
           {wallCapped && (
             <div className="mb-2 rounded-lg bg-verdict-caution-bg px-3 py-2">
-              <p className="text-sm font-bold text-verdict-caution-text">{t.chatWallTitle}</p>
-              <p className="text-sm text-verdict-caution-text">{t.chatWallDesc}</p>
+              <p className="text-sm font-bold text-verdict-caution-text">
+                {t.chatWallTitle}
+              </p>
+              <p className="text-sm text-verdict-caution-text">
+                {t.chatWallDesc}
+              </p>
             </div>
           )}
           {error && (
             <div className="mb-2 flex items-center gap-2 rounded-lg bg-verdict-scam-bg px-3 py-2">
-              <p className="flex-1 text-sm text-verdict-scam-text">{t.chatTurnFailed}</p>
+              <p className="flex-1 text-sm text-verdict-scam-text">
+                {t.chatTurnFailed}
+              </p>
               <Button
                 type="button"
                 size="sm"
@@ -934,12 +1063,19 @@ export function ThreadView({
                 </Button>
               </div>
               {streaming ? (
-                <Button type="button" size="sm" variant="outline" onClick={() => stop()}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => stop()}
+                >
                   {t.chatStop}
                 </Button>
               ) : (
                 <PromptInputSubmit
-                  disabled={!draft.trim() || wallCapped || uploading || !sessionId}
+                  disabled={
+                    !draft.trim() || wallCapped || uploading || !sessionId
+                  }
                 />
               )}
             </PromptInputFooter>

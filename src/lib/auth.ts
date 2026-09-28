@@ -143,9 +143,15 @@ export async function revokeAllSessions(userId: string): Promise<number> {
 
 // Prisma-backed equivalent of Supabase has_role(): moderation restricted to admins.
 // Public read stays limited to APPROVED registry rows (enforced in queries).
-export async function requireModerator(): Promise<{ userId: string; role: string }> {
-  // Open dev bypass only when explicitly enabled — never in production.
-  if (process.env.NODE_ENV !== "production" && process.env.CHECKAM_ADMIN_BYPASS === "true") {
+export async function requireModerator(): Promise<{
+  userId: string;
+  role: string;
+}> {
+  // Open dev bypass only when explicitly enabled - never in production.
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.CHECKAM_ADMIN_BYPASS === "true"
+  ) {
     return { userId: "dev-bypass", role: "ADMIN" };
   }
   const session = await auth.api.getSession({ headers: await headers() });

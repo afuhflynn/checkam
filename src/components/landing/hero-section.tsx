@@ -41,7 +41,9 @@ export function HeroSection({ stats }: { stats: LandingStats }) {
         >
           <div className="flex items-center gap-2.5 rounded-full border border-slate-200/90 bg-white/90 backdrop-blur-md px-4 py-2 shadow-lg text-left">
             <span className="flex h-2 w-2 rounded-full bg-amber-500" />
-            <span className="font-mono text-xs font-bold text-slate-700">{t.heroSignalMomo}</span>
+            <span className="font-mono text-xs font-bold text-slate-700">
+              {t.heroSignalMomo}
+            </span>
           </div>
         </div>
 
@@ -58,19 +60,19 @@ export function HeroSection({ stats }: { stats: LandingStats }) {
           </div>
         </div>
 
-        {/* Hero Headline — Fraunces Display */}
+        {/* Hero Headline - Fraunces Display */}
         <div className="space-y-4 max-w-4xl mx-auto">
           <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl font-black text-ink tracking-tight text-balance leading-[1.02]">
             {t.heroMainTitle}
           </h1>
 
-          {/* Subhead — Public Sans */}
+          {/* Subhead - Public Sans */}
           <p className="font-sans text-base sm:text-xl lg:text-2xl text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal">
             {t.heroMainSubtitle}
           </p>
         </div>
 
-        {/* Action Buttons — Clean, High-Contrast */}
+        {/* Action Buttons - Clean, High-Contrast */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button
             asChild
