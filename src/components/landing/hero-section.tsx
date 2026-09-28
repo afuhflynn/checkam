@@ -1,148 +1,108 @@
 "use client";
 
-import { ArrowRight, BadgeCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck, Siren } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { PRELOADED_DEMO_CASES } from "../demo-cases";
 import { useTranslation } from "../../lib/i18n/context";
 import { translations } from "../../lib/i18n/dictionary";
 import { Button } from "../ui/button";
+import type { LandingStats } from "./bulletin-bar";
 
-const SPECIMEN_BULLETS_FR = [
-  "Adresse Gmail gratuite au lieu d'un domaine *.gov.cm.",
-  "25 000 FCFA vers un MoMo personnel, sans quittance du Trésor.",
-  "Aucun arrêté ministériel, aucune diffusion CRTV.",
-];
+function maskShort(value: string): string {
+  if (value.includes("@")) return `•••@${value.split("@")[1] ?? ""}`;
+  const digits = value.replace(/\D/g, "");
+  if (digits.length < 6) return value;
+  return `+${digits.slice(0, 3)} •• •• ${digits.slice(-2)}`;
+}
 
-const SPECIMEN_BULLETS_EN = [
-  "Free Gmail address instead of a *.gov.cm domain.",
-  "25,000 FCFA to a personal MoMo, no Treasury receipt.",
-  "No ministerial decree, no CRTV broadcast.",
-];
-
-export function HeroSection({ onVerify }: { onVerify: () => void }) {
+export function HeroSection({ stats }: { stats: LandingStats }) {
   const { language, t } = useTranslation();
-  const specimenBullets = language === "fr" ? SPECIMEN_BULLETS_FR : SPECIMEN_BULLETS_EN;
-  // Bilingual echo: the other language's headline, set in italic serif.
-  // In a bilingual country the translation is content, not decoration.
-  const echo =
-    language === "fr" ? translations.en.heroHeading : translations.fr.heroHeading;
-  const sealRef = useRef<HTMLDivElement | null>(null);
-  const [sealed, setSealed] = useState(false);
-
-  useEffect(() => {
-    const node = sealRef.current;
-    if (!node) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setSealed(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setSealed(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.4 },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+  const echo = language === "fr" ? translations.en.heroHeading : translations.fr.heroHeading;
+  const flagged = stats.recentFlagged[0] ?? null;
 
   return (
-    <section className="relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-14 sm:pt-16 sm:pb-20 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-        {/* Editorial headline with bilingual echo */}
-        <div className="lg:col-span-7 space-y-6">
-          <p className="flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-authority-700">
-            <span className="h-px w-8 bg-authority-700" aria-hidden="true" />
-            {t.heroKicker}
-          </p>
-
-          <h1 className="font-display text-4xl sm:text-6xl font-black leading-[1.04] tracking-tight text-ink text-balance">
-            {t.heroHeadingA}{" "}
-            <em className="italic underline decoration-emerald-500 decoration-[0.08em] underline-offset-[0.12em]">
-              {t.heroHeadingB}
-            </em>
-          </h1>
-          <p className="font-display text-lg sm:text-xl italic text-slate-500" lang={language === "fr" ? "en" : "fr"}>
-            {echo}
-          </p>
-
-          <p className="text-base sm:text-lg text-slate-600 max-w-xl leading-relaxed">
-            {t.heroLede}
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              type="button"
-              size="lg"
-              onClick={onVerify}
-              className="gap-2 bg-authority-950 hover:bg-authority-900 font-bold shadow-lg"
-            >
-              {t.heroCtaVerify}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button asChild type="button" size="lg" variant="outline" className="font-bold">
-              <Link href="/directory">{t.heroCtaRegistry}</Link>
-            </Button>
+    <section className="bg-dots relative overflow-hidden">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center relative">
+        {/* Floating proof cards, desktop only */}
+        <div
+          aria-hidden="true"
+          className="animate-float-soft pointer-events-none absolute left-0 top-16 hidden w-56 rotate-[-4deg] rounded-2xl border-2 border-authority-900/15 bg-white text-left shadow-2xl xl:block"
+          style={{ "--float-rotate": "-4deg" } as React.CSSProperties}
+        >
+          <div className="quittance-stripes border-b border-slate-200 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+            Nº 07-MINE-CM
           </div>
-
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            <span className="flex items-center gap-1.5 text-emerald-700">
-              <BadgeCheck className="h-3.5 w-3.5" />
-              {t.heroNoteFree}
+          <div className="space-y-2.5 p-4">
+            <span className="inline-flex rounded-md bg-red-600 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-white">
+              {t.heroSealRisk}
             </span>
-            <span>{t.heroNoteNoAccount}</span>
-            <span>{t.heroNoteBilingual}</span>
+            <div className="stamp-rotated inline-block rounded-md border-2 border-red-700 px-2 py-0.5 font-mono text-[11px] font-black uppercase tracking-widest text-red-700">
+              {t.heroSealScam}
+            </div>
+            <p className="font-mono text-[11px] font-bold text-slate-500">ANTIC 8202</p>
           </div>
+        </div>
 
-          <p className="font-mono text-[11px] uppercase tracking-wider text-slate-400">
-            {t.heroTrustLabel} — PRC · MINFOPRA · MINESEC · ANTIC
+        <div
+          aria-hidden="true"
+          className="animate-float-soft-late pointer-events-none absolute right-0 top-24 hidden w-60 rotate-[3deg] rounded-2xl border border-authority-900/10 bg-white p-4 text-left shadow-xl xl:block"
+          style={{ "--float-rotate": "3deg" } as React.CSSProperties}
+        >
+          <p className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-red-700">
+            <Siren className="h-3.5 w-3.5" />
+            {flagged ? maskShort(flagged.normalizedValue) : "+237 •• •• 56"}
+          </p>
+          <p className="mt-1.5 text-xs font-semibold text-slate-600">
+            {flagged ? flagged.category.replace(/_/g, " ") : t.bulletinBlacklisted}
+          </p>
+          <p className="mt-2 flex items-center gap-1.5 font-mono text-[10px] font-bold text-emerald-700">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            ANTIC 8202
           </p>
         </div>
 
-        {/* Specimen receipt: badges speak the page language, the seal
-            stamps once when scrolled into view */}
-        <div className="lg:col-span-5" ref={sealRef}>
-          <div className="relative mx-auto max-w-md rotate-1 rounded-2xl border-2 border-authority-900/15 bg-white shadow-2xl overflow-hidden">
-            <div className="quittance-stripes flex items-center justify-between gap-2 px-5 py-2 border-b border-slate-200 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-              <span>{t.heroReceiptTitle}</span>
-              <span className="whitespace-nowrap">Nº 07-MINE-CM</span>
-            </div>
-            <div className="p-5 sm:p-6 space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <span className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-white">
-                  {t.heroSealRisk}
-                </span>
-                <span
-                  className={`inline-block rounded-md border-2 border-red-700 px-2 py-0.5 font-mono text-[11px] font-black uppercase tracking-widest text-red-700 ${
-                    sealed ? "stamp-in" : "opacity-0"
-                  }`}
-                  aria-hidden={!sealed}
-                >
-                  {t.heroSealScam}
-                </span>
-              </div>
-              <div className="space-y-2.5">
-                {specimenBullets.map((bullet, idx) => (
-                  <div
-                    key={bullet}
-                    className="flex items-start gap-2.5 rounded-lg bg-slate-50 border border-slate-200/80 p-3"
-                  >
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-authority-900 font-mono text-[10px] font-bold text-white">
-                      {idx + 1}
-                    </span>
-                    <p className="text-xs font-medium leading-relaxed text-slate-700">{bullet}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="perforated-edge" aria-hidden="true" />
-              <div className="flex items-center justify-between font-mono text-[11px] font-bold">
-                <span className="text-slate-500">ANTIC 8202 — {t.heroNoteFree}</span>
-                <span className="text-emerald-700">wa.me →</span>
-              </div>
-            </div>
+        <p className="inline-flex items-center gap-2 rounded-full border border-authority-900/15 bg-white px-4 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-authority-800 shadow-sm">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+          {t.heroKicker}
+        </p>
+
+        <h1 className="mx-auto mt-6 max-w-3xl text-balance text-5xl sm:text-7xl font-extrabold leading-[1.02] tracking-tight text-ink">
+          {t.heroHeadingA} {t.heroHeadingB}
+        </h1>
+        <p className="mx-auto mt-4 max-w-2xl font-display text-xl sm:text-2xl italic text-slate-500" lang={language === "fr" ? "en" : "fr"}>
+          {echo}
+        </p>
+        <p className="mx-auto mt-4 max-w-xl text-base sm:text-lg leading-relaxed text-slate-600">
+          {t.heroLede}
+        </p>
+
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Button asChild type="button" size="lg" className="gap-2 bg-authority-950 hover:bg-authority-900 font-bold shadow-lg px-8">
+            <Link href="/chat">
+              {t.heroCtaChat}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button asChild type="button" size="lg" variant="outline" className="font-bold px-8">
+            <Link href="/directory">{t.heroCtaRegistry}</Link>
+          </Button>
+        </div>
+
+        <div className="mt-10">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+            {t.heroTrialTitle}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            {PRELOADED_DEMO_CASES.map((demo) => (
+              <Button key={demo.id} asChild type="button" variant="outline" size="sm" className="font-semibold">
+                <Link href={`/chat?q=${encodeURIComponent(demo.text.slice(0, 400))}`}>
+                  {language === "fr" ? demo.titleFr : demo.titleEn}
+                </Link>
+              </Button>
+            ))}
           </div>
         </div>
       </div>

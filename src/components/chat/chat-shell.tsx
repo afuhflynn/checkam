@@ -55,7 +55,7 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const [folderName, setFolderName] = useState("");
   const [renaming, setRenaming] = useState<{ kind: "session" | "folder"; id: string; title: string } | null>(null);
   const [pendingSend, setPendingSend] = useState<string | null>(null);
-  const [emptyDraft, setEmptyDraft] = useState("");
+  const [emptyDraft, setEmptyDraft] = useState(trial ?? "");
 
   async function startWithText(text: string) {
     const id = await createSession();

@@ -185,6 +185,9 @@ export const translations = {
     heroLede:
       "Paste the SMS, upload the flyer, search the number. CheckAm interrogates it against Cameroon's official rules and the confirmed scam registry — and hands you receipts you can forward.",
     heroCtaVerify: "Verify a message",
+    heroCtaChat: "Start a check",
+    heroTrialTitle: "Or try a real case:",
+    proofKicker: "Live from the registry",
     heroCtaRegistry: "Browse the registry",
     heroNoteFree: "Free",
     heroNoteNoAccount: "No account needed",
@@ -570,6 +573,9 @@ export const translations = {
     heroLede:
       "Collez le SMS, déposez le flyer, cherchez le numéro. CheckAm l'interroge face aux règles officielles camerounaises et au registre des arnaques confirmées — et vous remet des preuves à transférer.",
     heroCtaVerify: "Vérifier un message",
+    heroCtaChat: "Lancer une vérification",
+    heroTrialTitle: "Ou essayez un cas réel :",
+    proofKicker: "En direct du registre",
     heroCtaRegistry: "Consulter le registre",
     heroNoteFree: "Gratuit",
     heroNoteNoAccount: "Sans compte",

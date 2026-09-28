@@ -14,7 +14,7 @@ export function HowSection() {
   ];
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
       <div className="max-w-2xl space-y-3 mb-10">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-authority-700">
           {t.howKicker}
