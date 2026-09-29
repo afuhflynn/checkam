@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, Briefcase, CreditCard, Plane, ShieldAlert } from "lucide-react";
+import { Briefcase, CreditCard, Plane, ShieldAlert } from "lucide-react";
 import { useTranslation } from "../../lib/i18n/context";
 
 export function VectorsBentoSection() {
@@ -46,9 +46,6 @@ export function VectorsBentoSection() {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
       {/* Section Header with Generous Negative Space */}
       <div className="max-w-3xl space-y-4 mb-14 sm:mb-16">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-authority-700">
-          {t.bentoKicker}
-        </p>
         <h2 className="font-display text-3xl sm:text-5xl font-black tracking-tight text-ink text-balance leading-tight">
           {t.bentoTitle}
         </h2>

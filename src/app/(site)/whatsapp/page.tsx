@@ -1,26 +1,14 @@
 "use client";
 
 import {
-  ArrowRight,
   Bot,
   CheckCheck,
-  FileText,
-  Image as ImageIcon,
   MessageCircle,
-  PhoneCall,
-  QrCode,
-  Send,
   ShieldAlert,
   ShieldCheck,
-  Smartphone,
   Zap,
 } from "lucide-react";
-import Link from "next/link";
 import React, { useState } from "react";
-import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
-import { Card, CardContent, CardHeader } from "../../../components/ui/card";
-import { GuideTrials } from "../../../components/guide-trials";
 import { useTranslation } from "../../../lib/i18n/context";
 
 const MINSEC_REPLY_FR = `🚨 *ALERTE ARNAQUE / CHECKAM CAMEROUN* 🚨
@@ -73,7 +61,9 @@ Verify before you pay! This notice was analyzed on https://checkam.cm :
 
 export default function WhatsAppPage() {
   const { language, t } = useTranslation();
-  const [activeSimulatorDemo, setActiveSimulatorDemo] = useState<"minesec" | "momo">("minesec");
+  const [activeSimulatorDemo, setActiveSimulatorDemo] = useState<
+    "minesec" | "momo"
+  >("minesec");
 
   const simReply =
     activeSimulatorDemo === "minesec"
@@ -91,7 +81,9 @@ export default function WhatsAppPage() {
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-xs font-bold text-emerald-800">
           <MessageCircle className="h-4 w-4 text-[#25D366]" />
           <span>
-            {language === "fr" ? "Canal WhatsApp Officiel CheckAm" : "CheckAm WhatsApp Channel"}
+            {language === "fr"
+              ? "Canal WhatsApp Officiel CheckAm"
+              : "CheckAm WhatsApp Channel"}
           </span>
         </div>
         <h1 className="font-display text-3xl sm:text-5xl font-black text-authority-950 tracking-tight">
@@ -173,7 +165,9 @@ export default function WhatsAppPage() {
                     CheckAm Cameroun
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   </div>
-                  <div className="text-[10px] text-emerald-200 leading-none">{t.waBotName}</div>
+                  <div className="text-[10px] text-emerald-200 leading-none">
+                    {t.waBotName}
+                  </div>
                 </div>
               </div>
             </div>
@@ -201,14 +195,18 @@ export default function WhatsAppPage() {
                   <div className="font-mono text-[10.5px] whitespace-pre-line text-slate-800 leading-relaxed select-none">
                     {simReply}
                   </div>
-                  <div className="text-[9px] text-slate-400 text-right">10:42</div>
+                  <div className="text-[9px] text-slate-400 text-right">
+                    10:42
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Simulator Switcher Controls */}
             <div className="bg-white p-2.5 border-t border-slate-200 flex items-center justify-between text-[11px]">
-              <span className="font-bold text-slate-700">{t.waTestScenario}</span>
+              <span className="font-bold text-slate-700">
+                {t.waTestScenario}
+              </span>
               <div className="flex gap-1.5">
                 <button
                   type="button"
@@ -237,23 +235,6 @@ export default function WhatsAppPage() {
           </div>
         </div>
       </div>
-
-      {/* Save number + trials */}
-      <GuideTrials />
-
-      {/* Webhook Developer Info Card */}
-      <Card className="border border-slate-200 bg-authority-50/50 p-6 sm:p-8 space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2 text-authority-950 font-bold text-lg">
-            <Bot className="h-5 w-5 text-authority-700" />
-            <span>{t.waDevSpecTitle}</span>
-          </div>
-          <Badge variant="outline" className="font-mono text-xs">
-            /api/public/whatsapp/webhook
-          </Badge>
-        </div>
-        <p className="text-xs text-slate-600 leading-relaxed">{t.waDevSpecDesc}</p>
-      </Card>
     </div>
   );
 }

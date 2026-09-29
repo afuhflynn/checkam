@@ -1,6 +1,5 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
 import { useTranslation } from "../../lib/i18n/context";
 
 const INSTITUTIONS = [
@@ -25,23 +24,15 @@ export function TrustStrip() {
 
         <div className="flex flex-wrap items-center justify-center gap-x-10 sm:gap-x-14 gap-y-6">
           {INSTITUTIONS.map((inst) => (
-            <div
-              key={inst.acronym}
-              className="flex flex-col items-center group cursor-default transition-transform hover:-translate-y-0.5"
-            >
-              <span className="font-display text-xl sm:text-2xl font-black tracking-tight text-slate-400 group-hover:text-ink transition-colors">
+            <div key={inst.acronym} className="flex flex-col items-center">
+              <span className="font-display text-xl sm:text-2xl font-black tracking-tight text-slate-400">
                 {inst.acronym}
               </span>
-              <span className="font-mono text-[10px] font-semibold text-slate-400 group-hover:text-authority-700 transition-colors">
+              <span className="font-mono text-[10px] font-semibold text-slate-400">
                 {inst.name}
               </span>
             </div>
           ))}
-        </div>
-
-        <div className="pt-2 flex items-center justify-center gap-2 text-xs font-mono text-emerald-800 font-bold">
-          <ShieldCheck className="h-4 w-4 text-emerald-600" />
-          <span>ANTIC 8202 - {t.heroPerkFree}</span>
         </div>
       </div>
     </section>

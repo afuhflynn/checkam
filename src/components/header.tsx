@@ -5,65 +5,22 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "../lib/i18n/context";
 import { UserButton } from "./user-button";
+import { ShieldCheck } from "lucide-react";
 
 export function Header() {
-  const { language, setLanguage, t } = useTranslation();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: "/", label: t.navHome },
-    { href: "/chat", label: t.navChat },
     { href: "/directory", label: t.navDirectory },
     { href: "/report", label: t.navReport },
     { href: "/whatsapp", label: t.navWhatsApp },
-    { href: "/admin", label: t.navAdmin },
+    // { href: "/admin", label: t.navAdmin }, // coming soon
   ];
 
   return (
     <header className="sticky top-0 z-50 w-full bg-paper/95 backdrop-blur-md border-b border-authority-900/10">
-      {/* Utility strip: hotline + language */}
-      <div className="bg-authority-950 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center justify-between gap-4">
-          <p className="font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300 truncate">
-            {language === "fr" ? "Cybersécurité ANTIC" : "ANTIC Cyber Security"}
-            <span className="text-emerald-400 font-bold">
-              {" "}
-              - 8202 ({language === "fr" ? "gratuit" : "free"})
-            </span>
-          </p>
-          <div className="flex items-center font-mono text-[11px] font-bold">
-            <button
-              type="button"
-              onClick={() => setLanguage("fr")}
-              aria-pressed={language === "fr"}
-              className={`px-2 py-0.5 transition-colors ${
-                language === "fr"
-                  ? "text-white"
-                  : "text-slate-500 hover:text-slate-200"
-              }`}
-            >
-              FR
-            </button>
-            <span className="text-slate-700" aria-hidden="true">
-              /
-            </span>
-            <button
-              type="button"
-              onClick={() => setLanguage("en")}
-              aria-pressed={language === "en"}
-              className={`px-2 py-0.5 transition-colors ${
-                language === "en"
-                  ? "text-white"
-                  : "text-slate-500 hover:text-slate-200"
-              }`}
-            >
-              EN
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Masthead */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
         <Link
@@ -71,11 +28,11 @@ export function Header() {
           className="flex items-baseline gap-2 shrink-0"
           aria-label="CheckAm - home"
         >
+          <div className="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center text-authority-950 font-black">
+            <ShieldCheck className="h-5 w-5 text-white" />
+          </div>
           <span className="font-display text-[26px] leading-none font-black tracking-tight text-ink">
             CheckAm
-          </span>
-          <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-emerald-700 border border-emerald-600/40 rounded px-1.5 py-0.5">
-            CMR
           </span>
         </Link>
 

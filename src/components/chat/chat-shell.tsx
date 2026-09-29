@@ -17,7 +17,13 @@ import {
 } from "../ai-elements/prompt-input";
 import type { Language } from "../../lib/i18n/dictionary";
 import { useTranslation } from "../../lib/i18n/context";
-import { DossierPane, ThreadView, type LookupResult, type Verdict } from "./thread-view";
+import {
+  DossierPane,
+  ThreadView,
+  type LookupResult,
+  type Verdict,
+} from "./thread-view";
+import { UserButton } from "../user-button";
 
 interface Folder {
   id: string;
@@ -52,7 +58,14 @@ function writeActiveSession(id: string): void {
   }
 }
 
-export function ChatShell({ locale, trial }: { locale: Language; trial: string | null }) {  const { t } = useTranslation();
+export function ChatShell({
+  locale,
+  trial,
+}: {
+  locale: Language;
+  trial: string | null;
+}) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -102,13 +115,21 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
     queryKey: ["chat", "sessions", search, cursor],
     staleTime: 30_000,
     refetchInterval: 30_000,
-    queryFn: async (): Promise<{ sessions: SessionRow[]; nextCursor: string | null }> => {
+    queryFn: async (): Promise<{
+      sessions: SessionRow[];
+      nextCursor: string | null;
+    }> => {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
       if (cursor) params.set("cursor", cursor);
-      const res = await fetch(`/api/chat/sessions${params.size ? `?${params}` : ""}`);
+      const res = await fetch(
+        `/api/chat/sessions${params.size ? `?${params}` : ""}`,
+      );
       if (!res.ok) throw new Error("sessions_failed");
-      return (await res.json()) as { sessions: SessionRow[]; nextCursor: string | null };
+      return (await res.json()) as {
+        sessions: SessionRow[];
+        nextCursor: string | null;
+      };
     },
   });
 
@@ -135,9 +156,10 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
     if (restoredRef.current || activeId || !sessions.length) return;
     restoredRef.current = true;
     const remembered = readActiveSession();
-    const target = remembered && sessions.some((s) => s.id === remembered)
-      ? remembered
-      : sessions[0]?.id;
+    const target =
+      remembered && sessions.some((s) => s.id === remembered)
+        ? remembered
+        : sessions[0]?.id;
     if (target) setActiveId(target);
   }, [sessions, activeId]);
 
@@ -204,7 +226,8 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
       return (await res.json()) as { undoToken: string };
     },
     onSuccess: (data, target) => {
-      if (target.kind === "session" && target.id === activeId) setActiveId(null);
+      if (target.kind === "session" && target.id === activeId)
+        setActiveId(null);
       refresh();
       toast.success(t.chatDeleted, {
         action: {
@@ -229,8 +252,15 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
     onError: () => toast.error(t.gateFailed),
   });
 
-  async function togglePin(kind: "session" | "folder", id: string, pinned: boolean) {
-    const url = kind === "session" ? `/api/chat/sessions/${id}` : `/api/chat/folders/${id}`;
+  async function togglePin(
+    kind: "session" | "folder",
+    id: string,
+    pinned: boolean,
+  ) {
+    const url =
+      kind === "session"
+        ? `/api/chat/sessions/${id}`
+        : `/api/chat/folders/${id}`;
     const res = await fetch(url, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -248,7 +278,9 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
     const url = isSession
       ? `/api/chat/sessions/${renaming.id}`
       : `/api/chat/folders/${renaming.id}`;
-    const body = isSession ? { title: renaming.title.trim() } : { name: renaming.title.trim() };
+    const body = isSession
+      ? { title: renaming.title.trim() }
+      : { name: renaming.title.trim() };
     const res = await fetch(url, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -303,8 +335,12 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
           setActiveId(item.id);
           setRailOpen(false);
         }}
-        onRename={(title) => setRenaming({ kind: "session", id: item.id, title })}
-        onRenameChange={(title) => setRenaming({ kind: "session", id: item.id, title })}
+        onRename={(title) =>
+          setRenaming({ kind: "session", id: item.id, title })
+        }
+        onRenameChange={(title) =>
+          setRenaming({ kind: "session", id: item.id, title })
+        }
         onRenameSubmit={submitRename}
         onPin={() => togglePin("session", item.id, item.pinned)}
         onDelete={() => setConfirmDelete({ kind: "session", id: item.id })}
@@ -321,7 +357,11 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
   const rail = (
     <div className="flex h-full flex-col gap-3">
       <div className="flex items-center gap-2">
-        <Button type="button" className="flex-1 font-bold" onClick={() => createSession()}>
+        <Button
+          type="button"
+          className="flex-1 font-bold"
+          onClick={() => createSession()}
+        >
           {t.chatNewChat}
         </Button>
       </div>
@@ -380,7 +420,11 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                   <Input
                     value={renaming.title}
                     onChange={(event) =>
-                      setRenaming({ kind: "folder", id: folder.id, title: event.target.value })
+                      setRenaming({
+                        kind: "folder",
+                        id: folder.id,
+                        title: event.target.value,
+                      })
                     }
                     maxLength={80}
                   />
@@ -390,7 +434,9 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                 </form>
               ) : (
                 <>
-                  <p className="flex-1 truncate text-sm font-bold text-slate-800">{folder.name}</p>
+                  <p className="flex-1 truncate text-sm font-bold text-slate-800">
+                    {folder.name}
+                  </p>
                   <Button
                     type="button"
                     variant="ghost"
@@ -406,7 +452,9 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                     variant="ghost"
                     size="sm"
                     aria-label={folder.pinned ? t.chatUnpin : t.chatPin}
-                    onClick={() => togglePin("folder", folder.id, folder.pinned)}
+                    onClick={() =>
+                      togglePin("folder", folder.id, folder.pinned)
+                    }
                   >
                     {folder.pinned ? "★" : "☆"}
                   </Button>
@@ -416,7 +464,11 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                     size="sm"
                     aria-label={t.chatRename}
                     onClick={() =>
-                      setRenaming({ kind: "folder", id: folder.id, title: folder.name })
+                      setRenaming({
+                        kind: "folder",
+                        id: folder.id,
+                        title: folder.name,
+                      })
                     }
                   >
                     ✎
@@ -430,7 +482,8 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                       setConfirmDelete({
                         kind: "folder",
                         id: folder.id,
-                        count: sessions.filter((s) => s.folderId === folder.id).length,
+                        count: sessions.filter((s) => s.folderId === folder.id)
+                          .length,
                       })
                     }
                   >
@@ -440,14 +493,18 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
               )}
             </div>
             <ul className="mt-1 space-y-0.5">
-              {sessions.filter((s) => s.folderId === folder.id).map((item) => sessionRow(item))}
+              {sessions
+                .filter((s) => s.folderId === folder.id)
+                .map((item) => sessionRow(item))}
             </ul>
           </section>
         ))}
         {sessions.filter((s) => !s.folderId).length > 0 && (
           <section aria-label="unfiled">
             <ul className="space-y-0.5">
-              {sessions.filter((s) => !s.folderId).map((item) => sessionRow(item))}
+              {sessions
+                .filter((s) => !s.folderId)
+                .map((item) => sessionRow(item))}
             </ul>
           </section>
         )}
@@ -492,20 +549,17 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
       .join("")
       .toUpperCase();
     return (
-      <Link
-        href="/settings"
-        className="flex items-center gap-2.5 rounded-xl border border-authority-900/10 bg-white px-2.5 py-2 hover:bg-slate-50"
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-authority-950 font-mono text-[11px] font-bold text-white">
-          {initials}
-        </span>
+      <div className="flex items-center gap-2.5 rounded-xl border border-authority-900/10 bg-white px-2.5 py-2 hover:bg-slate-50">
+        <UserButton hideChat />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-bold text-ink">{name}</span>
-          <span className="block font-mono text-[10px] uppercase tracking-wider text-slate-400">
-            {t.gateUserMenuSettings}
+          <span className="block truncate text-sm font-bold text-ink">
+            {name}
+          </span>
+          <span className="block font-mono text-[10px] tracking-wider text-slate-400">
+            {session?.user?.email}
           </span>
         </span>
-      </Link>
+      </div>
     );
   }
 
@@ -548,11 +602,14 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
               <p className="font-display text-3xl font-black tracking-tight text-ink sm:text-4xl">
                 {t.chatEmptyTitle}
               </p>
-              <p className="max-w-md text-sm text-slate-500">{t.chatEmptySub}</p>
+              <p className="max-w-md text-sm text-slate-500">
+                {t.chatEmptySub}
+              </p>
               <div className="w-full">
                 <PromptInput
                   onSubmit={(message) => {
-                    if (message.text.trim()) void startWithText(message.text.trim());
+                    if (message.text.trim())
+                      void startWithText(message.text.trim());
                   }}
                 >
                   <PromptInputTextarea
@@ -578,7 +635,11 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                 >
                   {t.chatSampleText}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => createSession()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => createSession()}
+                >
                   {t.chatSampleFlyer}
                 </Button>
                 <Button
@@ -622,15 +683,12 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
           className={`${dossierOpen ? "fixed inset-y-0 right-0 z-40 w-80 overflow-y-auto border-l border-authority-900/10 bg-paper p-4" : "hidden"} lg:static lg:block lg:w-80 lg:shrink-0`}
           aria-label={t.chatDossierTitle}
         >
-          <DossierPane verdict={verdict} sealed={sealed} fallbackText={fallback} lookup={lookup} />
-          {!verdict && !fallback && !lookup && (
-            <div className="rounded-xl border border-dashed border-authority-900/20 bg-white/60 p-4">
-              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                {t.chatDossierTitle}
-              </p>
-              <p className="mt-1.5 text-sm text-slate-500">{t.chatDossierEmpty}</p>
-            </div>
-          )}
+          <DossierPane
+            verdict={verdict}
+            sealed={sealed}
+            fallbackText={fallback}
+            lookup={lookup}
+          />
         </aside>
 
         <Dialog.Root
@@ -643,7 +701,9 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
               <Card>
                 <CardContent className="space-y-3 p-5">
                   <Dialog.Title className="font-display text-lg font-black text-ink">
-                    {confirmDelete?.kind === "folder" ? t.chatDeleteFolder : t.chatDeleteSession}
+                    {confirmDelete?.kind === "folder"
+                      ? t.chatDeleteFolder
+                      : t.chatDeleteSession}
                   </Dialog.Title>
                   {confirmDelete?.kind === "folder" && (
                     <Dialog.Description className="text-sm text-slate-500">
@@ -651,14 +711,20 @@ export function ChatShell({ locale, trial }: { locale: Language; trial: string |
                     </Dialog.Description>
                   )}
                   <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setConfirmDelete(null)}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setConfirmDelete(null)}
+                    >
                       {t.chatCancel}
                     </Button>
                     <Button
                       type="button"
                       variant="destructive"
                       disabled={deleteMutation.isPending}
-                      onClick={() => confirmDelete && deleteMutation.mutate(confirmDelete)}
+                      onClick={() =>
+                        confirmDelete && deleteMutation.mutate(confirmDelete)
+                      }
                     >
                       {t.chatConfirmDelete}
                     </Button>

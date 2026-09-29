@@ -108,6 +108,10 @@ body {
   }
 }
 
+button {
+  @apply cursor-pointer;
+}
+
 .animate-ticker {
   animation: ticker-scroll 40s linear infinite;
 }

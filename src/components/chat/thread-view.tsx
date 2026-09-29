@@ -156,101 +156,6 @@ const VERDICT_LABEL: Record<
   VERIFIED_OFFICIAL: "verdictOfficial",
 };
 
-function ShareBlock({ verdict }: { verdict: Verdict }) {
-  const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
-  const shareText = verdict.shareText;
-  if (!shareText) return null;
-
-  const open = (url: string) =>
-    window.open(url, "_blank", "noopener,noreferrer");
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setCopied(true);
-      toast.success(t.chatShareCopied);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      toast.error(t.copyFailed);
-    }
-  };
-
-  // Facebook and X have no markdown, so they receive the bare rendering.
-  const plain = verdict.shareTextPlain || shareText;
-
-  return (
-    <div className="space-y-3 rounded-xl border border-authority-900/10 bg-white p-3">
-      <div>
-        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-          {t.chatShareTitle}
-        </p>
-        <p className="mt-1 text-xs leading-relaxed text-slate-600">
-          {t.chatShareDesc}
-        </p>
-      </div>
-      <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-3 font-sans text-xs leading-relaxed text-slate-700">
-        {shareText}
-      </pre>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="whatsapp"
-          className="gap-1.5 font-sans font-semibold"
-          onClick={() =>
-            open(`https://wa.me/?text=${encodeURIComponent(shareText)}`)
-          }
-        >
-          <MessageCircleIcon className="h-4 w-4" />
-          {t.chatShareWhatsapp}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="gap-1.5 font-sans font-semibold"
-          onClick={() =>
-            open(
-              `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(plain)}`,
-            )
-          }
-        >
-          <FacebookIcon className="h-4 w-4" />
-          {t.chatShareFacebook}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="gap-1.5 font-sans font-semibold"
-          onClick={() =>
-            open(
-              `https://twitter.com/intent/tweet?text=${encodeURIComponent(plain)}&url=${encodeURIComponent("https://checkam.cm")}`,
-            )
-          }
-        >
-          <Share2Icon className="h-4 w-4" />
-          {t.chatShareX}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="gap-1.5"
-          onClick={copy}
-        >
-          {copied ? (
-            <CheckIcon className="h-4 w-4" />
-          ) : (
-            <CopyIcon className="h-4 w-4" />
-          )}
-          {copied ? t.chatShareCopied : t.chatShareCopy}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 export function DossierPane({
   verdict,
   sealed,
@@ -295,32 +200,6 @@ export function DossierPane({
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
           {t.chatDossierTitle}
         </p>
-
-        {/*
-          The seal used to be one rotated line of display type, "Verdict
-          sealed: CAUTION · 15". In a 300px sidebar it wrapped to two lines and
-          the rotation pushed it into the card edge, which is what read as
-          broken rendering. The badge and the score are now separate blocks,
-          upright, and the rotation is gone.
-        */}
-        <div className="flex items-start justify-between gap-3">
-          <span
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 font-sans text-[11px] font-bold uppercase tracking-wide ${theme.chip}`}
-          >
-            {sealed && <span aria-hidden="true">✓</span>}
-            {t[labelKey]}
-          </span>
-          <div className="shrink-0 text-right">
-            <div
-              className={`font-display text-2xl font-black leading-none ${theme.score}`}
-            >
-              {verdict.score}
-            </div>
-            <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-slate-500">
-              {t.chatRiskScore}
-            </div>
-          </div>
-        </div>
 
         {verdict.bullets.length > 0 && (
           <div className="space-y-2">
@@ -376,15 +255,18 @@ export function DossierPane({
             </SourcesTrigger>
             <SourcesContent>
               {verdict.sources.map((source) => (
-                <Source key={source.url} href={source.url} title={source.title}>
+                <Source
+                  key={source.url}
+                  href={source.url}
+                  title={source.title}
+                  className="underline italic"
+                >
                   {source.title}
                 </Source>
               ))}
             </SourcesContent>
           </Sources>
         )}
-
-        <ShareBlock verdict={verdict} />
 
         {lookup && (
           <p className="text-sm text-slate-700">
@@ -431,14 +313,6 @@ export function InlineVerdict({ verdict }: { verdict: Verdict | null }) {
           className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-sans text-[11px] font-bold uppercase tracking-wide ${theme.chip}`}
         >
           {t[labelKey]}
-        </span>
-        <span
-          className={`font-display text-xl font-black leading-none ${theme.score}`}
-        >
-          {verdict.score}
-          <span className="ml-1 font-sans text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-            {t.chatRiskScore}
-          </span>
         </span>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">

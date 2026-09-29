@@ -28,8 +28,8 @@ describe("CheckAm Rules Engine", () => {
       true,
     );
     // Should contain WhatsApp alert template
-    expect(result.whatsappWarning.fr).toContain("ALERTE ARNAQUE");
-    expect(result.whatsappWarning.en).toContain("SCAM ALERT");
+    expect(result.whatsappWarning.fr).toContain("Alerte arnaque");
+    expect(result.whatsappWarning.en).toContain("Scam alert");
     expect(result.anticHotline).toBe("8202");
   });
 
@@ -212,6 +212,7 @@ describe("Forwardable notices", () => {
     claimedEntity: "MINESEC",
     emails: ["recrutement@gmail.com"],
     phoneNumbers: ["699123456"],
+    amount: "25000 FCFA",
   });
 
   it("marks the WhatsApp rendering and leaves the plain one bare", () => {
@@ -221,15 +222,87 @@ describe("Forwardable notices", () => {
 
   it("carries the verdict header and the next step in both renderings", () => {
     for (const text of [result.whatsappWarning.en, result.whatsappWarningPlain.en]) {
-      expect(text).toContain("SCAM ALERT");
+      expect(text).toContain("Scam alert - CheckAm Cameroon");
       expect(text).toContain("8202");
       expect(text).toContain("699123456");
     }
   });
 
-  it("says so plainly when there was nothing to forward", () => {
+  it("uses no emojis in the share message", () => {
+    expect(result.whatsappWarning.en).not.toMatch(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u);
+    expect(result.whatsappWarning.fr).not.toMatch(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u);
+  });
+
+  it("skips the bullet section when there are no evidence bullets", () => {
     const thin = runRulesEngine({ text: "Bonjour, merci." });
-    expect(thin.whatsappWarningPlain.en).toContain("No clear scam signal");
+    expect(thin.whatsappWarningPlain.en).not.toContain("\n- ");
+    expect(thin.whatsappWarningPlain.en).toContain("This message was analyzed on checkam.cm:");
+  });
+
+  it("shows all phone numbers comma separated", () => {
+    const multiPhone = runRulesEngine({
+      text: "Scam message",
+      phoneNumbers: ["699123456", "677987654", "655111222"],
+    });
+    expect(multiPhone.whatsappWarning.en).toContain("699123456");
+    expect(multiPhone.whatsappWarning.en).toContain("677987654");
+    expect(multiPhone.whatsappWarning.en).toContain("655111222");
+  });
+
+  it("shows only the first email when no phone number is found", () => {
+    const multiEmail = runRulesEngine({
+      text: "Scam message",
+      emails: ["first@scam.com", "second@scam.com"],
+    });
+    expect(multiEmail.whatsappWarning.en).toContain("first@scam.com");
+    expect(multiEmail.whatsappWarning.en).not.toContain("second@scam.com");
+  });
+
+  it("includes the entity line when an official entity is identified", () => {
+    expect(result.whatsappWarning.en).toContain("MINESEC");
+  });
+
+  it("includes the amount line when an amount is found", () => {
+    expect(result.whatsappWarning.en).toContain("25000 FCFA");
+  });
+
+  it("includes the payment method line when found in evidence", () => {
+    expect(result.whatsappWarning.en).toContain("Mobile Money");
+  });
+
+  it("replaces em dashes with hyphens", () => {
+    const emDashResult = runRulesEngine({
+      text: "This is a test — with an em dash",
+    });
+    expect(emDashResult.whatsappWarning.en).not.toContain("—");
+    expect(emDashResult.whatsappWarning.en).not.toContain("–");
+  });
+
+  it("includes the forward prompt only on HIGH_RISK", () => {
+    expect(result.whatsappWarning.en).toContain("Forward this to your family");
+    const cautionResult = runRulesEngine({
+      text: "Bonjour, je suis le ministre. Merci de me rappeler.",
+    });
+    expect(cautionResult.whatsappWarning.en).not.toContain("Forward this to your family");
+  });
+
+  it("includes the ANTIC hotline only on HIGH_RISK", () => {
+    expect(result.whatsappWarning.en).toContain("Report it free on the ANTIC hotline, 8202.");
+    const cautionResult = runRulesEngine({
+      text: "Bonjour, je suis le ministre. Merci de me rappeler.",
+    });
+    expect(cautionResult.whatsappWarning.en).not.toContain("Report it free on the ANTIC hotline, 8202.");
+  });
+
+  it("uses a lighter safety note for VERIFIED_OFFICIAL", () => {
+    const officialResult = runRulesEngine({
+      text: "COMMUNIQUÉ DU MINFOPRA: Ouverture du concours d'entrée à l'ENAM session 2025.",
+      claimedEntity: "MINFOPRA",
+      emails: ["concours@minfopra.gov.cm"],
+    });
+    expect(officialResult.whatsappWarningPlain.en).toContain("Official communication - CheckAm");
+    expect(officialResult.whatsappWarningPlain.en).not.toContain("Report it free on the ANTIC hotline");
+    expect(officialResult.whatsappWarningPlain.en).not.toContain("Forward this to your family");
   });
 });
 

@@ -25,6 +25,8 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 12 | Landing redesign (intentional) | Path 1: enter | done |
 | 13 | Proxy edge rate limits | Path 6: harden | in-progress |
 | 14 | Thread window tuning from data | Path 6: harden | planned |
+| 15 | Share message rewrite | Path 3: chat | in-progress |
+| 16 | Chat history action menu | Path 3: chat | planned |
 
 ## Path 1: enter
 
@@ -110,6 +112,22 @@ Agent with tools: Tavily web search plus registry lookup plus flagged lookup plu
 - [x] Test it: `/test-engineer agent tools` (`src/tests/agent.test.ts`: tool wrapper, budget, prompt registry)
 Spec 0006 (`docs/specs/0001-ui-rebuild/0006-agent.md`) · code in `src/lib/agent/`, `src/lib/ai/prompts.ts`, `src/lib/ai/prompts/`, rewired `src/app/api/chat/transport/`
 
+### 16. Chat history action menu · in-progress
+Each chat history item gets a clear action menu with meaningful labels: rename, delete, share, pin. Replaces the current confusing menu with something easy to use.
+**Done when:** a user can rename, delete, share, and pin any chat history item from a clear action menu, in both languages.
+- [x] Design it (spec): `/solution-architect chat history action menu`
+- [ ] Build it: `/feature-build chat history action menu`
+   - [ ] Replace symbol menu with text labels (AC-1, AC-6, AC-7, AC-8)
+   - [ ] Implement Share action (AC-2)
+   - [ ] Implement Pin action (AC-3)
+   - [ ] Implement Rename action (AC-4)
+   - [ ] Implement Delete action (AC-5)
+- [ ] Verify it: `/verify-release chat history action menu`
+- [ ] Test it: `/test-engineer chat history action menu`
+- [ ] Review it (fresh model): `/peer-review chat history action menu`
+- [ ] Document it: `/tech-writer chat history action menu`
+Spec 0012 (`docs/specs/0001-ui-rebuild/0012-chat-action-menu.md`)
+
 ## Path 4: account
 
 ### 7. Lean settings · done
@@ -177,6 +195,20 @@ Spec 0010 (`docs/specs/0001-ui-rebuild/0010-proxy-edge-limits.md`)
 Tune the 50 by 3 thread window from real thread lengths after launch, from spec 0009 follow-up.
 Done when: the window matches measured p99 threads with smooth scroll retained.
 - [ ] Build it: `/feature-build thread window tuning`
+
+### 15. Share message rewrite · in-progress
+Rewrite the share message to be calm, emoji free, and human looking. The verdict leads, evidence follows, and a clear action step closes. No emojis, no all caps, no AI slop.
+**Done when:** the share message reads like a concerned friend who checked something, not like a security system firing an alarm.
+- [x] Design it (spec): `/solution-architect share message rewrite`
+- [x] Build it: `/feature-build share message rewrite`
+   - [x] Rewrite renderAlert with new format (AC-1, AC-2, AC-3, AC-4, AC-14, AC-15, AC-16)
+   - [x] Add conditional sections for contact and evidence (AC-5, AC-6, AC-7, AC-8, AC-9)
+   - [x] Add verdict specific tail sections (AC-10, AC-11, AC-12, AC-13)
+- [ ] Verify it: `/verify-release share message rewrite`
+- [ ] Test it: `/test-engineer share message rewrite`
+- [ ] Review it (fresh model): `/peer-review share message rewrite`
+- [ ] Document it: `/tech-writer share message rewrite`
+Spec 0011 (`docs/specs/0001-ui-rebuild/0011-share-message-rewrite/index.md`)
 
 ## Deferred
 

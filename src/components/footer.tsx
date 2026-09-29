@@ -2,7 +2,6 @@
 
 import { ExternalLink, Phone, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import React from "react";
 import { useTranslation } from "../lib/i18n/context";
 
 export function Footer() {
@@ -19,10 +18,12 @@ export function Footer() {
                 <ShieldCheck className="h-5 w-5 text-white" />
               </div>
               <span className="font-display text-xl font-black text-white tracking-tight">
-                CheckAm Cameroon
+                CheckAm
               </span>
             </div>
-            <p className="text-sm text-slate-400 max-w-md leading-relaxed">{t.footerDisclaimer}</p>
+            <p className="text-sm text-slate-400 max-w-md leading-relaxed">
+              {t.footerDisclaimer}
+            </p>
             <div className="inline-flex items-center gap-2 p-3 rounded-xl bg-authority-900 border border-slate-800 text-xs">
               <Phone className="h-4 w-4 text-emerald-400 shrink-0" />
               <div>
@@ -41,7 +42,9 @@ export function Footer() {
           {/* Col 2: Official Whitelist Portals */}
           <div className="space-y-3">
             <h4 className="text-xs uppercase font-bold tracking-wider text-slate-400">
-              {language === "fr" ? "Portails Officiels de l'État" : "Official State Portals"}
+              {language === "fr"
+                ? "Portails Officiels de l'État"
+                : "Official State Portals"}
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
@@ -51,7 +54,8 @@ export function Footer() {
                   rel="noreferrer"
                   className="hover:text-emerald-400 transition-colors flex items-center gap-1.5"
                 >
-                  Présidence de la République (prc.cm) <ExternalLink className="h-3 w-3" />
+                  Présidence de la République (prc.cm){" "}
+                  <ExternalLink className="h-3 w-3" />
                 </a>
               </li>
               <li>
@@ -61,7 +65,8 @@ export function Footer() {
                   rel="noreferrer"
                   className="hover:text-emerald-400 transition-colors flex items-center gap-1.5"
                 >
-                  MINFOPRA Concours (minfopra.gov.cm) <ExternalLink className="h-3 w-3" />
+                  MINFOPRA Concours (minfopra.gov.cm){" "}
+                  <ExternalLink className="h-3 w-3" />
                 </a>
               </li>
               <li>
@@ -71,7 +76,8 @@ export function Footer() {
                   rel="noreferrer"
                   className="hover:text-emerald-400 transition-colors flex items-center gap-1.5"
                 >
-                  MINESEC Enseignements (minesec.gov.cm) <ExternalLink className="h-3 w-3" />
+                  MINESEC Enseignements (minesec.gov.cm){" "}
+                  <ExternalLink className="h-3 w-3" />
                 </a>
               </li>
               <li>
@@ -81,7 +87,8 @@ export function Footer() {
                   rel="noreferrer"
                   className="hover:text-emerald-400 transition-colors flex items-center gap-1.5"
                 >
-                  ANTIC Cybersécurité (antic.cm) <ExternalLink className="h-3 w-3" />
+                  ANTIC Cybersécurité (antic.cm){" "}
+                  <ExternalLink className="h-3 w-3" />
                 </a>
               </li>
             </ul>
@@ -94,17 +101,26 @@ export function Footer() {
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/directory" className="hover:text-emerald-400 transition-colors">
+                <Link
+                  href="/directory"
+                  className="hover:text-emerald-400 transition-colors"
+                >
                   {t.navDirectory}
                 </Link>
               </li>
               <li>
-                <Link href="/report" className="hover:text-emerald-400 transition-colors">
+                <Link
+                  href="/report"
+                  className="hover:text-emerald-400 transition-colors"
+                >
                   {t.navReport}
                 </Link>
               </li>
               <li>
-                <Link href="/whatsapp" className="hover:text-emerald-400 transition-colors">
+                <Link
+                  href="/whatsapp"
+                  className="hover:text-emerald-400 transition-colors"
+                >
                   {t.navWhatsApp}
                 </Link>
               </li>
@@ -127,9 +143,6 @@ export function Footer() {
           <p>
             © {new Date().getFullYear()} {t.footerRights}
           </p>
-          <div className="flex items-center gap-4">
-            <span>Douala • Yaoundé • Bafoussam • Garoua • Bamenda</span>
-          </div>
         </div>
       </div>
     </footer>

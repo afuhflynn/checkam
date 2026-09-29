@@ -399,13 +399,17 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
   // Format forwardable notices. Markdown for WhatsApp, plain for Facebook and
   // SMS, which render asterisks literally.
   const phoneListStr = extractedPhones.map((p) => p.normalized).join(", ");
+  const emailList = extractedEmails.map((e) => e.original);
+  const amountStr = input.amount || null;
   const warningEn = renderAlert({
     language: "en",
     verdict,
     category,
     bullets: finalBulletsEn,
     phones: phoneListStr,
+    emails: emailList,
     entity: officialEntity?.acronym || "UNOFFICIAL",
+    amount: amountStr,
     nextStep: safetyNote.en,
     format: "markdown",
   });
@@ -415,7 +419,9 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     category,
     bullets: finalBulletsFr,
     phones: phoneListStr,
+    emails: emailList,
     entity: officialEntity?.acronym || "NON OFFICIEL",
+    amount: amountStr,
     nextStep: safetyNote.fr,
     format: "markdown",
   });
@@ -425,7 +431,9 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     category,
     bullets: finalBulletsEn,
     phones: phoneListStr,
+    emails: emailList,
     entity: officialEntity?.acronym || "UNOFFICIAL",
+    amount: amountStr,
     nextStep: safetyNote.en,
     format: "plain",
   });
@@ -435,7 +443,9 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     category,
     bullets: finalBulletsFr,
     phones: phoneListStr,
+    emails: emailList,
     entity: officialEntity?.acronym || "NON OFFICIEL",
+    amount: amountStr,
     nextStep: safetyNote.fr,
     format: "plain",
   });
@@ -467,61 +477,85 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
 
 export type AlertFormat = "markdown" | "plain";
 
+function extractPaymentMethod(bullets: string[]): string | null {
+  const patterns = [/orange money/i, /mtn momo/i, /mobile money/i, /bank transfer/i, /virement/i];
+  for (const bullet of bullets) {
+    for (const pattern of patterns) {
+      const match = bullet.match(pattern);
+      if (match) return match[0];
+    }
+  }
+  return null;
+}
+
 function renderAlert(params: {
   language: "en" | "fr";
   verdict: VerdictStatus;
   category: ScamCategory;
   bullets: string[];
   phones: string;
+  emails: string[];
   entity: string;
+  amount: string | null;
   nextStep: string;
   format: AlertFormat;
 }): string {
   const fr = params.language === "fr";
-  // WhatsApp honours *bold*; Facebook, X and SMS print the asterisks as
-  // literal noise, so the plain variant drops every marker.
   const strong = (text: string) => (params.format === "markdown" ? `*${text}*` : text);
+  const replaceDashes = (text: string) => text.replace(/[\u2014\u2013]/g, "-");
+  const stripEmojis = (text: string) =>
+    text.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "");
 
   const header =
     params.verdict === "HIGH_RISK"
       ? fr
-        ? "🚨 ALERTE ARNAQUE / CHECKAM CAMEROUN 🚨"
-        : "🚨 SCAM ALERT / CHECKAM CAMEROUN 🚨"
+        ? "Alerte arnaque - CheckAm Cameroun"
+        : "Scam alert - CheckAm Cameroon"
       : params.verdict === "CAUTION"
         ? fr
-          ? "⚠️ ATTENTION, MESSAGE À VÉRIFIER / CHECKAM ⚠️"
-          : "⚠️ CAUTION, MESSAGE TO VERIFY / CHECKAM ⚠️"
+          ? "Attention, message a verifier - CheckAm"
+          : "Caution, message to verify - CheckAm"
         : fr
-          ? "✅ COMMUNICATION OFFICIELLE / CHECKAM ✅"
-          : "✅ OFFICIAL COMMUNICATION / CHECKAM ✅";
+          ? "Communication officielle - CheckAm"
+          : "Official communication - CheckAm";
 
   const intro = fr
-    ? "Ce message a été analysé sur checkam.cm :"
-    : "This message was analyzed on checkam.cm :";
+    ? "Ce message a ete analyse sur checkam.cm :"
+    : "This message was analyzed on checkam.cm:";
 
-  // No findings is an honest state, not a formatting bug: say so rather than
-  // forward an empty numbered list.
-  const body = params.bullets.length
-    ? params.bullets.map((b, i) => `🔹 ${strong(`${i + 1}.`)} ${b}`).join("\n")
-    : fr
-      ? "Aucun indice d'arnaque clair n'a été trouvé. Restez prudent et vérifiez avant d'agir."
-      : "No clear scam signal was found. Stay cautious and verify before you act.";
+  const sections: string[] = [strong(header), "", intro];
 
-  const contact = fr
-    ? `📞 ${strong("Numéro concerné :")} ${params.phones || "non indiqué"}`
-    : `📞 ${strong("Number to watch:")} ${params.phones || "not given"}`;
+  if (params.bullets.length > 0) {
+    const bulletLines = params.bullets.map((b) => `- ${stripEmojis(replaceDashes(b))}`);
+    sections.push("", bulletLines.join("\n"));
+  }
 
-  const tail = fr
-    ? [
-        `🛡️ ${params.nextStep}`,
-        `🛡️ ${strong("Signalez gratuitement à l'ANTIC au 8202.")}`,
-        `🔄 ${strong("Faites suivre dans vos groupes WhatsApp pour protéger vos proches.")}`,
-      ]
-    : [
-        `🛡️ ${params.nextStep}`,
-        `🛡️ ${strong("Report it free on the ANTIC hotline, 8202.")}`,
-        `🔄 ${strong("Forward this to your family and groups to protect others.")}`,
-      ];
+  const contactLines: string[] = [];
+  if (params.phones) {
+    contactLines.push(fr ? `Numero a surveiller : ${params.phones}` : `Number to watch: ${params.phones}`);
+  } else if (params.emails.length > 0) {
+    contactLines.push(fr ? `Email a surveiller : ${params.emails[0]}` : `Email to watch: ${params.emails[0]}`);
+  }
+  if (params.entity && params.entity !== "UNOFFICIAL" && params.entity !== "NON OFFICIEL") {
+    contactLines.push(fr ? `Entite : ${params.entity}` : `Entity: ${params.entity}`);
+  }
+  if (params.amount) {
+    contactLines.push(fr ? `Montant demande : ${params.amount}` : `Amount demanded: ${params.amount}`);
+  }
+  const paymentMethod = extractPaymentMethod(params.bullets);
+  if (paymentMethod) {
+    contactLines.push(fr ? `Methode de paiement : ${paymentMethod}` : `Payment method: ${paymentMethod}`);
+  }
+  if (contactLines.length > 0) {
+    sections.push("", contactLines.join("\n"));
+  }
 
-  return [strong(header), "", intro, "", body, "", contact, ...tail].join("\n");
+  sections.push("", replaceDashes(stripEmojis(params.nextStep)));
+
+  if (params.verdict === "HIGH_RISK") {
+    sections.push("", fr ? "Signalez gratuitement a l'ANTIC au 8202." : "Report it free on the ANTIC hotline, 8202.");
+    sections.push(fr ? "Faites suivre a vos groupes WhatsApp pour proteger vos proches." : "Forward this to your family and groups to protect others.");
+  }
+
+  return sections.join("\n");
 }

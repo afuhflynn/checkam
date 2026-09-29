@@ -10,11 +10,10 @@ export const translations = {
       "Paste a suspicious message, upload a recruitment flyer or search any phone number/email. Get an instant, evidence-backed verdict and a ready-to-forward WhatsApp alert.",
     anticBanner:
       "Official National Cyber Security Hotline: Call 8202 (Free / ANTIC)",
-    navHome: "Verify",
     navChat: "Chat",
     navDirectory: "Scam Registry",
     navReport: "Report a Scam",
-    navWhatsApp: "WhatsApp Bot",
+    navWhatsApp: "WhatsApp",
     navAdmin: "Moderation",
 
     // Intake Hub
@@ -104,7 +103,7 @@ export const translations = {
     footerDisclaimer:
       "CheckAm is an independent public-utility scam verification service for Cameroon. Official communications are cross-referenced with the Presidency, Government Ministries, and ANTIC (National Agency for ICT).",
     footerHotline: "ANTIC Cybercrime Hotline: 8202 (Toll-Free in Cameroon)",
-    footerRights: "CheckAm Cameroon. All rights reserved.",
+    footerRights: "CheckAm. All rights reserved.",
 
     // Case dossier (/scam/[slug])
     dossierBack: "Back to scam registry",
@@ -212,7 +211,6 @@ export const translations = {
       "Three ways in, one clear answer out: high risk, caution, or verified official.",
 
     // Landing - how it works
-    howKicker: "How a verdict is built",
     howTitle: "Rules first. AI second. Receipts always.",
     howSub:
       "No black box. Every verdict cites the exact rule it broke - and the official channel that proves it.",
@@ -266,8 +264,6 @@ export const translations = {
     ctaTitle: "Got a suspicious message right now?",
     ctaSub: "Thirty seconds of verification beats months of regret.",
     ctaBtn: "Verify it now",
-    continueBarText: "Welcome back - your checks wait in chat.",
-    continueBarBtn: "Continue to chat",
 
     // Rebuilt Landing - Modern, Airy Hero & Sections
     heroBadge: "National Cyber Security Hotline 8202 • Cameroon Public Utility",
@@ -289,7 +285,6 @@ export const translations = {
       "Cross-referenced against verified Cameroon institutional standards",
 
     // Rebuilt Landing - Scam Vectors Bento Grid
-    bentoKicker: "Recognize the tells",
     bentoTitle: "Common Scam Vectors in Cameroon",
     bentoSub:
       "Before money leaves your hands, see how scammers exploit daily administrative, financial, and travel services in Cameroon.",
@@ -499,11 +494,10 @@ export const translations = {
       "Collez un message suspect, déposez un flyer de concours ou cherchez un numéro/email. Obtenez un verdict immédiat avec preuves irréfutables et une alerte WhatsApp prête à transférer.",
     anticBanner:
       "Numéro vert national de cybersécurité : Appelez le 8202 (Gratuit / ANTIC)",
-    navHome: "Vérifier",
     navChat: "Chat",
     navDirectory: "Registre des Arnaques",
     navReport: "Signaler une Arnaque",
-    navWhatsApp: "Bot WhatsApp",
+    navWhatsApp: "WhatsApp",
     navAdmin: "Modération",
 
     // Intake Hub
@@ -594,7 +588,7 @@ export const translations = {
       "CheckAm est un service d'utilité publique indépendant au Cameroun. Les informations officielles sont recoupées avec la Présidence de la République, les Ministères et l'ANTIC.",
     footerHotline:
       "Numéro Vert Cybersécurité ANTIC : 8202 (Appel gratuit au Cameroun)",
-    footerRights: "CheckAm Cameroun. Tous droits réservés.",
+    footerRights: "CheckAm. Tous droits réservés.",
 
     // Dossier d'affaire (/scam/[slug])
     dossierBack: "Retour au registre des arnaques",
@@ -703,7 +697,6 @@ export const translations = {
       "Trois voies d'entrée, une réponse claire : risque élevé, prudence, ou officiel vérifié.",
 
     // Accueil - méthode
-    howKicker: "Comment un verdict est construit",
     howTitle: "Les règles d'abord. L'IA ensuite. Les preuves toujours.",
     howSub:
       "Aucune boîte noire. Chaque verdict cite la règle exacte qui a été violée - et le canal officiel qui le prouve.",
@@ -759,9 +752,6 @@ export const translations = {
     ctaSub:
       "Trente secondes de vérification valent mieux que des mois de regrets.",
     ctaBtn: "Vérifiez-le maintenant",
-    continueBarText:
-      "Bon retour - vos vérifications vous attendent dans le chat.",
-    continueBarBtn: "Continuer vers le chat",
 
     // Rebuilt Landing - Modern, Airy Hero & Sections
     heroBadge:
@@ -784,7 +774,6 @@ export const translations = {
       "Recoupé avec les sources et cadres réglementaires officiels du Cameroun",
 
     // Rebuilt Landing - Scam Vectors Bento Grid
-    bentoKicker: "Repérez les signaux",
     bentoTitle: "Les arnaques courantes au Cameroun",
     bentoSub:
       "Avant que votre argent ne s'envole, découvrez les mécanismes concrets exploités par les fraudeurs sur les services administratifs, bancaires et de voyage.",

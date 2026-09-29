@@ -30,9 +30,6 @@ export function HowSection() {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
       <div className="max-w-3xl space-y-4 mb-14 sm:mb-16">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-authority-700">
-          {t.howKicker}
-        </p>
         <h2 className="font-display text-3xl sm:text-5xl font-black tracking-tight text-ink text-balance leading-tight">
           {t.howTitle}
         </h2>
@@ -47,14 +44,14 @@ export function HowSection() {
           return (
             <div
               key={step.num}
-              className="flex flex-col justify-between rounded-3xl border border-slate-200/90 bg-white p-7 sm:p-9 shadow-sm hover:shadow-xl hover:border-authority-300 transition-all duration-300 group"
+              className="flex flex-col justify-between rounded-3xl border border-slate-200/90 bg-white p-7 sm:p-9 shadow-sm"
             >
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-3xl font-black text-slate-300 group-hover:text-authority-900 transition-colors">
+                  <span className="font-mono text-3xl font-black text-slate-300 ">
                     {step.num}
                   </span>
-                  <div className="h-11 w-11 rounded-2xl bg-authority-50 text-authority-900 flex items-center justify-center shrink-0 group-hover:bg-authority-950 group-hover:text-white transition-colors">
+                  <div className="h-11 w-11 rounded-2xl bg-authority-50 text-authority-900 flex items-center justify-center shrink-0">
                     <Icon className="h-5 w-5" />
                   </div>
                 </div>
@@ -67,11 +64,6 @@ export function HowSection() {
                     {step.desc}
                   </p>
                 </div>
-              </div>
-
-              <div className="mt-8 pt-4 border-t border-slate-100 flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                <span>ANTIC Verified Standards</span>
               </div>
             </div>
           );

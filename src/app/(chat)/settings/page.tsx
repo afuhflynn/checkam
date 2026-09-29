@@ -22,7 +22,10 @@ export default function SettingsPage() {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <p className="text-slate-600">{t.settingsNeedSignIn}</p>
-        <Link href="/signin" className="font-bold text-authority-700 hover:underline">
+        <Link
+          href="/signin"
+          className="font-bold text-authority-700 hover:underline"
+        >
           {t.gateSignInBtn}
         </Link>
       </div>
@@ -74,8 +77,15 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-6 px-4 py-10 sm:px-6">
+      <div className="flex items-center justify-start w-full">
+        <Button asChild variant={"outline"}>
+          <Link href={"/chat"}>Back to chat</Link>
+        </Button>
+      </div>
       <div>
-        <h1 className="font-display text-3xl font-black text-ink">{t.settingsTitle}</h1>
+        <h1 className="font-display text-3xl font-black text-ink">
+          {t.settingsTitle}
+        </h1>
         <p className="text-sm text-slate-500">{t.settingsSub}</p>
       </div>
 
@@ -84,7 +94,10 @@ export default function SettingsPage() {
           <h2 className="font-bold text-ink">{t.settingsProfile}</h2>
           <form onSubmit={saveProfile} className="space-y-3">
             <div className="space-y-1.5">
-              <label htmlFor="settings-name" className="text-sm font-semibold text-slate-800">
+              <label
+                htmlFor="settings-name"
+                className="text-sm font-semibold text-slate-800"
+              >
                 {t.settingsNameLabel}
               </label>
               <Input
@@ -100,7 +113,9 @@ export default function SettingsPage() {
             </Button>
           </form>
           <div className="space-y-1.5">
-            <p className="text-sm font-semibold text-slate-800">{t.settingsLanguage}</p>
+            <p className="text-sm font-semibold text-slate-800">
+              {t.settingsLanguage}
+            </p>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -128,7 +143,10 @@ export default function SettingsPage() {
           <h2 className="font-bold text-ink">{t.settingsPassword}</h2>
           <form onSubmit={changePassword} className="space-y-3">
             <div className="space-y-1.5">
-              <label htmlFor="settings-current" className="text-sm font-semibold text-slate-800">
+              <label
+                htmlFor="settings-current"
+                className="text-sm font-semibold text-slate-800"
+              >
                 {t.settingsCurrentPw}
               </label>
               <Input
@@ -141,7 +159,10 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="settings-new" className="text-sm font-semibold text-slate-800">
+              <label
+                htmlFor="settings-new"
+                className="text-sm font-semibold text-slate-800"
+              >
                 {t.settingsNewPw}
               </label>
               <Input

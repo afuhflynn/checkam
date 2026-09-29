@@ -22,44 +22,6 @@ export function HeroSection({ stats }: { stats: LandingStats }) {
       </div>
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
-        {/* Floating Security Signal Badges on Desktop Orbits */}
-        <div
-          aria-hidden="true"
-          className="animate-float-soft pointer-events-none absolute -left-4 top-16 hidden lg:block"
-        >
-          <div className="flex items-center gap-2.5 rounded-full border border-slate-200/90 bg-white/90 backdrop-blur-md px-4 py-2 shadow-lg text-left">
-            <span className="flex h-2 w-2 rounded-full bg-red-500" />
-            <span className="font-mono text-xs font-bold text-slate-700">
-              {t.heroSignalMinfopra}
-            </span>
-          </div>
-        </div>
-
-        <div
-          aria-hidden="true"
-          className="animate-float-soft-late pointer-events-none absolute -right-4 top-24 hidden lg:block"
-        >
-          <div className="flex items-center gap-2.5 rounded-full border border-slate-200/90 bg-white/90 backdrop-blur-md px-4 py-2 shadow-lg text-left">
-            <span className="flex h-2 w-2 rounded-full bg-amber-500" />
-            <span className="font-mono text-xs font-bold text-slate-700">
-              {t.heroSignalMomo}
-            </span>
-          </div>
-        </div>
-
-        {/* Top Social Proof Micro-Pill */}
-        <div className="flex justify-center">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-authority-900/10 bg-white/90 backdrop-blur-md px-4 py-1.5 shadow-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-authority-900">
-              {t.heroBadge}
-            </span>
-          </div>
-        </div>
-
         {/* Hero Headline - Fraunces Display */}
         <div className="space-y-4 max-w-4xl mx-auto">
           <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl font-black text-ink tracking-tight text-balance leading-[1.02]">
