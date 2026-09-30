@@ -39,7 +39,7 @@ Live desk above the fold (paste / upload / lookup) with a sample flyer beside it
    - [x] Frame plus header plus desk lift (AC-1, AC-2, AC-3)
    - [x] Bilingual SEO (AC-6)
 - [x] Verify it: `/verify-release landing refresh`
-Spec 0007 (`docs/specs/0001-ui-rebuild/0007-shell.md`) · code in `src/components/landing-page.tsx`, `src/components/header.tsx`, `src/app/sitemap.ts`, `src/app/robots.ts`, `src/app/directory/layout.tsx`, `src/app/report/layout.tsx`
+Spec 0007 (`docs/specs/0001-ui-rebuild/0007-shell/index.md`) · code in `src/components/landing-page.tsx`, `src/components/header.tsx`, `src/app/sitemap.ts`, `src/app/robots.ts`, `src/app/directory/layout.tsx`, `src/app/report/layout.tsx`
 
 ### 12. Landing redesign (intentional) · done
 Deliberate non templated landing voice: bilingual echo headlines, language correct sealed specimen with stamp in motion, dossier filing steps instead of giant numerals, Lucide icons over emoji, no gradients.
@@ -134,17 +134,17 @@ Spec 0013 (`docs/specs/0001-ui-rebuild/0013-hover-icon-action-menu.md`), superse
 Settings opens as a modal over the chat shell instead of leaving the chat for a standalone page. The open and closed state lives in a browser search parameter through nuqs, which this project already uses, with the parameter parsed through a typed schema so a bad value cannot reach the component. The existing /settings route stays as a deep link that opens the same modal. The dialog mounts inside ChatShell beside the thread and opens from the rail without navigating, so the conversation is never torn down; /settings answers as a server redirect for the cross surface deep link.
 **Done when:** settings opens over the thread without losing the conversation, the URL carries the state so it can be linked and restored, closing returns you to the chat, and /settings still lands on the same modal.
 - [x] Design it (spec): `/solution-architect settings as a chat modal`
-- [ ] Build it: `/feature-build settings as a chat modal`
-   - [ ] Shared form component plus the typed `panel` parser (AC-4, AC-7)
-   - [ ] `UserButton` trigger prop so the rail opens the panel without navigating (AC-8)
-   - [ ] Dialog beside the thread in ChatShell, with focus return, internal scroll, reduced motion, bilingual close label (AC-8, AC-10)
-   - [ ] Server redirect from /settings, plus the bad value strip and the push then replace history rules (AC-7, AC-8)
-   - [ ] Access states: sign in prompt, unverified, drawer close, parameter dropped on sign out (AC-8, AC-9)
+- [x] Build it: `/feature-build settings as a chat modal`
+   - [x] Shared form component plus the typed `panel` parser (AC-4, AC-7)
+   - [x] `UserButton` trigger prop so the rail opens the panel without navigating (AC-8)
+   - [x] Dialog beside the thread in ChatShell, with focus return, internal scroll, reduced motion, bilingual close label (AC-8, AC-10)
+   - [x] Server redirect from /settings, plus the bad value strip and the push then replace history rules (AC-7, AC-8)
+   - [x] Access states: sign in prompt, unverified, drawer close, parameter dropped on sign out (AC-8, AC-9)
 - [ ] Verify it: `/verify-release settings as a chat modal`
 - [ ] Test it: `/test-engineer settings as a chat modal`
 - [ ] Review it (fresh model): `/peer-review settings as a chat modal`
 - [ ] Document it: `/tech-writer settings as a chat modal`
-Spec 0007 (`../specs/0001-ui-rebuild/0007-shell.md`), amended 2026-09-30 (AC-7 to AC-10 are new) · code in `src/components/chat/chat-shell.tsx`, `src/components/user-button.tsx`, `src/components/ui/dialog.tsx`, `src/app/(chat)/settings/page.tsx`, `src/lib/search-params.ts`, `src/lib/i18n/dictionary.ts`
+Spec 0007 (`../specs/0001-ui-rebuild/0007-shell/index.md`), amended 2026-09-30 (AC-7 to AC-10 are new) · code in `src/components/chat/chat-shell.tsx`, `src/components/user-button.tsx`, `src/components/ui/dialog.tsx`, `src/app/(chat)/settings/page.tsx`, `src/lib/search-params.ts`, `src/lib/i18n/dictionary.ts`
 
 ### 7. Lean settings · done
 One quiet page: name, language toggle, password change, sign out, with instant save notes in both languages.
@@ -152,7 +152,7 @@ One quiet page: name, language toggle, password change, sign out, with instant s
 - [x] Design it (spec): `/solution-architect lean settings`
 - [x] Build it: `/feature-build lean settings` (with shell child, AC-4)
 - [x] Verify it: `/verify-release lean settings`
-Spec 0007 (`docs/specs/0001-ui-rebuild/0007-shell.md`) · code in `src/app/settings/`
+Spec 0007 (`docs/specs/0001-ui-rebuild/0007-shell/index.md`) · code in `src/app/settings/`
 
 ### 8. WhatsApp guide · done
 Three steps plus save number plus sample prompts for text, image, and phone lookup, in both languages, with tap to open chat.
@@ -160,7 +160,7 @@ Three steps plus save number plus sample prompts for text, image, and phone look
 - [x] Design it (spec): `/solution-architect whatsapp guide`
 - [x] Build it: `/feature-build whatsapp guide` (with shell child, AC-5)
 - [x] Verify it: `/verify-release whatsapp guide`
-Spec 0007 (`docs/specs/0001-ui-rebuild/0007-shell.md`) · code in `src/components/guide-trials.tsx`, `src/app/api/guide/number/`, wired into `src/app/whatsapp/page.tsx`
+Spec 0007 (`docs/specs/0001-ui-rebuild/0007-shell/index.md`) · code in `src/components/guide-trials.tsx`, `src/app/api/guide/number/`, wired into `src/app/whatsapp/page.tsx`
 
 ## Throughout
 

@@ -2,25 +2,16 @@
 
 **Date**: 2026-09-25 (settings reach amended 2026-09-30)
 
+_No `**Status**:` line on purpose. This file records three shipped features (the landing rebuild, lean settings, the WhatsApp guide) alongside the settings dialog work, which shipped on 2026-09-30. A single status cannot be true of both, and the dated Amendments in rationale.md carry the build state per slice. `/state-sync` should reconcile this if the split ever happens._
+
 ## Summary
 
 The shell wraps the product: a rebuilt landing frame keeps the proven intake engine with guest counter and repeat lift, signed in visitors continue into chat, lean settings hold four fields with guarded password change, and the WhatsApp guide turns reading into doing with deep linked trials. Header gains Chat plus the avatar button, public pages carry full bilingual SEO.
 
 Amended on 2026-09-30: settings now opens as a dialog (a modal layer, a box over the page) over the chat thread instead of a page of its own, and whether it is open lives in the address bar as `?panel=settings` so the link can be shared and the Back button can close it. The four fields do not change at all. Only where they appear and how you get there change. This amendment is not built yet; scope feature 17 tracks the work and acceptance criteria AC-7 through AC-10 are new and unbuilt.
 
-## Context
-
-Settings shipped as a standalone page at `/settings`, reached from the avatar in the header on every page. The chat shell arrived afterwards as a full height immersive surface with its own rail, its own thread and a streaming composer, and the standalone page became the one place in the product where a reader leaves their conversation entirely to change four fields, then presses Back and waits for the thread to mount and refetch again.
-
-The scope row for feature 17 records the problem plainly: settings should open over the thread without losing the conversation, the URL should carry the state so the link can be shared and restored, closing should return you to the chat, and `/settings` should still land on the same dialog. Nothing about the fields themselves is in question. Spec 0007 already settled what settings holds, that the password path stays guarded, and that language lives in the existing cookie plus storage with no column.
-
-Two facts from the built code shape this decision. First, `nuqs` is already installed, already wrapped by `NuqsAdapter` in `src/components/providers.tsx`, and already used by `src/app/(site)/directory/page.tsx` for query state, so the address bar contract is a pattern the repo has rather than a new dependency. Worth being precise: those existing calls are untyped, `useQueryState("category", { defaultValue: "ALL" })` is a plain string with a default, and the repo has no `createParser` anywhere. The typed schema this decision needs is the first one, on an API the installed version does export. Second, the shadcn dialog wrapper exists at `src/components/ui/dialog.tsx` and carries the focus trapping, Escape handling, scroll locking and accessibility wiring, but it is not yet in use on the chat surface. The rail's delete confirmation is hand rolled from the bare Radix primitive at `src/components/chat/chat-shell.tsx:817`, and the wrapper's only importer today is `src/components/command.tsx`. This amendment is the wrapper's first real consumer there, so it inherits the wrapper as it stands rather than quietly improving it in passing.
-
-Third, a force only the code reveals: `UserButton` hardcodes `href="/settings"` at `src/components/user-button.tsx:92`, and the rail renders it at `src/components/chat/chat-shell.tsx:676`. Left alone, opening settings from the thread would be a full navigation, which unmounts the thread, refires its queries and loses the scroll position, defeating the whole point. So the in chat trigger and the cross surface deep link have to be two different code paths, not one.
-
-There is a real cost to putting UI state in a URL, and it is named in the Consequences rather than hidden: the address bar now carries a piece of interface state, a mistyped value has to be handled deliberately, and the landing header's settings link will navigate a reader into the chat shell. The alternative of leaving settings as a page was considered and is recorded below.
-
 ## Requirements
+
 
 **User stories**:
 - As a first visitor, I want the desk above the proof so that I check in seconds.
@@ -41,96 +32,8 @@ There is a real cost to putting UI state in a URL, and it is named in the Conseq
 - **AC-9**: a signed out reader who opens the panel sees the existing sign in prompt inside the dialog with a link to `/signin` and no settings fields, and following that link clears the panel parameter on the way, so a later return to chat does not reopen settings unbidden. A signed in but unverified reader gets the full form, which is what the page allows today. Changing the password still revokes every session including the current one and then signs out, and the panel parameter is dropped on the way out, so signing back in does not reopen settings unbidden.
 - **AC-10**: the dialog uses the existing shadcn dialog wrapper, so focus is trapped while it is open, Escape closes it, the page behind cannot scroll, and it is announced as a dialog. It is a controlled `Dialog.Root` with no `DialogTrigger` of its own, because the control that opens it is a menu item that unmounts when the menu closes, so `onCloseAutoFocus` refocuses the avatar button through a ref the host holds. Its content carries a maximum height and scrolls internally, so every field stays reachable on a short phone while the body behind it is locked, and its width follows the phone treatment the rail's delete dialog already uses. Its title and description come from the existing bilingual `settingsTitle` and `settingsSub` keys. Exactly one new string is added, a close label, because the wrapper currently renders a hardcoded English `Close` at `src/components/ui/dialog.tsx:49` and this repo requires every shell string to come from an i18n key in both languages; the label is passed in as a prop rather than left to the wrapper. Reduced motion is honoured at the call site with the same override the rail menu uses at `src/components/chat/chat-shell.tsx:1051`, and the shared wrapper is not edited for it, because `src/components/command.tsx` consumes that wrapper too.
 
-## Options considered
-
-### Options considered for the shell rebuild (shipped 2026-09-25)
-
-#### Option 1: Keep engine with new frame
-
-Rebuilt frame, tokens, seal, and header around the live intake, registry, and guide content.
-
-**Pros**:
-- Keeps the converting engine while the voice turns dossier.
-- Smallest risk on working flows.
-
-**Cons**:
-- Old component seams constrain the new frame in places.
-
-#### Option 2: Rebuild everything including intake
-
-Fresh intake, fresh registry, fresh guide.
-
-**Pros**:
-- No legacy seams at all.
-
-**Cons**:
-- Rebuilds a converting flow with real regression risk.
-
-#### Option 3: Landing only, settings later
-
-Ship landing now, defer settings plus guide.
-
-**Pros**:
-- Smallest child.
-
-**Cons**:
-- Splits the shell across releases and strands the avatar menu.
-
-### Options considered for how settings is reached (2026-09-30)
-
-#### Option A: Dialog over the thread with the state in the URL (chosen)
-
-Settings renders as a dialog inside `ChatShell`, beside the thread. One query parameter, parsed through a `createParser` enum, holds whether it is open. `/settings` becomes a server redirect to the canonical chat url. (basis: `src/components/ui/dialog.tsx` and the installed `nuqs`, both already in the repo, so the build adds no dependency)
-
-**Pros**:
-- Changing a name or language never costs the reader their place in the conversation.
-- The state is linkable, shareable, restorable by a refresh, and closable with Back, which is what the scope asks for.
-- `nuqs` and the dialog wrapper are both already installed, so the build adds no dependency, and the accessibility wiring comes with the wrapper rather than being hand built.
-- One component renders the four fields, so there is a single place for them to live and nothing to keep in step.
-
-**Cons**:
-- The address bar now carries a piece of interface state, which is a small conceptual cost and a precedent for future panels.
-- A visitor who opens settings from the landing header is navigated into the chat shell, which is a change in what that link feels like.
-- A mistyped parameter value has to be detected and cleaned rather than ignored, or the URL stays wrong.
-- The in chat trigger and the cross surface link stop being one thing, so `UserButton` grows a prop and there are two paths to keep correct.
-
-#### Option B: Keep the standalone page
-
-Leave settings where it is. (basis: the scope row for feature 17, which asks for the conversation to be preserved)
-
-**Pros**:
-- No change at all, so no new state, no redirect, no test surface.
-- A full page is the easiest place to put a long form.
-
-**Cons**:
-- Does not deliver what scope feature 17 asks for at all.
-- Keeps the one flow in the product that discards the reader's conversation.
-
-#### Option C: Dialog over the thread with no URL state
-
-Same dialog, held in React state only. (basis: smallest possible implementation, which is the right answer if the linkable and restorable state is not required)
-
-**Pros**:
-- Simplest possible implementation, one boolean in a component.
-- The URL stays clean, no parameter to parse, strip, or test.
-
-**Cons**:
-- A refresh closes settings, and there is no link to share, which is two of the four things the scope asks for.
-- Escape and the Back button would disagree, because only one of them could work.
-
-#### Option D: Side panel or drawer instead of a centered dialog
-
-A panel sliding in from the rail side. (basis: the 256 pixel rail width measured in spec 0012, where labels and the title competed for the same row)
-
-**Pros**:
-- Keeps the thread visible beside the fields, so nothing is covered.
-
-**Cons**:
-- On a phone it competes with the rail drawer for the same space and the same gesture.
-- The rail is already 256 pixels on desktop, so a side panel has nowhere to go without eating the thread.
-- A new bespoke component with its own focus and gesture handling, where the dialog wrapper already covers that.
-
 ## Decision
+
 
 **Chosen option**: Option 1: Keep engine with new frame (shipped) plus Option A: Dialog over the thread with the state in the URL (2026-09-30). The mount point is inside `ChatShell` rather than the route layout, and the in chat trigger is client side rather than a link, both settled on the evidence in the Rationale. (basis: `railOpen` is local state in `src/components/chat/chat-shell.tsx:102` and the avatar that opens settings sits inside that drawer, so a host in the layout would have had no way to close it; `src/components/user-button.tsx:92` hardcodes `href="/settings"`, so the primary path would otherwise be a navigation that unmounts the thread)
 
@@ -138,21 +41,8 @@ Strangler beside the live landing, cut over per section, settings plus guide bui
 
 **Implementation skills**: none installed. This project has no community skills directory and the root `AGENTS.md` carries no `## Agent skills` section, so there are no skill conventions to point at. The conventions this decision leans on are the shadcn wrapper at `src/components/ui/dialog.tsx` and the reduced motion handling established in spec 0013.
 
-## Rationale
-
-The intake converts today, so the frame changes around it rather than through it. Settings stay lean per scope while password change stays guarded because it is the sensitive moment. The guide earns its keep only when samples launch trials, so deep links beat screenshots.
-
-The shell rebuild stands on the force it was chosen for: the intake converts today, so the frame changes around it rather than through it. Nothing in the settings reach decision disturbs that, because the four fields are untouched and the only retired surface is a redirect.
-
-Option A wins on the specific force the scope names. The reader's place in a conversation is the thing at risk, and a dialog opened over a still mounted thread is the only option that protects it: Option B gives it up, and Option C protects it but costs the shareable link and the working Back button, which the scope asks for by name. Width is the other force, the same one that sank the inline labelled buttons in spec 0012: the rail is 256 pixels and a full page form is a lot of surface for four fields, while a dialog sized to the viewport needs none of that width on a phone. The typed enum rather than a boolean is chosen because the scope asks that a bad value cannot reach the component, and a boolean parser treats any value other than `false` as `true`, so `?panel=banana` would open the dialog. An enum rejects it, and stripping the value on read means the link repairs itself. (basis: the scope row's requirement that a bad value cannot reach the component, and the `createParser` API the installed `nuqs` 2.10.1 actually exports)
-
-Option D was rejected on width before it was rejected on effort. The rail is 256 pixels, so a side panel either narrows the thread or overlaps it, and on a phone it fights the rail drawer that already owns that space. Option C is the closest call and deserves an honest note: it is the smallest code, and it would have been the right answer if the scope had not asked for a linkable and restorable state. The engineer was offered that tradeoff explicitly and chose the URL.
-
-The mount point moved once, and the reason is worth recording because the first answer was wrong. The dialog was first specified to mount in the chat route layout, on the reasoning that a dialog is not part of a thread so it should live beside one. Reading the code showed that the rail drawer state (`railOpen`) is local to `ChatShell`, and that the avatar which opens settings lives inside that drawer, so a host in the layout had no way to close the drawer on a phone and would have needed a new channel invented for it. It would also have needed a `Suspense` decision, since the chat page has no boundary today. Mounting inside `ChatShell` as a sibling of the thread removes both problems and still satisfies the requirement that the thread is never unmounted. The layout's only advantage was surviving a future non chat route in that group, which does not exist. The lesson is narrow and worth keeping: the argument for a layout was about tidiness, and the argument against it was about state that already existed one level down.
-
-One correction is recorded here rather than quietly fixed. This spec previously claimed, at its auth test scenario, that signed out settings access sends to the gate. The built page never did that: `src/app/(chat)/settings/page.tsx` renders an inline sign in prompt with a link to `/signin`. AC-9 and the test scenarios below now follow the code, because changing the rule is a product decision and changing it by accident during a refactor is not.
-
 ## Feature design
+
 
 **Data model sketch**:
 No new tables. Settings read and write `User` name plus language preference. Language preference needs a home: reuse the `checkam_lang` cookie plus localStorage already live, no column per the `0002-auth` zero migration rule. The 2026-09-30 amendment adds no table, no migration, and nothing new stored. The one new module is `src/lib/search-params.ts`, which exports the `panel` parser built with `createParser` from the installed `nuqs`, the first typed parser in the repo. The panel state lives in the URL only, and the four fields already exist: `User.name` through the session, language in the existing `checkam_lang` cookie plus localStorage with no column per the `0002-auth` zero migration rule. A panel that remembered itself per user would add a column and a write to carry state the URL already carries.
@@ -231,6 +121,7 @@ Self only profile writes, rate capped password change, number endpoint is public
 
 ## Migration plan
 
+
 **Strategy**: strangler for the shipped landing rebuild, no migration needed for the 2026-09-30 amendment
 **Phases**:
 1. Build new frame beside live landing, cut over section by section with the desk last.
@@ -240,19 +131,21 @@ Self only profile writes, rate capped password change, number endpoint is public
 
 ## Build plan
 
+
 Tasks 1 through 4 shipped with the shell rebuild. Tasks 5 through 8 are the 2026-09-30 settings reach amendment, not yet built. The project builds one full user path at a time and each phase stays usable, so task 5 and task 6 together deliver the whole path (open settings from the thread, see the fields, close, return) before the access states and the dialog polish land.
 
 1. Build frame plus header plus continue bar plus desk lift, satisfies **AC-1**, **AC-2**, **AC-3** (shipped)
 2. Build lean settings with guarded password change, satisfies **AC-4** (shipped)
 3. Build guide with env number plus deep linked trials, satisfies **AC-5** (shipped)
 4. Complete bilingual SEO on public routes, satisfies **AC-6** (shipped)
-5. Extract the four fields into a shared settings form component, and add `src/lib/search-params.ts` exporting the `createParser` enum for `panel` that accepts only `settings` and defaults to closed, satisfies **AC-4**, **AC-7**
-6. Add the `settingsHref` prop to `UserButton` defaulting to `/settings`, so the rail can open the panel client side while every other surface keeps its current link, satisfies **AC-8**
-7. Mount the dialog inside `ChatShell` as a sibling of the thread in its own `Suspense` boundary, with the controlled root, the focus return to the avatar, the internal scroll on a short screen, the call site reduced motion override, and the bilingual close label passed into the wrapper, satisfies **AC-8**, **AC-10**
-8. Turn `/settings` into a server redirect to `/chat?panel=settings`, and add the raw presence read that strips a value outside the enum with a replace, plus push on open and replace on close, satisfies **AC-7**, **AC-8**
-9. Add the states: the inline sign in prompt for a signed out reader with the parameter cleared on the way to `/signin`, the full form for an unverified one, the rail drawer closing before the panel is set, and the parameter dropped on sign out, satisfies **AC-8**, **AC-9**
+5. [x] Extract the four fields into a shared settings form component, and add `src/lib/search-params.ts` exporting the `createParser` enum for `panel` that accepts only `settings` and defaults to closed, satisfies **AC-4**, **AC-7**
+6. [x] Add the `settingsHref` prop to `UserButton` defaulting to `/settings`, so the rail can open the panel client side while every other surface keeps its current link, satisfies **AC-8**
+7. [x] Mount the dialog inside `ChatShell` as a sibling of the thread in its own `Suspense` boundary, with the controlled root, the focus return to the avatar, the internal scroll on a short screen, the call site reduced motion override, and the bilingual close label passed into the wrapper, satisfies **AC-8**, **AC-10**
+8. [x] Turn `/settings` into a server redirect to `/chat?panel=settings`, and add the raw presence read that strips a value outside the enum with a replace, plus push on open and replace on close, satisfies **AC-7**, **AC-8**
+9. [x] Add the states: the inline sign in prompt for a signed out reader with the parameter cleared on the way to `/signin`, the full form for an unverified one, the rail drawer closing before the panel is set, and the parameter dropped on sign out, satisfies **AC-8**, **AC-9**
 
 ## Consequences
+
 
 **Positive**:
 - One coherent shell from first visit to daily use.
@@ -279,6 +172,7 @@ Tasks 1 through 4 shipped with the shell rebuild. Tasks 5 through 8 are the 2026
 
 ## Follow-up
 
+
 - [ ] `src/components/ui/dialog.tsx:49` hardcodes an English `Close` for every consumer. This amendment passes a label in for its own use; the wrapper itself still needs fixing so no future caller inherits the problem.
 - [ ] The unverified reader can still open settings and change a name, which is looser than the chat write path that refuses unverified users. Decide later whether to align them.
 - [ ] Decide the panel parameter's shape once a second panel exists. A single boolean may be simpler than an enum at that point, though the typed parse should stay.
@@ -287,41 +181,6 @@ Tasks 1 through 4 shipped with the shell rebuild. Tasks 5 through 8 are the 2026
 - [ ] Connect a design MCP and name the shell file plus frames.
 - [ ] Decide cross device language sync as later work or never.
 
-## References
+## Rationale
 
-**Project sources** (verifiable, in this repo):
-- `AGENTS.md`, the stack, the zero invented copy rule, and the one full user path at a time build approach
-- spec 0002 auth, the session model, the password policy, and the zero migration rule for language
-- spec 0012 and spec 0013, where rail width is the force that pushed labels off the row, and where reduced motion handling is already settled
-- `src/components/ui/dialog.tsx`, the shadcn dialog wrapper already in the repo
-- `src/components/providers.tsx` and `src/app/(site)/directory/page.tsx`, the existing `nuqs` wiring and typed query state
-- `src/app/(chat)/settings/page.tsx` and `src/components/user-button.tsx`, the surface being changed and the link that reaches it
-- `src/lib/i18n/dictionary.ts`, where every string this change renders already exists in both languages
-
-**Practices & standards**:
-- Strangler pattern for retiring a live surface, here a redirect that keeps the old url working
-- Progressive disclosure, a modal over content that stays present behind it
-- Typed parsing at the boundary, so visitor supplied input is rejected by a schema before it reaches a component
-- Layered UI over persistent content, where the address bar holds the layer state so the link and the Back button both work
-
-## Amendments (settings reach, 2026-09-30)
-
-- Settings becomes a dialog over the chat thread, opened by `?panel=settings` read through a `createParser` enum, replacing the standalone page. The four fields are unchanged.
-- The dialog mounts inside `ChatShell` as a sibling of the thread, in its own `Suspense` boundary, and never unmounts, refetches or scrolls the thread. It was first specified to mount in the route layout; reading `railOpen` and the drawer that holds the avatar showed the layout had no way to close the phone drawer, so the mount moved.
-- Opening from a thread is client side with no navigation, through a `settingsHref` prop on `UserButton` that defaults to `/settings`. `UserButton` had `href="/settings"` hardcoded and is rendered in the rail, so without this the primary path was a full navigation that would have undone the feature.
-- `/settings` answers as a server redirect from the existing page file, and is a cross surface deep link only. The landing avatar keeps pointing at `/settings`.
-- Opening pushes a history entry so Back closes the dialog; closing and stripping a bad value both replace, so Back after closing leaves the thread.
-- A value outside the enum renders closed and is stripped on first read. The host reads the raw presence of `panel` as well, because a typed parser returns the same empty result for absent and unparseable.
-- Corrects an earlier claim in this spec: signed out settings access does not send to the gate. The built page renders an inline sign in prompt with a link to `/signin`, and AC-9 plus the test scenarios now follow the code.
-- Signed in but unverified readers keep the full form, which is what the page allows today and was never checked against `emailVerified`.
-- Adds one new string, a close label, because the dialog wrapper hardcodes an English `Close`. Every other string comes from keys that already exist in both languages.
-- AC-7 through AC-10 are new and unbuilt. Scope feature 17 tracks the work.
-- A cross check pass on a separate model found two factual errors in the first draft of this amendment, both since corrected: that the dialog wrapper was already used by the rail's delete confirmation (it is hand rolled there, and the wrapper's only importer is `src/components/command.tsx`), and that `nuqs` was already used for typed query state (it is used untyped, and this will be the repo's first `createParser`). It also found that `asEnum`, which it recommended, does not exist in the installed `nuqs` 2.10.1; `createParser` is the API actually exported.
-
-## Amendments (peer review pass, 2026-09-25)
-
-- Continue bar routes unverified users to the resend panel, not chat.
-- Guide carries tel links plus locale-prefilled wa.me trials alongside web trials.
-- Metadata is locale aware per route; robots excludes admin, api, settings, and chat; sitemap includes approved dossiers.
-- Settings password change revokes every session including the current one, then signs out.
-- Accepted deviations: trial suspect text rides the URL by user action; whatsapp demo copy stays inline (pre-existing style); language does not roam devices.
+Reasoning and options: see rationale.md.

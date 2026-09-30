@@ -11,6 +11,7 @@
  * everything that is a fact about the DOM and the requests the rail makes.
  */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Toaster, toast } from "sonner";
@@ -164,13 +165,19 @@ function renderRail() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <LanguageProvider initialLanguage="en">
-        <ChatShell locale="en" trial={null} deepLinkId={null} />
-        {/* Mounted so the toast text is assertable. The rail leans on toasts to
-            tell a reader why a write did not land, which makes them part of the
-            behaviour rather than decoration. */}
-        <Toaster />
-      </LanguageProvider>
+      {/* The settings dialog reads its open state from the URL through nuqs. The
+          app wires the Next App Router adapter in its root layout, which needs a
+          real router, so these tests use the adapter nuqs ships for exactly this
+          case. Without either one the whole shell throws on render. */}
+      <NuqsTestingAdapter>
+        <LanguageProvider initialLanguage="en">
+          <ChatShell locale="en" trial={null} deepLinkId={null} />
+          {/* Mounted so the toast text is assertable. The rail leans on toasts to
+              tell a reader why a write did not land, which makes them part of the
+              behaviour rather than decoration. */}
+          <Toaster />
+        </LanguageProvider>
+      </NuqsTestingAdapter>
     </QueryClientProvider>,
   );
 }

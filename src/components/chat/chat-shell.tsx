@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authClient } from "../../lib/auth-client";
@@ -46,6 +46,10 @@ import {
   type Verdict,
 } from "./thread-view";
 import { UserButton } from "../user-button";
+import {
+  SettingsPanelHost,
+  type SettingsPanelHandle,
+} from "../settings/settings-panel";
 
 interface Folder {
   id: string;
@@ -100,6 +104,11 @@ export function ChatShell({
   // overlap at millisecond boundaries, so rows can repeat but never vanish.
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [railOpen, setRailOpen] = useState(false);
+  // The panel's open state lives in the URL, not here. The shell only holds a
+  // handle to ask for it to open, which is what lets the phone drawer close in
+  // the same beat without the address bar gaining a second source of truth.
+  const settingsPanelRef = useRef<SettingsPanelHandle>(null);
+  const settingsTriggerRef = useRef<HTMLButtonElement>(null);
   const [dossierOpen, setDossierOpen] = useState(false);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [sealed, setSealed] = useState(false);
@@ -252,6 +261,14 @@ export function ChatShell({
   useEffect(() => {
     if (activeId) writeActiveSession(activeId);
   }, [activeId]);
+
+  function openSettingsPanel() {
+    // The rail is a full screen drawer on a phone and the avatar that opens
+    // settings lives inside it, so the drawer closes first or it is left hanging
+    // behind the dialog.
+    setRailOpen(false);
+    settingsPanelRef.current?.open();
+  }
 
   function resetRail() {
     setCursor(null);
@@ -673,7 +690,11 @@ export function ChatShell({
       .toUpperCase();
     return (
       <div className="flex items-center gap-2.5 rounded-xl border border-authority-900/10 bg-white px-2.5 py-2 hover:bg-slate-50">
-        <UserButton hideChat />
+        <UserButton
+          hideChat
+          onOpenSettings={openSettingsPanel}
+          triggerRef={settingsTriggerRef}
+        />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold text-ink">
             {name}
@@ -867,6 +888,11 @@ export function ChatShell({
           </Dialog.Portal>
         </Dialog.Root>
       </div>
+      {/* Beside the thread rather than inside it, and inside a boundary of its
+          own so the shell's own hook cannot put the thread behind a fallback. */}
+      <Suspense fallback={null}>
+        <SettingsPanelHost ref={settingsPanelRef} triggerRef={settingsTriggerRef} />
+      </Suspense>
     </div>
   );
 }

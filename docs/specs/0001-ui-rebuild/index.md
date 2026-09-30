@@ -18,7 +18,7 @@ Child specs, one per load bearing decision (each buildable on its own):
 - `0004-chat-memory.md` ([chat memory](0004-chat-memory.md), written `Proposed`) - `ChatFolder` / `ChatSession` / `ChatMessage` model, ownership, retention, guest cap (scope 5)
 - `0005-chat-shell.md` ([chat shell](0005-chat-shell.md), written `Proposed`) - AI Elements thread, streaming via AI SDK, folders rail, composer, upload + lookup (scope 4)
 - `0006-agent.md` ([agent tools](0006-agent.md), written `Proposed`) - tools (Tavily web search, registry + flagged lookup, verify call), reviewed versioned prompts, safety limits (scope 6)
-- `0007-shell.md` ([shell](0007-shell.md), written `Proposed`) - landing desk, lean settings, WhatsApp guide (scope 1, 7, 8; amended 2026-09-30 to carry settings as a dialog over the chat thread, scope 17)
+- `0007-shell/` ([shell](0007-shell/index.md), written `Proposed`) - landing desk, lean settings, WhatsApp guide (scope 1, 7, 8; amended 2026-09-30 to carry settings as a dialog over the chat thread, scope 17)
 - `0008-chat-layout.md` ([chat layout](0008-chat-layout.md), written `Proposed`) - route group shells, proxy routing, user card, folder actions (scope 10)
 - `0009-thread-sync.md` ([thread sync](0009-thread-sync.md), written `Proposed`) - windowed thread, older pages, SSE plus poll freshness (scope 11)
 - `0010-proxy-edge-limits.md` ([edge rate limits](0010-proxy-edge-limits.md), written `Proposed`) - Arcjet sliding windows at the proxy with tiered caps (scope 13)

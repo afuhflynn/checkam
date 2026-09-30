@@ -335,6 +335,7 @@ export const translations = {
 
     // Settings
     settingsTitle: "Settings",
+    dialogClose: "Close",
     settingsSub: "Your profile, language, and password in one quiet place.",
     settingsProfile: "Profile",
     settingsNameLabel: "Display name",
@@ -837,6 +838,7 @@ export const translations = {
 
     // Paramètres
     settingsTitle: "Paramètres",
+    dialogClose: "Fermer",
     settingsSub: "Votre profil, langue et mot de passe au même endroit calme.",
     settingsProfile: "Profil",
     settingsNameLabel: "Nom affiché",
