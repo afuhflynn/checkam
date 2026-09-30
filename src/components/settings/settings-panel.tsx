@@ -62,8 +62,13 @@ export const SettingsPanelHost = forwardRef<
   }, [panel, rawPanel, setPanel]);
 
   const openPanel = useCallback(() => {
+    // Already open, so return without writing. The trigger is a button whose own
+    // click does this, and the menu behind it can also deliver a synthesised
+    // click on pointer up. Each write here is a push, so a second one would stack
+    // a duplicate history entry and ask the reader to press Back twice.
+    if (open) return;
     void setPanel(PANEL_SETTINGS, { history: "push" });
-  }, [setPanel]);
+  }, [open, setPanel]);
 
   useImperativeHandle(ref, () => ({ open: openPanel }), [openPanel]);
 
