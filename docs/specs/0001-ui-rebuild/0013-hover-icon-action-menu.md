@@ -1,7 +1,6 @@
 # 0013. Hover icon action menu for the chat rail
 
 **Date**: 2026-09-29
-**Status**: Proposed
 
 ## Summary
 

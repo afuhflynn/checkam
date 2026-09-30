@@ -27,7 +27,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 14 | Thread window tuning from data | Path 6: harden | planned |
 | 15 | Share message rewrite | Path 3: chat | in-progress |
 | 16 | Chat history action menu | Path 3: chat | in-progress |
-| 17 | Settings as a chat modal | Path 3: chat | planned |
+| 17 | Settings as a chat modal | Path 3: chat | in-progress |
 
 ## Path 1: enter
 
@@ -117,23 +117,34 @@ Spec 0006 (`docs/specs/0001-ui-rebuild/0006-agent.md`) · code in `src/lib/agent
 Each chat or folder keeps its title readable, with one action icon that appears on hover, on focus, and on the check you are inside, opening a dropdown holding rename, share, pin, move and delete. Replaces spec 0012, whose inline labelled buttons were measured collapsing the title to zero width in a 256px rail and whose menu never opened on a phone.
 **Done when:** the title is always readable, the actions live in one dropdown reachable by hover, keyboard and tap, and every action works in both languages.
 - [x] Design it (spec): `/solution-architect chat history action menu`
-- [ ] Build it: `/feature-build chat history action menu`
-   - [ ] Row and dropdown from the shadcn wrapper, icon always mounted, reduced motion (AC-1, AC-2, AC-3, AC-16, AC-17)
-   - [ ] Rename as a growing input with no buttons (AC-4, AC-5, AC-6)
-   - [ ] Actions wired, pinning scoped to a section, folder rows, move submenu (AC-7, AC-8, AC-9, AC-10, AC-11)
-   - [ ] Pinned star column, cross tab delete channel, keyboard contract, bilingual labels (AC-8, AC-12, AC-13, AC-14)
+- [x] Build it: `/feature-build chat history action menu`
+   - [x] Row and dropdown from the shadcn wrapper, icon always mounted, reduced motion (AC-1, AC-2, AC-3, AC-16, AC-17)
+   - [x] Rename as a growing input with no buttons (AC-4, AC-5, AC-6)
+   - [x] Actions wired, pinning scoped to a section, folder rows, move submenu (AC-7, AC-8, AC-9, AC-10, AC-11)
+   - [x] Pinned star column, cross tab delete channel, keyboard contract, bilingual labels (AC-8, AC-12, AC-13, AC-14)
 - [ ] Verify it: `/verify-release chat history action menu`
-- [ ] Test it: `/test-engineer chat history action menu`
+- [x] Test it: `/test-engineer chat history action menu`
 - [ ] Review it (fresh model): `/peer-review chat history action menu`
 - [ ] Document it: `/tech-writer chat history action menu`
 Spec 0013 (`docs/specs/0001-ui-rebuild/0013-hover-icon-action-menu.md`), superseding 0012 · code in `src/components/chat/chat-shell.tsx`, `src/components/ui/dropdown-menu.tsx`, `src/app/api/chat/sessions/[id]/route.ts`, `src/app/(chat)/chat/page.tsx`, `src/lib/i18n/dictionary.ts`
 
 ## Path 4: account
 
-### 17. Settings as a chat modal · needs a decision
-Settings opens as a modal over the chat shell instead of leaving the chat for a standalone page. The open and closed state lives in a browser search parameter through nuqs, which this project already uses, with the parameter parsed through a typed schema so a bad value cannot reach the component. The existing /settings route stays as a deep link that opens the same modal.
+### 17. Settings as a chat modal · in-progress
+Settings opens as a modal over the chat shell instead of leaving the chat for a standalone page. The open and closed state lives in a browser search parameter through nuqs, which this project already uses, with the parameter parsed through a typed schema so a bad value cannot reach the component. The existing /settings route stays as a deep link that opens the same modal. The dialog mounts inside ChatShell beside the thread and opens from the rail without navigating, so the conversation is never torn down; /settings answers as a server redirect for the cross surface deep link.
 **Done when:** settings opens over the thread without losing the conversation, the URL carries the state so it can be linked and restored, closing returns you to the chat, and /settings still lands on the same modal.
-- [ ] Design it (spec): `/solution-architect settings as a chat modal`
+- [x] Design it (spec): `/solution-architect settings as a chat modal`
+- [ ] Build it: `/feature-build settings as a chat modal`
+   - [ ] Shared form component plus the typed `panel` parser (AC-4, AC-7)
+   - [ ] `UserButton` trigger prop so the rail opens the panel without navigating (AC-8)
+   - [ ] Dialog beside the thread in ChatShell, with focus return, internal scroll, reduced motion, bilingual close label (AC-8, AC-10)
+   - [ ] Server redirect from /settings, plus the bad value strip and the push then replace history rules (AC-7, AC-8)
+   - [ ] Access states: sign in prompt, unverified, drawer close, parameter dropped on sign out (AC-8, AC-9)
+- [ ] Verify it: `/verify-release settings as a chat modal`
+- [ ] Test it: `/test-engineer settings as a chat modal`
+- [ ] Review it (fresh model): `/peer-review settings as a chat modal`
+- [ ] Document it: `/tech-writer settings as a chat modal`
+Spec 0007 (`../specs/0001-ui-rebuild/0007-shell.md`), amended 2026-09-30 (AC-7 to AC-10 are new) · code in `src/components/chat/chat-shell.tsx`, `src/components/user-button.tsx`, `src/components/ui/dialog.tsx`, `src/app/(chat)/settings/page.tsx`, `src/lib/search-params.ts`, `src/lib/i18n/dictionary.ts`
 
 ### 7. Lean settings · done
 One quiet page: name, language toggle, password change, sign out, with instant save notes in both languages.
@@ -224,6 +235,11 @@ Out of scope for the current build pass, kept so the plan stays honest.
 - **Product analytics**: measure activation and habit · needs a decision
 - **Pinned checks above every section**: pinning only reorders within a folder section today · from spec 0013 · needs a decision
 - **Exact folder delete count**: the rail is cursor paged so the count is a lower bound · from spec 0013 · needs a decision
+- **Hardcoded English in the shared dialog wrapper**: `src/components/ui/dialog.tsx` renders a fixed `Close` label for every consumer; spec 0007 passes a bilingual one in for the settings dialog only, the wrapper itself still needs fixing · from spec 0007
+- **Unverified reader can change settings**: the form is reachable before email verification, looser than the chat write path which refuses · from spec 0007 · needs a decision
+- **Panel parameter shape**: an enum carrying one value may be more than a boolean, decide when a second panel exists · from spec 0007 · needs a decision
+- **Split spec 0007**: the shell and the settings reach are two decisions in one file, split if either grows · from spec 0007 · needs a decision
+- **Test scenarios for shipped shell work**: AC-3, AC-5 and AC-6 shipped with no critical test scenario, so they have nothing to verify against if revisited · from spec 0007
 
 ## Legend
 
