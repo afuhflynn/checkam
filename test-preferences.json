@@ -1,9 +1,10 @@
 {
   "tool": "vitest",
   "gate": null,
-  "additionalTools": [],
+  "additionalTools": ["@testing-library/react", "happy-dom"],
   "e2eTool": "none",
   "testDir": "src/tests",
-  "filePattern": "*.test.ts",
-  "packageManager": "pnpm"
+  "filePattern": "*.test.ts, *.test.tsx",
+  "packageManager": "pnpm",
+  "notes": "Logic tests run in node and are named *.test.ts. Component tests need a DOM, so they are named *.test.tsx and opt in per file with an `@vitest-environment happy-dom` docblock, which keeps the node default for everything else. The alias and that default live in vitest.config.ts, because vitest does not read tsconfig paths on its own. No end to end runner yet: anything measured in pixels, or read off a Tailwind class, is still verified by hand in a real browser."
 }
