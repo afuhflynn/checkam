@@ -16,5 +16,13 @@ export default async function ChatPage({
   const q = params?.q;
   const trial =
     typeof q === "string" && q.trim() ? q.trim().slice(0, 500) : null;
-  return <ChatShell locale={match?.[1] === "en" ? "en" : "fr"} trial={trial} />;
+  const s = params?.s;
+  const deepLinkId = typeof s === "string" && /^[a-z0-9]+$/i.test(s) ? s : null;
+  return (
+    <ChatShell
+      locale={match?.[1] === "en" ? "en" : "fr"}
+      trial={trial}
+      deepLinkId={deepLinkId}
+    />
+  );
 }

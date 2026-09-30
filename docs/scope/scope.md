@@ -26,7 +26,8 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 13 | Proxy edge rate limits | Path 6: harden | in-progress |
 | 14 | Thread window tuning from data | Path 6: harden | planned |
 | 15 | Share message rewrite | Path 3: chat | in-progress |
-| 16 | Chat history action menu | Path 3: chat | planned |
+| 16 | Chat history action menu | Path 3: chat | in-progress |
+| 17 | Settings as a chat modal | Path 3: chat | planned |
 
 ## Path 1: enter
 
@@ -113,22 +114,26 @@ Agent with tools: Tavily web search plus registry lookup plus flagged lookup plu
 Spec 0006 (`docs/specs/0001-ui-rebuild/0006-agent.md`) · code in `src/lib/agent/`, `src/lib/ai/prompts.ts`, `src/lib/ai/prompts/`, rewired `src/app/api/chat/transport/`
 
 ### 16. Chat history action menu · in-progress
-Each chat history item gets a clear action menu with meaningful labels: rename, delete, share, pin. Replaces the current confusing menu with something easy to use.
-**Done when:** a user can rename, delete, share, and pin any chat history item from a clear action menu, in both languages.
+Each chat or folder keeps its title readable, with one action icon that appears on hover, on focus, and on the check you are inside, opening a dropdown holding rename, share, pin, move and delete. Replaces spec 0012, whose inline labelled buttons were measured collapsing the title to zero width in a 256px rail and whose menu never opened on a phone.
+**Done when:** the title is always readable, the actions live in one dropdown reachable by hover, keyboard and tap, and every action works in both languages.
 - [x] Design it (spec): `/solution-architect chat history action menu`
 - [ ] Build it: `/feature-build chat history action menu`
-   - [ ] Replace symbol menu with text labels (AC-1, AC-6, AC-7, AC-8)
-   - [ ] Implement Share action (AC-2)
-   - [ ] Implement Pin action (AC-3)
-   - [ ] Implement Rename action (AC-4)
-   - [ ] Implement Delete action (AC-5)
+   - [ ] Row and dropdown from the shadcn wrapper, icon always mounted, reduced motion (AC-1, AC-2, AC-3, AC-16, AC-17)
+   - [ ] Rename as a growing input with no buttons (AC-4, AC-5, AC-6)
+   - [ ] Actions wired, pinning scoped to a section, folder rows, move submenu (AC-7, AC-8, AC-9, AC-10, AC-11)
+   - [ ] Pinned star column, cross tab delete channel, keyboard contract, bilingual labels (AC-8, AC-12, AC-13, AC-14)
 - [ ] Verify it: `/verify-release chat history action menu`
 - [ ] Test it: `/test-engineer chat history action menu`
 - [ ] Review it (fresh model): `/peer-review chat history action menu`
 - [ ] Document it: `/tech-writer chat history action menu`
-Spec 0012 (`docs/specs/0001-ui-rebuild/0012-chat-action-menu.md`)
+Spec 0013 (`docs/specs/0001-ui-rebuild/0013-hover-icon-action-menu.md`), superseding 0012 · code in `src/components/chat/chat-shell.tsx`, `src/components/ui/dropdown-menu.tsx`, `src/app/api/chat/sessions/[id]/route.ts`, `src/app/(chat)/chat/page.tsx`, `src/lib/i18n/dictionary.ts`
 
 ## Path 4: account
+
+### 17. Settings as a chat modal · needs a decision
+Settings opens as a modal over the chat shell instead of leaving the chat for a standalone page. The open and closed state lives in a browser search parameter through nuqs, which this project already uses, with the parameter parsed through a typed schema so a bad value cannot reach the component. The existing /settings route stays as a deep link that opens the same modal.
+**Done when:** settings opens over the thread without losing the conversation, the URL carries the state so it can be linked and restored, closing returns you to the chat, and /settings still lands on the same modal.
+- [ ] Design it (spec): `/solution-architect settings as a chat modal`
 
 ### 7. Lean settings · done
 One quiet page: name, language toggle, password change, sign out, with instant save notes in both languages.
@@ -217,6 +222,8 @@ Out of scope for the current build pass, kept so the plan stays honest.
 - **Richer settings**: theme, notices, data export, delete account · needs a decision
 - **Multi turn WhatsApp memory**: WhatsApp stays single shot per turn · needs a decision
 - **Product analytics**: measure activation and habit · needs a decision
+- **Pinned checks above every section**: pinning only reorders within a folder section today · from spec 0013 · needs a decision
+- **Exact folder delete count**: the rail is cursor paged so the count is a lower bound · from spec 0013 · needs a decision
 
 ## Legend
 

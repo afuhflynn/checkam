@@ -1,6 +1,16 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -61,9 +71,11 @@ function writeActiveSession(id: string): void {
 export function ChatShell({
   locale,
   trial,
+  deepLinkId,
 }: {
   locale: Language;
   trial: string | null;
+  deepLinkId?: string | null;
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -145,6 +157,33 @@ export function ChatShell({
   }, [pageData]);
 
   const nextCursor = sessionsQuery.data?.nextCursor ?? null;
+
+  // A shared link arrives as ?s=<id>. The rail is cursor paged, so the shared
+  // check is usually not in the first page: fetch it, drop it into the rail so
+  // the title and actions work, and open it. The 404 path is silent on purpose,
+  // a dead link should fall through to the normal "your last check" restore
+  // rather than dead end on an error.
+  const deepLinkRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkRef.current || !deepLinkId) return;
+    deepLinkRef.current = true;
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch(`/api/chat/sessions/${deepLinkId}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { session: SessionRow };
+      if (cancelled) return;
+      setSessions((prev) =>
+        prev.some((row) => row.id === data.session.id)
+          ? prev
+          : [data.session, ...prev],
+      );
+      setActiveId(data.session.id);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [deepLinkId]);
 
   // Reopen the thread on load. activeId used to start null and only ever got
   // set by clicking the rail or creating a check, so every page load dropped
@@ -252,6 +291,23 @@ export function ChatShell({
     onError: () => toast.error(t.gateFailed),
   });
 
+  // Share copies a link that opens this check. The id goes in the query so the
+  // reader lands on the same immersive chat shell rather than a stripped page,
+  // and the route reads it back through the scoped GET above. Session only:
+  // a folder is just a grouping of the reader's own checks, and there is no
+  // folder view to land on, so offering it would copy a link that opens
+  // something other than what the label promised.
+  async function shareSession(id: string) {
+    const url = new URL("/chat", window.location.origin);
+    url.searchParams.set("s", id);
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      toast.success(t.chatShareCopied);
+    } catch {
+      toast.error(t.gateFailed);
+    }
+  }
+
   async function togglePin(
     kind: "session" | "folder",
     id: string,
@@ -271,7 +327,13 @@ export function ChatShell({
   }
 
   async function submitRename() {
-    if (!renaming || !renaming.title.trim()) return;
+    if (!renaming) return;
+    // An empty title is rejected rather than saved: a blank row in the rail
+    // reads as a broken check, and there is no way to tell which one it was.
+    if (!renaming.title.trim()) {
+      toast.error(t.chatRenameEmpty);
+      return;
+    }
     // Kind rides the rename state so a folder id absent from the rail can
     // never misroute to the session endpoint.
     const isSession = renaming.kind === "session";
@@ -342,13 +404,21 @@ export function ChatShell({
           setRenaming({ kind: "session", id: item.id, title })
         }
         onRenameSubmit={submitRename}
+        onRenameCancel={() => setRenaming(null)}
         onPin={() => togglePin("session", item.id, item.pinned)}
+        onShare={() => shareSession(item.id)}
         onDelete={() => setConfirmDelete({ kind: "session", id: item.id })}
         onMove={(folderId) => moveSession(item.id, folderId)}
         t={{
           rename: t.chatRename,
           pin: item.pinned ? t.chatUnpin : t.chatPin,
+          share: t.chatShare,
           del: t.chatDeleteSession,
+          move: t.chatMoveTo,
+          moveNone: t.chatMoveNone,
+          actions: t.chatActions,
+          save: t.chatSave,
+          cancel: t.chatCancel,
         }}
       />
     );
@@ -416,8 +486,16 @@ export function ChatShell({
                     event.preventDefault();
                     void submitRename();
                   }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      setRenaming(null);
+                    }
+                  }}
                 >
                   <Input
+                    autoFocus
+                    aria-label={t.chatRename}
                     value={renaming.title}
                     onChange={(event) =>
                       setRenaming({
@@ -429,66 +507,58 @@ export function ChatShell({
                     maxLength={80}
                   />
                   <Button type="submit" size="sm">
-                    OK
+                    {t.chatSave}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setRenaming(null)}
+                  >
+                    {t.chatCancel}
                   </Button>
                 </form>
               ) : (
                 <>
-                  <p className="flex-1 truncate text-sm font-bold text-slate-800">
+                  <p className="min-w-0 flex-1 truncate text-sm font-bold text-slate-800">
                     {folder.name}
                   </p>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label={t.chatNewChat}
-                    title={t.chatNewChat}
-                    onClick={() => createSession(folder.id)}
-                  >
-                    +
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label={folder.pinned ? t.chatUnpin : t.chatPin}
-                    onClick={() =>
-                      togglePin("folder", folder.id, folder.pinned)
-                    }
-                  >
-                    {folder.pinned ? "★" : "☆"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label={t.chatRename}
-                    onClick={() =>
-                      setRenaming({
-                        kind: "folder",
-                        id: folder.id,
-                        title: folder.name,
-                      })
-                    }
-                  >
-                    ✎
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label={t.chatDeleteFolder}
-                    onClick={() =>
-                      setConfirmDelete({
-                        kind: "folder",
-                        id: folder.id,
-                        count: sessions.filter((s) => s.folderId === folder.id)
-                          .length,
-                      })
-                    }
-                  >
-                    ✕
-                  </Button>
+                  <Menu
+                    label={t.chatFolderActions}
+                    tone="light"
+                    items={[
+                      {
+                        label: t.chatNewCheckIn,
+                        onSelect: () => createSession(folder.id),
+                      },
+                      {
+                        label: folder.pinned ? t.chatUnpin : t.chatPin,
+                        onSelect: () =>
+                          togglePin("folder", folder.id, folder.pinned),
+                      },
+                      {
+                        label: t.chatRename,
+                        onSelect: () =>
+                          setRenaming({
+                            kind: "folder",
+                            id: folder.id,
+                            title: folder.name,
+                          }),
+                      },
+                      {
+                        label: t.chatDeleteFolder,
+                        danger: true,
+                        onSelect: () =>
+                          setConfirmDelete({
+                            kind: "folder",
+                            id: folder.id,
+                            count: sessions.filter(
+                              (s) => s.folderId === folder.id,
+                            ).length,
+                          }),
+                      },
+                    ]}
+                  />
                 </>
               )}
             </div>
@@ -748,7 +818,9 @@ function SessionRowView({
   onRename,
   onRenameChange,
   onRenameSubmit,
+  onRenameCancel,
   onPin,
+  onShare,
   onDelete,
   onMove,
   t,
@@ -761,10 +833,22 @@ function SessionRowView({
   onRename: (title: string) => void;
   onRenameChange: (title: string) => void;
   onRenameSubmit: () => void;
+  onRenameCancel: () => void;
   onPin: () => void;
+  onShare: () => void;
   onDelete: () => void;
   onMove: (folderId: string | null) => void;
-  t: { rename: string; pin: string; del: string };
+  t: {
+    rename: string;
+    pin: string;
+    share: string;
+    del: string;
+    move: string;
+    moveNone: string;
+    actions: string;
+    save: string;
+    cancel: string;
+  };
 }) {
   if (renaming !== null) {
     return (
@@ -775,14 +859,27 @@ function SessionRowView({
             event.preventDefault();
             onRenameSubmit();
           }}
+          onKeyDown={(event) => {
+            // Escape backs out of an edit rather than committing a title the
+            // reader did not mean to set.
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onRenameCancel();
+            }
+          }}
         >
           <Input
+            autoFocus
+            aria-label={t.rename}
             value={renaming}
             onChange={(event) => onRenameChange(event.target.value)}
             maxLength={120}
           />
           <Button type="submit" size="sm">
-            OK
+            {t.save}
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={onRenameCancel}>
+            {t.cancel}
           </Button>
         </form>
       </li>
@@ -791,54 +888,166 @@ function SessionRowView({
   return (
     <li>
       <div
-        className={`group flex items-center gap-1 rounded-lg px-2 py-1.5 ${active ? "bg-authority-950 text-white" : "hover:bg-slate-100"}`}
+        className={`rounded-lg px-2 py-1.5 ${active ? "bg-authority-950 text-white" : "hover:bg-slate-100"}`}
       >
-        <button
-          type="button"
-          onClick={onOpen}
-          className={`flex-1 truncate text-left text-sm font-semibold ${active ? "text-white" : "text-slate-700"}`}
-        >
-          {item.pinned ? "★ " : ""}
-          {item.title}
-        </button>
-        <button
-          type="button"
-          aria-label={t.pin}
-          onClick={onPin}
-          className={`text-xs ${active ? "text-slate-300" : "text-slate-400"}`}
-        >
-          {item.pinned ? "★" : "☆"}
-        </button>
-        <button
-          type="button"
-          aria-label={t.rename}
-          onClick={() => onRename(item.title)}
-          className={`text-xs ${active ? "text-slate-300" : "text-slate-400"}`}
-        >
-          ✎
-        </button>
-        <button
-          type="button"
-          aria-label={t.del}
-          onClick={onDelete}
-          className={`text-xs ${active ? "text-slate-300" : "text-slate-400"}`}
-        >
-          ✕
-        </button>
-        <select
-          aria-label="folder"
-          value={item.folderId ?? ""}
-          onChange={(event) => onMove(event.target.value || null)}
-          className={`max-w-20 truncate rounded bg-transparent text-xs ${active ? "text-slate-300" : "text-slate-400"}`}
-        >
-          <option value="">≣</option>
-          {folders.map((folder) => (
-            <option key={folder.id} value={folder.id}>
-              {folder.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onOpen}
+            className={`min-w-0 flex-1 truncate text-left text-sm font-semibold ${active ? "text-white" : "text-slate-700"}`}
+          >
+            {item.pinned ? "★ " : ""}
+            {item.title}
+          </button>
+          <Menu
+            label={t.actions}
+            tone={active ? "dark" : "light"}
+            items={[
+              { label: t.rename, onSelect: () => onRename(item.title) },
+              { label: t.share, onSelect: onShare },
+              { label: t.pin, onSelect: onPin },
+              {
+                label: t.move,
+                submenu: [
+                  { label: t.moveNone, onSelect: () => onMove(null) },
+                  ...folders.map((folder) => ({
+                    label: folder.name,
+                    onSelect: () => onMove(folder.id),
+                  })),
+                ],
+              },
+              { label: t.del, onSelect: onDelete, danger: true },
+            ]}
+          />
+        </div>
       </div>
     </li>
+  );
+}
+
+// One row of real action buttons, shared by the inline desktop rail and the
+// mobile dropdown so the two cannot drift apart in labels or behaviour.
+function ActionList({
+  items,
+  tone,
+}: {
+  items: { label: string; onSelect?: () => void; danger?: boolean }[];
+  tone: "light" | "dark";
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {items.map((item) => (
+        <button
+          key={item.label}
+          type="button"
+          onClick={item.onSelect}
+          className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold transition-colors ${
+            item.danger
+              ? tone === "dark"
+                ? "text-rose-300 hover:bg-white/10"
+                : "text-rose-600 hover:bg-rose-50"
+              : tone === "dark"
+                ? "text-slate-300 hover:bg-white/10"
+                : "text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type MenuItem = {
+  label: string;
+  onSelect?: () => void;
+  danger?: boolean;
+  submenu?: { label: string; onSelect: () => void }[];
+};
+
+// The rail is 256px on desktop, which fits short labels inline but not four of
+// them per row, and on phone it is a drawer where inline labels would push the
+// titles to nothing. So desktop gets the labelled row and phone gets one button
+// that opens the same labels in a dropdown. Both render MenuItem labels, so
+// there is one vocabulary of actions in the product.
+function Menu({
+  label,
+  tone,
+  items,
+}: {
+  label: string;
+  tone: "light" | "dark";
+  items: MenuItem[];
+}) {
+  const [open, setOpen] = useState(false);
+  const flat = items.filter((item) => !item.submenu);
+  const trigger = (
+    <button
+      type="button"
+      aria-label={label}
+      aria-expanded={open}
+      aria-haspopup="menu"
+      onClick={() => setOpen((value) => !value)}
+      className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-semibold transition-colors md:hidden ${
+        tone === "dark"
+          ? "text-slate-300 hover:bg-white/10"
+          : "text-slate-600 hover:bg-slate-200"
+      }`}
+    >
+      ⋯
+    </button>
+  );
+
+  if (open) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {flat.map((item) => (
+            <DropdownMenuItem
+              key={item.label}
+              onSelect={() => {
+                setOpen(false);
+                item.onSelect?.();
+              }}
+              className={item.danger ? "text-rose-600" : undefined}
+            >
+              {item.label}
+            </DropdownMenuItem>
+          ))}
+          {items
+            .filter((item) => item.submenu)
+            .map((item) => (
+              <DropdownMenuSub key={item.label}>
+                <DropdownMenuSubTrigger>{item.label}</DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    {item.submenu?.map((child) => (
+                      <DropdownMenuItem
+                        key={child.label}
+                        onSelect={() => {
+                          setOpen(false);
+                          child.onSelect();
+                        }}
+                      >
+                        {child.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+            ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <>
+      {trigger}
+      <div className="hidden md:block">
+        <ActionList items={flat} tone={tone} />
+      </div>
+    </>
   );
 }

@@ -15,6 +15,25 @@ async function ownedSession(actor: Awaited<ReturnType<typeof resolveActor>>, id:
   return db.chatSession.findFirst({ where: { id, ...sessionScope(actor) } });
 }
 
+// A shared link carries the session id, so the page needs to read one check
+// by id. Scoped to the actor the same way the writes are, so a link can only
+// ever open the reader's own check and a guessed id is a plain 404.
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const actor = await resolveActor();
+  const { id } = await params;
+  const session = await ownedSession(actor, id);
+  if (!session) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  return NextResponse.json({
+    session: {
+      id: session.id,
+      title: session.title,
+      folderId: session.folderId,
+      pinned: session.pinned,
+      updatedAt: session.updatedAt,
+    },
+  });
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const actor = await resolveActor();
   const { id } = await params;

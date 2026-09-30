@@ -1,7 +1,7 @@
 # 0012. Chat history action menu
 
 **Date**: 2026-09-29
-**Status**: Proposed
+**Status**: Superseded by [0013](0013-hover-icon-action-menu.md)
 
 ## Summary
 
