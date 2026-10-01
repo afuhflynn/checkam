@@ -1,41 +1,29 @@
-# WhatsApp Channel - Meta Cloud API Go-Live
+# WhatsApp integration
 
-Stage 2 is built and testable without credentials (mock dispatch logs to console).
-To go live you need WhatsApp Business credentials from Meta (or a BSP).
+The WhatsApp flow is implemented as a webhook receiver plus an async worker pipeline. The webhook acknowledges the request quickly and then passes the event to Inngest for the heavy verification work.
 
-## What exists
+## What the app does
 
-- `GET /api/public/whatsapp/webhook` - Meta subscription verification
-  (`hub.mode` / `hub.verify_token` / `hub.challenge` against `WHATSAPP_WEBHOOK_VERIFY_TOKEN`).
-- `POST /api/public/whatsapp/webhook` - HMAC-SHA256 check (`x-hub-signature-256` vs
-  `WHATSAPP_APP_SECRET`, skipped while the secret is a placeholder), typed payload parsing,
-  single-flight idempotent inbox on `messageId` (Prisma `P2002` = duplicate delivery),
-  fast `200` then `inngest.send("whatsapp/message.received")`.
-- `src/inngest/functions/process-whatsapp-message.ts` - dedupe → fact extraction
-  (text direct; image/document fetched from Graph API with `WHATSAPP_API_TOKEN`) → rules
-  engine verdict → reply via `POST /{PHONE_NUMBER_ID}/messages` (sender's language,
-  auto-detected FR/EN, French default) →
-  event marked `COMPLETED`. Concurrency 10 per sender, retries 2, AI circuit breaker shared
-  with the web engine.
+- `GET /api/public/whatsapp/webhook` verifies Meta subscription requests using the configured verify token.
+- `POST /api/public/whatsapp/webhook` validates the HMAC signature, parses the payload, and stores a deduplicated event by `messageId`.
+- The worker pipeline fetches media if needed, runs fact extraction, and evaluates the verdict with the same rules engine used elsewhere.
+- The response message is sent back through the WhatsApp Cloud API and marked complete in the database.
 
 ## Go-live checklist
 
-1. **Meta app**: create app → add WhatsApp product → test number (or your business number).
-2. **Env** (production, never commit):
-   `WHATSAPP_WEBHOOK_VERIFY_TOKEN` (long random),
-   `WHATSAPP_API_TOKEN` (permanent system-user token),
-   `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`.
-3. **Webhook subscription**: callback URL
-   `https://<your-domain>/api/public/whatsapp/webhook`, verify token from step 2,
-   subscribe to `messages` field.
-4. **Test**: send text → expect badge + 3 bullets + 8202 + forwardable warning;
-   send flyer image/PDF → same engine reads it.
-5. **Inngest**: point production serve URL at `/api/inngest` (see Inngest dashboard)
-   so background events actually execute outside `dev`.
+1. Create a Meta app and connect the WhatsApp Business product.
+2. Set the production environment values for the webhook token, API token, phone number id, and app secret.
+3. Subscribe the callback URL to the `messages` field.
+4. Verify text and flyer flows in a real channel before turning on broader traffic.
+5. Point Inngest production to `/api/inngest` so background jobs execute outside local development.
 
-## Limits & behavior
+## Operational notes
 
-- Unsupported message types are acknowledged (`IGNORED_UNSUPPORTED_TYPE`) without error.
-- Status/delivery receipts are acknowledged (`IGNORED_STATUS_UPDATE`).
-- When AI credits are exhausted the circuit opens for 60s and heuristics answer instead -
-  rules still decide the verdict.
+- Unsupported message types are ignored cleanly.
+- Delivery receipts are treated as informational and do not trigger a verification path.
+- If the AI layer is unavailable or credits are exhausted, the app falls back to heuristics while the rules engine still decides the verdict.
+- Keep the verification logic aligned with the web verification flow so both surfaces behave consistently.
+
+## Safety
+
+The WhatsApp path should never silently trust inbound content. The system should validate the payload, deduplicate duplicates, and keep the same evidence and verdict rules as the public web flow.

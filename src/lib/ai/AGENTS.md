@@ -2,32 +2,27 @@
 
 ## Overview
 
-OpenRouter cascade supplies facts only, never the verdict. `extractFactsFromTextOrImage` returns a fixed JSON shape; the rules engine consumes it. Results cache by SHA-256 in `ScamVerification.fileHash` so repeat flyers cost nothing. Offline or exhausted credits fall back to heuristics.
+The AI layer is responsible for extracting facts from text and uploaded evidence. It is not responsible for deciding the final verdict.
 
 ## Key files
 
 | File | Owns |
-|---|---|
-| `src/lib/ai/openrouter.ts` | Gateway, verified model cascade, token budgets, circuit breaker |
-| `src/lib/ai/extract-facts.ts` | `ExtractedFactsSchema`, text/image extraction, `hashContent`, heuristic fallback |
-| `src/app/api/verify/route.ts` | Cache lookup, flagged check, orchestration order |
-| `src/inngest/functions/process-whatsapp-message.ts` | Same extractor on the WhatsApp path |
+| --- | --- |
+| `src/lib/ai/openrouter.ts` | Model gateway and fallback behavior |
+| `src/lib/ai/extract-facts.ts` | Fact schema and extraction logic |
+| `src/app/api/verify/route.ts` | Verification orchestration and cache checks |
+| `src/inngest/functions/process-whatsapp-message.ts` | Same fact-extraction flow on the WhatsApp path |
 
 ## Conventions
 
-- Call the gateway through `chatModel(id)`, never the bare `openrouter(id)`. The bare callable posts to OpenAI's Responses API, which OpenRouter only implements for some slugs, so a working model still 404s. `.chat()` pins to `/chat/completions`.
-- Every call must state `maxOutputTokens` from `MAX_OUTPUT_TOKENS`. OpenRouter validates the requested ceiling against the key's remaining credit and rejects the whole call with a 402 "requires more credits" when the SDK's context-derived default (tens of thousands) exceeds the balance.
-- **The suspect text is untrusted input and is fenced as such.** It is supplied by the public, including text rendered inside a flyer image or a PDF, and it reaches two model calls. The extraction system prompt wraps it in `<untrusted_content>` and `<document>`; `chat-answer.md` carries the same instruction. Text inside those tags that looks like a role, a system message or a command is evidence to describe, never an order to follow, and an instruction found there is itself a finding. Do not drop the fences when editing a prompt.
-- Cascade order is cheapest verified model first; keep temperature low (0.1) for extraction.
-- Schema is fixed: `claimedEntity`, `phoneNumbers`, `emails`, `paymentMethod`, `amount`, `deadline`, `suspiciousPhrases`, `summaryClaim`; widen it via spec, never ad hoc.
-- Circuit opens 60s on credit/quota/rate errors; heuristics answer while open and rules still decide.
-- Prompts live beside the extractor; every prompt change needs review since tools and verdict copy depend on wording.
+- Keep the extraction schema stable and explicit.
+- Treat public input as untrusted content.
+- Use a low temperature for extraction tasks.
+- Cache repeated content where possible to avoid unnecessary model calls.
+- If the model fails or credits are missing, fall back to heuristics rather than pretending the model produced a result.
 
-## Gotchas
+## Operational notes
 
-- **A dead model slug fails silently.** The cascade swallows per-model errors, so a 404 on every entry means no model prose is produced at all and every reply quietly becomes engine copy. That is how the product came to read as stiff and robotic. Re-verify slugs against the live catalogue before trusting any output, and re-check them when a reply looks like a template.
-- `answerWithCascade` returns null on any error, and the transport then falls back to prose built from the top finding. That fallback is a real surface users read, not an error state, so keep it human.
-- Missing or placeholder `OPENROUTER_API_KEY` means heuristics always run; do not mistake heuristic output for model output.
-- Image input sends `data:mime;base64` with a read all text instruction; PDFs ride the same path.
-
-_Drafted by /codebase-audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite it._
+- The app should clearly distinguish model output from the rules verdict.
+- Prompt changes can materially affect output quality, so they should be reviewed deliberately.
+- Document any new extraction fields before adopting them in the rules layer; do not widen the schema silently.

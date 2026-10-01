@@ -1,32 +1,36 @@
-# Moderation - Admin Workflow & Safety Rules
+# Moderation workflow
 
-`/admin` + `/api/admin/reports` are gated by `requireModerator()` (`src/lib/auth.ts`):
-Better-Auth session with `role` = `ADMIN` or `MODERATOR`. Local dev may set
-`CHECKAM_ADMIN_BYPASS="true"` (blocked automatically when `NODE_ENV=production`).
+The moderation flow lives behind the admin gate in `src/lib/auth.ts`. Access is limited to users with the `ADMIN` or `MODERATOR` role, unless local development explicitly enables `CHECKAM_ADMIN_BYPASS`.
 
-## Queue
+## Admin queue
 
-- `GET /api/admin/reports?status=PENDING|APPROVED|REJECTED|ALL` → reports + stats
-  (`pendingCount`, `approvedCount`, `flaggedNumbersCount`, `verificationsTotal`).
-- Dashboard shows metric cards, status tabs, per-report evidence (phones, emails, amounts,
-  submitter), link to the public dossier, and one-click actions.
+`GET /api/admin/reports?status=PENDING|APPROVED|REJECTED|ALL` returns a list of reports and aggregate stats.
 
-## Actions
+The dashboard should expose:
 
-| Action | Effect |
-| ------ | ------ |
-| **APPROVE** | `status=APPROVED`, `publishedAt=now`, linked `flagged_identifiers` → `isActive: true`. If none exist, phone/email identifiers are auto-created from the report. Fires `threat-feed/sync.requested`. |
-| **REJECT** | `status=REJECTED`, linked identifiers → `isActive: false` (delisted from feed + directory). Reversible via re-APPROVE. |
+- pending, approved, and rejected counts
+- evidence summary for each report
+- file or text context used in the submission
+- links to the related public dossier when available
+- quick approve or reject actions
 
-Moderator identity is recorded (`moderatedById`, `moderatorNotes`).
+## Review actions
 
-## Safety rules (do not bypass)
+| Action | Result |
+| --- | --- |
+| APPROVE | Marks the report as approved, sets publication time, and activates any linked flagged identifiers. New phone or email identifiers are created when needed. |
+| REJECT | Marks the report as rejected and deactivates linked identifiers. |
 
-1. **Never publish without review.** Public `GET /api/reports` and `/directory` serve
-   `APPROVED` rows only - this protects innocent people from false accusations.
-2. **Verify before approving**: call back official numbers (`.gov.cm` sites, ANTIC 8202),
-   never the suspect number in the report.
-3. **Seeded roles**: `admin@checkam.cm` is ADMIN. Promote trusted reviewers to MODERATOR;
-   keep ADMIN to 1–2 people.
-4. **Abuse**: report submissions are rate-limited (5/hour/IP) and IP-hashed; WhatsApp
-   events are deduplicated by `messageId`.
+The moderation record keeps the reviewer identity and notes so every action is traceable.
+
+## Safety rules
+
+1. Never publish without review. Public report and directory endpoints should only return approved entries.
+2. Check reporting claims against official sources before approving them.
+3. Keep admin access narrow. The seeded admin account is a privileged operational account; elevate trusted reviewers carefully.
+4. Rate-limit report submissions and deduplicate incoming WhatsApp events by message id.
+5. Keep all moderation decisions in the audit trail and do not silently bypass the queue.
+
+## Operational reminder
+
+The moderation system exists to protect the public from false accusations while still making real scam reports actionable. It is a safety layer, not a shortcut around normal verification.

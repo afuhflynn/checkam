@@ -1,159 +1,112 @@
-# CheckAm - Verify Before You Pay 🇨🇲
+# CheckAm
 
-A bilingual (English/Français) scam-verification platform for Cameroon. People paste a message,
-upload a flyer, or search a phone number - and get a clear verdict with hard evidence, plus a
-ready-to-forward WhatsApp warning.
+CheckAm is a bilingual scam-verification product for Cameroon. It helps users check a message, flyer, phone number, or email against a deterministic rules engine and a clear evidence trail before they pay, send money, or trust a claim.
 
-> **Mission:** stop MINESEC/MINFOPRA recruitment scams, Orange/MTN Mobile Money fraud, fake
-> Canada-visa offers, and Douala-port auction scams **before** money moves. Rules decide the
-> verdict; AI only supplies the facts. Official cross-check: ANTIC hotline **8202**.
+The product is designed around a simple flow: a user enters the claim, the app extracts the facts, the rules engine decides the verdict, and the public-facing output stays easy to share in WhatsApp and other channels.
 
----
+## Project status
 
-## ✨ Features
+This repo is a working Next.js application with a live product surface, not only a prototype. The current codebase includes:
 
-| Stage | What |
-| ----- | ---- |
-| **1 - Verification engine + site** | Intake hub (paste text / upload flyer-PDF / lookup phone-email), 3 one-tap demo cases, deterministic rules engine, AI fact extraction, Receipts card (badge + 3 evidence bullets + official website + ANTIC 8202 + copyable WhatsApp warning) |
-| **2 - WhatsApp channel** | Meta webhook (`GET` verify + `POST` HMAC-signed receiver), idempotent event inbox, Inngest async processing, media fetch + same-engine verdict, short WhatsApp reply |
-| **3 - Registry + data feed** | Public scam directory (`/directory`), permanent dossiers (`/scam/$slug`), public reporting with moderation queue, gated admin dashboard, structured threat feed (JSON/CSV) for telcos/banks |
-| **4 - Accounts + chat (new)** | Permit gate at `/signin` (password + Google, email verify, reset link + OTP, resend caps), avatar menu, `/chat` atelier (folders, streaming threads, evidence dossier, Verdict Seal), guest tries (2/day) with sign-in wall, persistent history with undo restore, agent tools (registry, flagged, verify, Tavily web search, title drafts) behind versioned prompts, Nodemailer mail (verify/reset/welcome) via Inngest, lean `/settings`, WhatsApp trials guide, bilingual SEO + sitemap |
+- the public verification flow
+- moderation and admin review
+- the WhatsApp intake flow
+- persistent chat and agent tooling
+- threat-feed publication for approved identifiers
+- bilingual UI and locale handling
 
-Bilingual throughout: browser-language detection with persisted EN | FR switch. Mobile-first.
+## Stack
 
----
+- Next.js 16 + React 19 + TypeScript
+- Prisma + PostgreSQL
+- Better-Auth
+- Inngest
+- AI SDK + OpenRouter
+- Arcjet
+- Tailwind + shadcn-inspired UI
+- Vitest + Biome
 
-## 🧱 Stack
-
-- **Next.js 16.3.6** (Turbopack) + React 19 + strict TypeScript (`noUncheckedIndexedAccess`), Biome lint/format
-- **Tailwind CSS v4** (CSS-first `@theme`), shadcn-style `ui/*`, Lucide icons, Sonner toasts
-- **PostgreSQL 16** (Docker, port `5454`) + **Prisma 6** ORM + seed (official entities + 4 confirmed scams + admin)
-- **Vercel AI SDK v7** + **OpenRouter** free-model cascade with circuit breaker + heuristic fallback; results cached by SHA-256 so the same flyer is never re-read; `@ai-sdk/react` streaming + AI Elements chat surfaces
-- **Arcjet** (Shield + bot defense + rate limits), **Inngest v4** (WhatsApp processing, threat-feed sync, mail jobs, chat purge), **TanStack Query**, **nuqs** (shareable `?q=&category=`), **Better-Auth** (email+password, Google OAuth, ADMIN/MODERATOR roles)
-- **Nodemailer** SMTP mail (verify/reset/welcome), **Tavily** web search for the agent, **Vercel Blob** flyer storage (local driver in dev)
-- Local evidence storage: `public/uploads/evidence/` (Docker volume `uploads_data`; swap for S3 without changing code paths)
-
----
-
-## 🚀 Quickstart
+## Quick start
 
 ```bash
-# 1. Start Postgres (and storage init)
 docker compose up -d
-
-# 2. Install + generate + migrate + seed
 pnpm install
 pnpm db:generate
 pnpm db:push
 pnpm db:seed
-
-# 3. Run
-pnpm dev          # http://localhost:3000
+pnpm dev
 ```
 
-Seeded admin: `admin@checkam.cm` (role ADMIN - set its password via your auth flow, or
-promote a signed-up user in `psql`/Studio). Seeded scams: fake MINESEC-325 flyer, 75 000 FCFA
-Orange Money reversal SMS, express Canada visa, Douala-port auction.
+The app runs on http://localhost:3000 by default.
 
-### Environment
+## Key environment variables
 
-Copy the keys in `.env` and fill real values for production:
+Use a real `.env` in local or production environments. The main values are:
 
-| Key | Purpose |
-| --- | ------- |
-| `DATABASE_URL` | Postgres connection |
-| `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` | Auth signing + base URL (secret required in production, throws at boot) |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google sign-in (empty keeps password only; register `<app-url>/api/auth/callback/google` in production) |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | Nodemailer mail sending (empty fails loud, never silently) |
-| `ALERT_WEBHOOK_URL` | Ops alert for mail failures past retries (empty logs only) |
-| `TAVILY_API_KEY` / `TAVILY_DAILY_BUDGET` | Agent web search + daily cap (default 100; empty disables search, local tools remain) |
-| `WHATSAPP_NUMBER` | Guide `wa.me` link number (empty falls back to web chat) |
-| `OPENROUTER_API_KEY` / `OPENROUTER_BASE_URL` | AI fact extraction (without a real key the heuristic extractor runs offline) |
-| `ARCJET_KEY` | Bot defense + rate limits (dry-run in dev) |
-| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Meta webhook `GET` verification |
-| `WHATSAPP_API_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID` / `WHATSAPP_APP_SECRET` | Meta Cloud API media fetch + replies + HMAC check |
-| `NEXT_PUBLIC_APP_URL` | Canonical URL (share links, OpenRouter referer) |
-| `CHECKAM_ADMIN_BYPASS="true"` | **Local dev only** - skips moderator sign-in on `/api/admin`. Never set in production. |
+- `DATABASE_URL`
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
+- `OPENROUTER_API_KEY`
+- `ARCJET_KEY`
+- `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
+- `WHATSAPP_API_TOKEN`
+- `WHATSAPP_PHONE_NUMBER_ID`
+- `WHATSAPP_APP_SECRET`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- `TAVILY_API_KEY`
+- `NEXT_PUBLIC_APP_URL`
 
----
-
-## 🗺 Routes
+## Core routes
 
 | Route | Purpose |
-| ----- | ------- |
-| `/` | Intake hub + verdict Receipts card |
-| `/signin` | Permit gate (password + Google, verify/reset/OTP) |
-| `/verify` / `/reset` | Consume verify / reset link tokens |
-| `/chat` | Chat atelier (folders, threads, dossier, composer) |
-| `/settings` | Profile, language, password, sign out |
-| `/directory` | Public registry (search + category pills, `?q=&category=`) |
-| `/scam/[slug]` | Permanent shareable case dossier |
-| `/report` | Public report-a-scam (held PENDING until approved) |
-| `/whatsapp` | How the WhatsApp bot works (+ trials guide) |
-| `/admin` | Moderation queue (gated: ADMIN/MODERATOR) |
-| `/api/verify` | Verification engine (Arcjet + cache + AI + rules) |
-| `/api/chat/sessions` + `/folders` + `/messages` | Chat memory CRUD (owner scoped, guest keys, cursor pages) |
-| `/api/chat/transport` | Streaming chat transport (SSE text + verdict events) |
-| `/api/chat/upload` + `/lookup` + `/guest-counter` + `/claim` + `/restore` | Flyer upload, phone lookup, guest cap, claim, undo restore |
-| `/api/auth/resend-verify` | Capped verify resend (returns job id) |
-| `/api/mail/status` | Mail job state for the gate |
-| `/api/guide/number` | WhatsApp number with web fallback |
-| `/api/user/revoke-all` | Revoke every session (after password change) |
-| `/api/reports` | Public list (APPROVED only) + submit |
-| `/api/uploads` | Flyer evidence upload → `/uploads/evidence/…` |
-| `/api/admin/reports` | Moderation queue + APPROVE/REJECT (gated) |
-| `/api/public/whatsapp/webhook` | Meta `GET` challenge + `POST` receiver |
-| `/api/public/threat-feed` | `?format=json\|csv&category=&since=` telco/bank feed |
-| `/api/auth/[...all]` | Better-Auth handlers |
-| `/api/inngest` | Inngest serve endpoint |
+| --- | --- |
+| `/` | Public intake and verdict overview |
+| `/signin` | Auth flow and permit gate |
+| `/chat` | Chat interface and history |
+| `/directory` | Public scam directory |
+| `/report` | Report submission |
+| `/admin` | Moderation queue |
+| `/whatsapp` | WhatsApp guide and setup information |
+| `/api/verify` | Verification engine |
+| `/api/admin/reports` | Admin workflow |
+| `/api/public/whatsapp/webhook` | WhatsApp webhook receiver |
+| `/api/public/threat-feed` | Public threat feed |
 
----
+## Verification model
 
-## 🧠 How verification works
+The rules engine is the final authority for the verdict. AI is for fact extraction, not final decision-making.
 
-1. **Arcjet** rate-limit/bot check → **Zod** payload validation.
-2. **SHA-256 cache**: extraction reused when the same text/flyer was seen before.
-3. **Flagged-identifier lookup** in Postgres (`normalizedValue`, active only).
-4. **AI extraction** (or offline heuristics): ministry, phones, emails, amount, deadline, payment channel.
-5. **Pure rules engine** (`src/lib/rules/`) decides `HIGH_RISK | CAUTION | VERIFIED_OFFICIAL` + 0–100 score + exactly 3 EN/FR bullets. AI never sets the verdict.
-6. Session recorded in `scam_verifications`; WhatsApp warning generated in both languages.
+1. Validate incoming input and rate-limit it.
+2. Check for known active flagged identifiers.
+3. Extract facts from text or uploaded evidence.
+4. Apply the deterministic rules engine.
+5. Produce a verdict with evidence and a clear warning.
 
-Rule families: free-email posing as ministries, `.gov.cm` whitelist, personal-MoMo-for-fees,
-advance-fee phrases (`frais de dossier`, `quittance express`), guaranteed-return/visa promises,
-reversal-SMS patterns.
+## Documentation map
 
----
+- [AGENTS.md](AGENTS.md) — repository-level operational guide
+- [docs/ADMIN.md](docs/ADMIN.md) — moderation and admin workflow
+- [docs/WHATSAPP.md](docs/WHATSAPP.md) — WhatsApp integration and go-live notes
+- [docs/THREAT-FEED.md](docs/THREAT-FEED.md) — public threat feed format and usage
+- [docs/scope/scope.md](docs/scope/scope.md) — current rebuild plan and status
+- [docs/specs/0001-ui-rebuild/index.md](docs/specs/0001-ui-rebuild/index.md) — UI rebuild umbrella spec
 
-## 📚 Docs
-
-- [`docs/WHATSAPP.md`](docs/WHATSAPP.md) - Meta Cloud API go-live checklist
-- [`docs/THREAT-FEED.md`](docs/THREAT-FEED.md) - telco/bank integration
-- [`docs/ADMIN.md`](docs/ADMIN.md) - moderation workflow + safety rules
-
----
-
-## ✅ Verify
+## Quality checks
 
 ```bash
-pnpm typecheck   # tsc --noEmit (strict, no any)
-pnpm check       # biome check
-pnpm test        # vitest - rules engine (7 tests: 3 demos + official + phones)
-pnpm build       # production build (15 routes)
+pnpm typecheck
+pnpm check
+pnpm test
+pnpm build
 ```
 
-Smoke-tested: MINESEC demo → `HIGH_RISK / 100 / CIVIL_SERVICE`; threat feed → seeded threats.
+## Safety notes
 
----
+- Public reports and threat-feed entries remain hidden until moderation approves them.
+- The verifier never treats AI output as final verdict text.
+- The system keeps WhatsApp and admin flows idempotent and rate-limited.
 
-## 🛡 Safety & abuse notes
+Created for Cameroon, with a focus on practical scam detection and public safety.
 
-- Nothing is published until a moderator approves it - reports sit in `PENDING`, flagged
-  identifiers stay `isActive: false` until APPROVE.
-- Approve auto-creates flagged phone/email identifiers; Reject deactivates them.
-- Report submissions rate-limited (5/hour/IP); verify + uploads + threat feed behind Arcjet.
-- WhatsApp webhook verifies HMAC-SHA256 when `WHATSAPP_APP_SECRET` is real, dedupes by
-  `messageId` (single-flight), replies fast 200 then processes async.
-
----
-
-*Independent public-utility service. Created by Flynn Afuh with ♥️ for Cameroon
+> Created with ❤️ by Flynn Afuh for Cameroon

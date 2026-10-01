@@ -1,22 +1,20 @@
-# Public Threat Feed - Telco / Bank Integration
+# Threat feed
 
-`GET /api/public/threat-feed` - structured feed of newly flagged numbers and accounts.
-Rate-limited (Arcjet), cacheable (`s-maxage=300, stale-while-revalidate=600`), max 500 rows.
+The public threat feed exposes approved scam identifiers in a machine-readable format. It is intended for downstream consumers such as telcos, banks, or other public-interest monitors that need a structured feed without exposing unreviewed accusations.
 
-## Usage
+## Endpoint
 
 ```bash
-# JSON (default)
 curl "https://checkam.cm/api/public/threat-feed?format=json"
-
-# CSV for bulk ingest
 curl "https://checkam.cm/api/public/threat-feed?format=csv" -o threats.csv
-
-# Filter + incremental sync
-curl "https://checkam.cm/api/public/threat-feed?format=json&category=MOBILE_MONEY&since=2025-01-01T00:00:00Z"
 ```
 
-`category` accepts `CIVIL_SERVICE | VISA_TRAVEL | MOBILE_MONEY | INVESTMENT_PONZI | ECOMMERCE | OTHER`.
+## Important behavior
+
+- The feed is rate-limited and cacheable.
+- It only returns identifiers with `isActive: true`.
+- Records are included only after a moderator approves the linked report.
+- Consumer code should treat the feed as a downstream trust signal, not as a source of raw report data.
 
 ## JSON shape
 
@@ -29,24 +27,33 @@ curl "https://checkam.cm/api/public/threat-feed?format=json&category=MOBILE_MONE
   "anticHotline": "8202",
   "threats": [
     {
-      "id": "…",
-      "identifierType": "PHONE | EMAIL | DOMAIN | MOMO_ACCOUNT | BANK_ACCOUNT",
+      "id": "...",
+      "identifierType": "PHONE",
       "normalizedValue": "+237699123456",
       "riskLevel": "HIGH_RISK",
       "category": "CIVIL_SERVICE",
-      "notes": "…",
-      "relatedCase": { "slug": "…", "title": "…", "targetEntity": "MINESEC", "amountRequested": "25 000 FCFA" },
-      "firstDetectedAt": "…"
+      "notes": "...",
+      "relatedCase": {
+        "slug": "...",
+        "title": "...",
+        "targetEntity": "MINESEC",
+        "amountRequested": "25 000 FCFA"
+      },
+      "firstDetectedAt": "..."
     }
   ]
 }
 ```
 
-Phones are E.164 (`+237…`), emails lowercase. Only `isActive: true` rows appear -
-identifiers activate **only** when a moderator approves the linked report, so polling this
-feed never picks up unreviewed public accusations.
+## Sync guidance
 
-## Suggested sync
+- Poll on a regular cadence, such as every 5 to 15 minutes.
+- Use `since` to request only newer rows.
+- Upsert by normalized value.
+- Treat high-risk phone and MoMo entries as priority events for blocking or step-up verification flows.
 
-Poll every 5–15 min with `since=<last-generatedAt>`, upsert on `normalizedValue`,
-treat `HIGH_RISK` PHONE/MOMO_ACCOUNT as block-or-step-up-authentication.
+## Safety
+
+The feed is meant to be useful and public, but it should never become a replacement for moderation. Only approved records should appear.
+
+This document is part of the public source repository and is intended for contributors, operators, and downstream integrators.

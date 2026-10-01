@@ -2,29 +2,27 @@
 
 ## Overview
 
-Single Postgres schema plus seed is the source of truth for users, scam checks, registry, and WhatsApp inbox. `src/lib/rules/cameroon-entities.ts` seeds `OfficialEntity`; seed drift between that file and the DB is the main risk. No chat tables exist yet; they land here via spec + migration.
+The Prisma schema is the source of truth for the application data model: auth, scam verification records, reports, threat identifiers, and WhatsApp events.
 
 ## Key files
 
 | File | Owns |
-|---|---|
-| `prisma/schema.prisma` | All models + enums (`User`, `Session`, `Account`, `Verification`, `ScamVerification`, `ScamReport`, `FlaggedIdentifier`, `OfficialEntity`, `WhatsAppWebhookEvent`) |
-| `prisma/seed.ts` | Upserts official entities + demo reports + admin user |
-| `src/lib/db.ts` | Prisma singleton for server code |
-| `src/lib/rules/cameroon-entities.ts` | Canonical official institutions list (seed input) |
+| --- | --- |
+| `prisma/schema.prisma` | Models and enums for users, sessions, verification records, reports, flagged identifiers, and webhook event tracking |
+| `prisma/seed.ts` | Seed data for official entities, demo records, and admin account setup |
+| `src/lib/db.ts` | Prisma client singleton used by server code |
+| `src/lib/rules/cameroon-entities.ts` | Canonical official institutions list used in the rules layer |
 
 ## Conventions
 
-- `Verification` (`auth_verifications`) holds Better-Auth tokens; `ScamVerification` (`verifications`) holds scam checks; never confuse the two.
-- `Session` is the Better-Auth session (token + expiry), not a chat session.
-- Flagged lookups always query `normalizedValue` with `isActive: true`; phone values normalize to E.164 (`+237…`) before compare.
-- Reports stay `PENDING` until moderation; `APPROVE` creates flagged identifiers, `REJECT` deactivates them.
-- Migrations via `pnpm db:push` in dev; chat tables (`ChatFolder` / `ChatSession` / `ChatMessage`) require a spec first.
+- Distinguish `Verification` from `ScamVerification`; they serve different purposes.
+- `Session` is for Better-Auth, not chat activity.
+- Flagged identifiers should be queried by normalized value and active status.
+- Reports remain pending until moderation review.
+- Keep migration and seed changes explicit; do not add ad hoc tables without a reviewed spec.
 
-## Gotchas
+## Operational notes
 
-- `ScamVerification.queryContent` is truncated to 1000 chars; full text is not stored.
-- `whatsappWarning` is stored FR only; EN/FR bullets live in `evidenceBullets` JSON.
-- No FK links `ScamVerification` to WhatsApp events or users; per sender threads do not exist yet.
-
-_Drafted by /codebase-audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite it._
+- `ScamVerification.queryContent` is intentionally truncated for storage efficiency.
+- Language-specific output should be handled in the application layer rather than by storing only one language in the DB.
+- The schema evolves with migration changes rather than silent assumptions about untracked tables.

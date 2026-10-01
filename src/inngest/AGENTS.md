@@ -1,30 +1,28 @@
-# Inngest background jobs
+# Inngest jobs
 
 ## Overview
 
-`checkam-engine` runs async work outside the request: the WhatsApp inbound pipeline and the threat feed sync. Webhook receivers reply fast (200) then `inngest.send`; functions do the heavy steps with retries. Mail jobs (Nodemailer) are planned here, not yet wired.
+Inngest handles background work that should not block the request lifecycle. This includes WhatsApp processing, threat-feed updates, and other async follow-up work.
 
 ## Key files
 
 | File | Owns |
-|---|---|
-| `src/inngest/client.ts` | Client id `checkam-engine` |
-| `src/inngest/functions/process-whatsapp-message.ts` | Dedupe, fact extraction, rules, reply, mark `COMPLETED` |
-| `src/inngest/functions/sync-threat-feed.ts` | Threat feed cache sync after admin `APPROVE` |
-| `src/app/api/inngest/route.ts` | Serve endpoint (`GET,POST,PUT`) |
-| `src/app/api/public/whatsapp/webhook/route.ts` | Verifier + idempotent inbox + `inngest.send` |
+| --- | --- |
+| `src/inngest/client.ts` | Client configuration |
+| `src/inngest/functions/process-whatsapp-message.ts` | WhatsApp processing flow |
+| `src/inngest/functions/sync-threat-feed.ts` | Threat-feed sync after moderation actions |
+| `src/app/api/inngest/route.ts` | Inngest endpoint |
+| `src/app/api/public/whatsapp/webhook/route.ts` | Webhook verification and send-off |
 
 ## Conventions
 
-- Events: `whatsapp/message.received` and `threat-feed/sync.requested`; keep payloads small (ids + bodies, never secrets).
-- Idempotency key is `WhatsAppWebhookEvent.messageId` (`@unique`); duplicate delivery (`P2002`) means acknowledge without re send.
-- WhatsApp function uses per sender concurrency (limit 10, key `fromNumber`) and 2 retries.
-- Media fetch goes through Meta Graph v19 with `WHATSAPP_API_TOKEN`; placeholder secrets mean mock log dispatch, never real send.
+- Keep event payloads small and avoid sending secrets in the event body.
+- Treat duplicate webhook deliveries as idempotent events.
+- Run heavy verification work outside the HTTP request path.
+- Keep production deployment and local dev behavior aligned so jobs actually execute in the intended environment.
 
-## Gotchas
+## Notes
 
-- Rules run without the flagged DB check on the WhatsApp path (unlike web `/api/verify`); keep parity in mind when changing the engine.
-- Inngest needs its production serve URL pointed at `/api/inngest` outside dev, or background events never execute.
-- No mail transport exists yet; `emailAndPassword` is on but verification/reset mails cannot send until Nodemailer + jobs land via spec.
-
-_Drafted by /codebase-audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite it._
+- The WhatsApp path and the web verification path should stay aligned as the rules engine evolves.
+- If the app is missing API credentials, the job should fail safely or log instead of pretending to have sent a message.
+- Mail jobs should be introduced with explicit design and operational wiring, not silently as an unreviewed addition.
