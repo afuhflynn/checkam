@@ -14,6 +14,7 @@ export function Header() {
 
   const navLinks = [
     { href: "/directory", label: t.navDirectory },
+    { href: "/chat", label: "Chat" }, // special case
     { href: "/report", label: t.navReport },
     { href: "/whatsapp", label: t.navWhatsApp },
     // { href: "/admin", label: t.navAdmin }, // coming soon
