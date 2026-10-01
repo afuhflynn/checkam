@@ -28,6 +28,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 15 | Share message rewrite | Path 3: chat | in-progress |
 | 16 | Chat history action menu | Path 3: chat | in-progress |
 | 17 | Settings as a chat modal | Path 3: chat | in-progress |
+| 18 | Message actions and rich answers | Path 3: chat | in-progress |
 
 ## Path 1: enter
 
@@ -127,6 +128,21 @@ Each chat or folder keeps its title readable, with one action icon that appears 
 - [ ] Review it (fresh model): `/peer-review chat history action menu`
 - [ ] Document it: `/tech-writer chat history action menu`
 Spec 0013 (`docs/specs/0001-ui-rebuild/0013-hover-icon-action-menu.md`), superseding 0012 · code in `src/components/chat/chat-shell.tsx`, `src/components/ui/dropdown-menu.tsx`, `src/app/api/chat/sessions/[id]/route.ts`, `src/app/(chat)/chat/page.tsx`, `src/lib/i18n/dictionary.ts`
+
+### 18. Message actions and rich answers · in-progress
+Every message earns a quiet action row, so you can copy any message and any code block, and re ask an answer that got a verdict wrong. Answers already render as proper rich text through Streamdown, so this wires the action primitives the repo already vendors, keeps the code block copy the library already renders, and adds one nullable column so a replaced answer still counts against the budget.
+**Done when:** you can copy a message or a code block in one tap, re ask an answer without losing the thread, read formatted answers properly, and the thread reads as one modern surface in both languages on phone and desktop.
+- [x] Design it (spec): `/solution-architect message actions and rich answers`
+- [ ] Build it: `/feature-build message actions and rich answers`
+   - [ ] Action row with plain text copy, check confirmation, and both languages (AC-1, AC-2, AC-3, AC-4, AC-13)
+   - [ ] Supersede column plus the filter rule, naming the four paths that must not filter (AC-7, AC-8, AC-10)
+   - [ ] Re ask end to end: one transport field, stale target refusal, the guest charge, the control, the settled state (AC-5, AC-6, AC-7, AC-9, AC-11, AC-12, AC-14, AC-15)
+   - [ ] Surface pass for keyboard, focus, reduced motion, touch targets and both languages (AC-4)
+- [ ] Verify it: `/verify-release message actions and rich answers`
+- [ ] Test it: `/test-engineer message actions and rich answers`
+- [ ] Review it (fresh model): `/peer-review message actions and rich answers`
+- [ ] Document it: `/tech-writer message actions and rich answers`
+Spec 0014 (`../specs/0001-ui-rebuild/0014-message-actions/index.md`)
 
 ## Path 4: account
 
@@ -239,6 +255,9 @@ Out of scope for the current build pass, kept so the plan stays honest.
 - **Unverified reader can change settings**: the form is reachable before email verification, looser than the chat write path which refuses · from spec 0007 · needs a decision
 - **Panel parameter shape**: an enum carrying one value may be more than a boolean, decide when a second panel exists · from spec 0007 · needs a decision
 - **Split spec 0007**: the shell and the settings reach are two decisions in one file, split if either grows · from spec 0007 · needs a decision
+- **`tokenUse` on a message row is read but never written**: nothing writes it, so no accounting depends on it, yet `tokenUse` is still selected on every thread read · from spec 0014 · needs a decision
+- **The chat client never seeds the AI SDK's own message state**: the thread renders from fetched pages, so SDK features that read that state (`regenerate`, `resumeStream`) cannot work and spec 0014 routed around it · from spec 0014 · needs a decision
+- **`AGENTS.md` has no `## Agent skills` section**: `ai-sdk`, `frontend-design` and `tailwindcss` are installed and shaped spec 0014 but are not referenced from any context file · from spec 0014
 - **Test scenarios for shipped shell work**: AC-3, AC-5 and AC-6 shipped with no critical test scenario, so they have nothing to verify against if revisited · from spec 0007
 
 ## Legend
