@@ -156,6 +156,4 @@ Smoke-tested: MINESEC demo → `HIGH_RISK / 100 / CIVIL_SERVICE`; threat feed �
 
 ---
 
-*Independent public-utility service. Official communications cross-referenced with the
-Presidency, Government Ministries, and ANTIC (National Agency for ICT). Cybercrime hotline:
-**8202** (toll-free in Cameroon).*
+*Independent public-utility service. Created by Flynn Afuh with ♥️ for Cameroon
