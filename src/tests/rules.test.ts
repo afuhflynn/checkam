@@ -288,11 +288,33 @@ describe("Forwardable notices", () => {
   });
 
   it("replaces em dashes with hyphens", () => {
+    // The em dash has to travel in a field the engine interpolates, otherwise
+    // it never reaches the body and nothing is being tested. The amount is
+    // model extracted free text, which is exactly where a dash can arrive.
     const emDashResult = runRulesEngine({
-      text: "This is a test - with an em dash",
+      text: "Avis de recrutement MINESEC, envoyez 25000 FCFA par Orange Money au 699123456",
+      claimedEntity: "MINESEC",
+      phoneNumbers: ["699123456"],
+      amount: "25 000 \u2014 50 000 FCFA",
     });
-    expect(emDashResult.whatsappWarning.en).not.toContain("-");
-    expect(emDashResult.whatsappWarning.en).not.toContain("–");
+    const body = emDashResult.whatsappReply.fr;
+
+    // The dash is replaced, not deleted: the amount reads with a plain hyphen.
+    expect(body).toContain("25 000 - 50 000 FCFA");
+    expect(body).not.toContain("\u2014");
+    expect(body).not.toContain("\u2013");
+  });
+
+  it("replaces en dashes with hyphens too", () => {
+    const enDashResult = runRulesEngine({
+      text: "Avis de recrutement MINESEC, envoyez 25000 FCFA par Orange Money au 699123456",
+      claimedEntity: "MINESEC",
+      phoneNumbers: ["699123456"],
+      amount: "25 000 \u2013 50 000 FCFA",
+    });
+
+    expect(enDashResult.whatsappReply.fr).toContain("25 000 - 50 000 FCFA");
+    expect(enDashResult.whatsappReply.fr).not.toContain("\u2013");
   });
 
   it("includes the forward prompt only on HIGH_RISK", () => {
