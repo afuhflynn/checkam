@@ -22,6 +22,8 @@ Child specs, one per load bearing decision (each buildable on its own):
 - `0008-chat-layout.md` ([chat layout](0008-chat-layout.md), written `Proposed`) - route group shells, proxy routing, user card, folder actions (scope 10)
 - `0009-thread-sync.md` ([thread sync](0009-thread-sync.md), written `Proposed`) - windowed thread, older pages, SSE plus poll freshness (scope 11)
 - `0010-proxy-edge-limits.md` ([edge rate limits](0010-proxy-edge-limits.md), written `Proposed`) - Arcjet sliding windows at the proxy with tiered caps (scope 13)
+- `0015-whatsapp-platform-rules-and-cost/` ([WhatsApp platform rules and cost](0015-whatsapp-platform-rules-and-cost/index.md), written `Proposed`) - one pinned Meta API version, the 24 hour window and monthly reply cap enforced at our edge, and a phone format for the reply in accented French (scope 19)
+- `0016-whatsapp-click-to-chat-cta/` ([WhatsApp chat button](0016-whatsapp-click-to-chat-cta/index.md), written `Proposed`) - a one tap chat button built on the click to chat code, bilingual labels, and the guide page rendering from the real reply (scope 31; its step 1 also lands scope 28)
 - Visual polish direction (scope 9) lives in the Design section below and applies to every child.
 
 Cross child contracts: rules decide every verdict and AI never does; all user strings ship EN + FR; chat messages may link a `ScamVerification`; mail state is the `emailVerified` flag on the user row plus the Inngest run history.

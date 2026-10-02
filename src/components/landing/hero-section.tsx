@@ -3,7 +3,9 @@
 import { ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "../../lib/i18n/context";
+import { CLICK_TO_CHAT_ANCHOR_ID } from "../../lib/whatsapp/click-to-chat";
 import { Button } from "../ui/button";
+import { WhatsAppChatButton } from "../whatsapp/chat-button";
 import type { LandingStats } from "./bulletin-bar";
 
 export function HeroSection({ stats }: { stats: LandingStats }) {
@@ -47,6 +49,8 @@ export function HeroSection({ stats }: { stats: LandingStats }) {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
+
+          <WhatsAppChatButton id={CLICK_TO_CHAT_ANCHOR_ID} className="shadow-[#25D366]/25" />
 
           <Button
             asChild

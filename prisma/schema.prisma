@@ -178,6 +178,48 @@ model OfficialEntity {
   createdAt            DateTime @default(now())
 }
 
+// The outcome of our own send decision, recorded whether or not a message
+// left. `processedStatus` stays a free string for row 27 to finish.
+enum WhatsAppReplyDecision {
+  PENDING
+  SENT
+  REFUSED_WINDOW
+  REFUSED_CAP
+}
+
+// WhatsApp platform rules and cost (spec 0015). One row per sender holds the
+// 24 hour customer service window, because Meta gives us no endpoint for it.
+// The identity columns are deliberately empty: scope row 21 owns normalisation
+// and Meta's business scoped id, so this spec does not decide identity.
+model WhatsAppThread {
+  threadKey        String    @id // the raw from number exactly as Meta sends it
+  normalizedNumber String?
+  waId             String?
+  lastInboundAt    DateTime // earlier of Meta's message timestamp and our receive time
+  windowExpiresAt  DateTime // lastInboundAt plus 24 hours, never extended by us
+  lastOutboundAt   DateTime?
+  capNoteSentAt    DateTime? // at most one cap notice per thread per month
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  events WhatsAppWebhookEvent[]
+}
+
+// The monthly reply allowance, which Meta sets per business phone number and
+// resets at midnight in the account timezone. `repliesAttempted` is our only
+// ledger: it counts attempts rather than deliveries, and it never moves down.
+model WhatsAppUsageMonth {
+  phoneNumberId    String
+  month            String // YYYY-MM in the account timezone
+  repliesAttempted Int      @default(0)
+  capAtMonthStart  Int // audit only, never read to make a decision
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@id([phoneNumberId, month])
+  @@index([month])
+}
+
 model WhatsAppWebhookEvent {
   id              String   @id @default(cuid())
   messageId       String   @unique
@@ -186,7 +228,19 @@ model WhatsAppWebhookEvent {
   rawPayload      Json
   processedStatus String   @default("PENDING") // PENDING, COMPLETED, FAILED
   replyText       String?
-  createdAt       DateTime @default(now())
+  // Nullable so the column can be added to a populated table in one step; it is
+  // written in the same transaction that opens the thread (spec 0015).
+  threadKey                 String?
+  inboundAt                 DateTime? // Meta's own message timestamp
+  replyDecision             WhatsAppReplyDecision @default(PENDING)
+  replyDecisionReason       String? // WINDOW_EXPIRED, MONTHLY_CAP_REACHED, MISSING_CREDENTIALS
+  windowExpiresAtAtDecision DateTime?
+  createdAt                 DateTime @default(now())
+
+  thread WhatsAppThread? @relation(fields: [threadKey], references: [threadKey], onDelete: SetNull)
+
+  @@index([threadKey])
+  @@index([fromNumber])
 }
 
 // Chat memory (spec 0004): folders own sessions own messages. Guest rows

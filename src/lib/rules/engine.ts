@@ -1,11 +1,11 @@
 import { type OfficialInstitution, findOfficialEntity } from "./cameroon-entities";
+import { extractHosts, isCameroonGovHost, looksCameroonian } from "./domain-trust";
 import { FREE_EMAIL_DOMAINS, evaluateEmailLegitimacy, extractEmails } from "./email-rules";
 import { evaluateKeywordPatterns } from "./keyword-rules";
 import { evaluateLegitimacy } from "./legitimacy-rules";
 import { evaluatePaymentChannel } from "./payment-rules";
-import { evaluateStructuralPatterns } from "./structural-rules";
-import { extractHosts, isCameroonGovHost, looksCameroonian } from "./domain-trust";
 import { extractCameroonPhoneNumbers, normalizeCameroonPhone } from "./phone-normalizer";
+import { evaluateStructuralPatterns } from "./structural-rules";
 
 export type VerdictStatus = "HIGH_RISK" | "CAUTION" | "VERIFIED_OFFICIAL";
 export type ScamCategory =
@@ -79,6 +79,14 @@ export interface VerificationResult {
   };
   // Same notice without markdown, for surfaces that do not render asterisks.
   whatsappWarningPlain: {
+    en: string;
+    fr: string;
+  };
+  // The same notice shaped for a phone screen: a real bullet character, one
+  // blank line between sections, the whole body sanitised, and a length
+  // ceiling with a stated drop order. This is the text the WhatsApp worker
+  // sends (spec 0015, AC-8).
+  whatsappReply: {
     en: string;
     fr: string;
   };
@@ -449,6 +457,30 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     nextStep: safetyNote.fr,
     format: "plain",
   });
+  const replyEn = renderAlert({
+    language: "en",
+    verdict,
+    category,
+    bullets: finalBulletsEn,
+    phones: phoneListStr,
+    emails: emailList,
+    entity: officialEntity?.acronym || "UNOFFICIAL",
+    amount: amountStr,
+    nextStep: safetyNote.en,
+    format: "whatsapp",
+  });
+  const replyFr = renderAlert({
+    language: "fr",
+    verdict,
+    category,
+    bullets: finalBulletsFr,
+    phones: phoneListStr,
+    emails: emailList,
+    entity: officialEntity?.acronym || "NON OFFICIEL",
+    amount: amountStr,
+    nextStep: safetyNote.fr,
+    format: "whatsapp",
+  });
 
   return {
     verdict,
@@ -466,6 +498,7 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
     sources: cleanSources,
     whatsappWarning: { en: warningEn, fr: warningFr },
     whatsappWarningPlain: { en: warningEnPlain, fr: warningFrPlain },
+    whatsappReply: { en: replyEn, fr: replyFr },
     extractedFacts: {
       phones: extractedPhones.map((p) => p.normalized),
       emails: extractedEmails.map((e) => e.original),
@@ -475,7 +508,7 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
   };
 }
 
-export type AlertFormat = "markdown" | "plain";
+export type AlertFormat = "markdown" | "plain" | "whatsapp";
 
 function extractPaymentMethod(bullets: string[]): string | null {
   const patterns = [/orange money/i, /mtn momo/i, /mobile money/i, /bank transfer/i, /virement/i];
@@ -486,6 +519,45 @@ function extractPaymentMethod(bullets: string[]): string | null {
     }
   }
   return null;
+}
+
+/** WhatsApp renders this character as a list marker; a hyphen does not. */
+const WHATSAPP_BULLET = "•";
+
+/**
+ * A phone screen ceiling for one reply. The French safety paragraphs run to
+ * roughly 980 characters on their own, so a lower ceiling would cut the advice
+ * that stops someone losing money. What gets dropped instead is a decision, and
+ * it is made in this order (spec 0015, AC-8).
+ */
+const WHATSAPP_MAX_CHARS = 1600;
+
+function stripEmojis(text: string): string {
+  return text.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "");
+}
+
+function replaceDashes(text: string): string {
+  return text.replace(/[\u2014\u2013]/g, "-");
+}
+
+/**
+ * Sanitise the whole assembled body, not one section at a time. The amount and
+ * the entity arrive from model extraction, so a section by section clean is not
+ * a clean body.
+ */
+function sanitizeForPhone(text: string): string {
+  return replaceDashes(stripEmojis(text)).replace(/[ \t]+\n/g, "\n");
+}
+
+/** Cut at a sentence boundary where one is available, never mid word. */
+function truncateAtSentence(text: string, budget: number): string {
+  if (budget <= 0) return "";
+  if (text.length <= budget) return text;
+  const head = text.slice(0, budget);
+  const stops = [". ", "! ", "? ", ".\n"].map((s) => head.lastIndexOf(s));
+  const lastStop = Math.max(...stops);
+  if (lastStop > budget * 0.4) return head.slice(0, lastStop + 1).trimEnd();
+  return head.trimEnd();
 }
 
 function renderAlert(params: {
@@ -502,9 +574,6 @@ function renderAlert(params: {
 }): string {
   const fr = params.language === "fr";
   const strong = (text: string) => (params.format === "markdown" ? `*${text}*` : text);
-  const replaceDashes = (text: string) => text.replace(/[\u2014\u2013]/g, "-");
-  const stripEmojis = (text: string) =>
-    text.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "");
 
   const header =
     params.verdict === "HIGH_RISK"
@@ -513,49 +582,122 @@ function renderAlert(params: {
         : "Scam alert - CheckAm Cameroon"
       : params.verdict === "CAUTION"
         ? fr
-          ? "Attention, message a verifier - CheckAm"
+          ? "Attention, message à vérifier - CheckAm"
           : "Caution, message to verify - CheckAm"
         : fr
           ? "Communication officielle - CheckAm"
           : "Official communication - CheckAm";
 
   const intro = fr
-    ? "Ce message a ete analyse sur checkam.cm :"
+    ? "Ce message a été analysé sur checkam.cm :"
     : "This message was analyzed on checkam.cm:";
 
-  const sections: string[] = [strong(header), "", intro];
-
-  if (params.bullets.length > 0) {
-    const bulletLines = params.bullets.map((b) => `- ${stripEmojis(replaceDashes(b))}`);
-    sections.push("", bulletLines.join("\n"));
-  }
+  const bulletLines = params.bullets.map((b) =>
+    params.format === "whatsapp" ? `${WHATSAPP_BULLET} ${b}` : `- ${stripEmojis(replaceDashes(b))}`,
+  );
 
   const contactLines: string[] = [];
   if (params.phones) {
-    contactLines.push(fr ? `Numero a surveiller : ${params.phones}` : `Number to watch: ${params.phones}`);
+    contactLines.push(
+      fr ? `Numéro à surveiller : ${params.phones}` : `Number to watch: ${params.phones}`,
+    );
   } else if (params.emails.length > 0) {
-    contactLines.push(fr ? `Email a surveiller : ${params.emails[0]}` : `Email to watch: ${params.emails[0]}`);
+    contactLines.push(
+      fr ? `E-mail à surveiller : ${params.emails[0]}` : `Email to watch: ${params.emails[0]}`,
+    );
   }
   if (params.entity && params.entity !== "UNOFFICIAL" && params.entity !== "NON OFFICIEL") {
-    contactLines.push(fr ? `Entite : ${params.entity}` : `Entity: ${params.entity}`);
+    contactLines.push(fr ? `Entité : ${params.entity}` : `Entity: ${params.entity}`);
   }
   if (params.amount) {
-    contactLines.push(fr ? `Montant demande : ${params.amount}` : `Amount demanded: ${params.amount}`);
+    contactLines.push(
+      fr ? `Montant demandé : ${params.amount}` : `Amount demanded: ${params.amount}`,
+    );
   }
   const paymentMethod = extractPaymentMethod(params.bullets);
   if (paymentMethod) {
-    contactLines.push(fr ? `Methode de paiement : ${paymentMethod}` : `Payment method: ${paymentMethod}`);
+    contactLines.push(
+      fr ? `Méthode de paiement : ${paymentMethod}` : `Payment method: ${paymentMethod}`,
+    );
+  }
+
+  // The closing block: the next step, plus the two lines a high risk alert
+  // carries. It is never dropped and never truncated mid sentence.
+  const actionLines = [params.nextStep];
+  if (params.verdict === "HIGH_RISK") {
+    actionLines.push(
+      fr
+        ? "Signalez gratuitement à l'ANTIC au 8202."
+        : "Report it free on the ANTIC hotline, 8202.",
+      fr
+        ? "Faites suivre à vos groupes WhatsApp pour protéger vos proches."
+        : "Forward this to your family and groups to protect others.",
+    );
+  }
+  const action = replaceDashes(stripEmojis(actionLines.join("\n")));
+
+  if (params.format === "whatsapp") {
+    return renderPhoneAlert({ header, intro, bulletLines, contactLines, action });
+  }
+
+  const sections: string[] = [strong(header), "", intro];
+
+  if (bulletLines.length > 0) {
+    sections.push("", bulletLines.join("\n"));
   }
   if (contactLines.length > 0) {
     sections.push("", contactLines.join("\n"));
   }
+  sections.push("", action);
+  return sections.join("\n");
+}
 
-  sections.push("", replaceDashes(stripEmojis(params.nextStep)));
+/**
+ * The phone shape. One blank line between sections, a real bullet character,
+ * the whole body sanitised, and a stated drop order when the body is over the
+ * ceiling: contact lines first, then the oldest evidence bullets, then the
+ * closing block at a sentence boundary. At least one evidence bullet always
+ * survives, and the verdict line and the closing block are never cut.
+ */
+function renderPhoneAlert(parts: {
+  header: string;
+  intro: string;
+  bulletLines: string[];
+  contactLines: string[];
+  action: string;
+}): string {
+  const assemble = (bullets: string[], contacts: string[], action: string): string => {
+    const blocks = [
+      `*${parts.header}*`,
+      parts.intro,
+      bullets.length > 0 ? bullets.join("\n") : null,
+      contacts.length > 0 ? contacts.join("\n") : null,
+      action,
+    ].filter((block): block is string => block !== null && block.length > 0);
+    return blocks.join("\n\n");
+  };
 
-  if (params.verdict === "HIGH_RISK") {
-    sections.push("", fr ? "Signalez gratuitement a l'ANTIC au 8202." : "Report it free on the ANTIC hotline, 8202.");
-    sections.push(fr ? "Faites suivre a vos groupes WhatsApp pour proteger vos proches." : "Forward this to your family and groups to protect others.");
+  let bullets = parts.bulletLines;
+  let contacts = parts.contactLines;
+  let action = parts.action;
+
+  let body = assemble(bullets, contacts, action);
+  if (body.length > WHATSAPP_MAX_CHARS) {
+    contacts = [];
+    body = assemble(bullets, contacts, action);
+  }
+  while (body.length > WHATSAPP_MAX_CHARS && bullets.length > 1) {
+    bullets = bullets.slice(1);
+    body = assemble(bullets, contacts, action);
+  }
+  if (body.length > WHATSAPP_MAX_CHARS) {
+    const withoutAction = assemble(bullets, contacts, "");
+    action = truncateAtSentence(action, WHATSAPP_MAX_CHARS - withoutAction.length - 2);
+    body = assemble(bullets, contacts, action);
+  }
+  if (body.length > WHATSAPP_MAX_CHARS) {
+    body = body.slice(0, WHATSAPP_MAX_CHARS).trimEnd();
   }
 
-  return sections.join("\n");
+  return sanitizeForPhone(body);
 }

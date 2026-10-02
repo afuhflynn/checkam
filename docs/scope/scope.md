@@ -1,6 +1,6 @@
 # Scope: CheckAm UI rebuild
 
-Bilingual scam verification for Cameroon, rebuilt around a simple flow: landing invites trust, signed in chat does the work, settings and WhatsApp guide support it.
+Bilingual scam verification for Cameroon, rebuilt around a simple flow: landing invites trust, signed in chat does the work, settings and the WhatsApp guide support it, and WhatsApp itself is a first class surface that answers with the same verdict, evidence and voice as the web app.
 
 **Build approach:** Journey (one full user path at a time, each phase usable).
 **Workflow:** GA (after `/feature-build`, `/verify-release` then `/test-engineer`, then a fresh model `/peer-review` then `/tech-writer`; most features need a spec).
@@ -29,6 +29,19 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 16 | Chat history action menu | Path 3: chat | in-progress |
 | 17 | Settings as a chat modal | Path 3: chat | in-progress |
 | 18 | Message actions and rich answers | Path 3: chat | in-progress |
+| 19 | WhatsApp platform rules and cost | Path 7: WhatsApp | in-progress |
+| 20 | Untrusted content hardening | Path 7: WhatsApp | planned |
+| 21 | WhatsApp sender identity | Path 7: WhatsApp | planned |
+| 22 | WhatsApp answer parity | Path 7: WhatsApp | planned |
+| 23 | WhatsApp rate and abuse guard | Path 7: WhatsApp | planned |
+| 24 | WhatsApp thread memory | Path 7: WhatsApp | planned |
+| 25 | WhatsApp checks recorded | Path 7: WhatsApp | planned |
+| 26 | WhatsApp media handling | Path 7: WhatsApp | planned |
+| 27 | WhatsApp delivery reliability | Path 7: WhatsApp | planned |
+| 28 | WhatsApp guide truth | Path 7: WhatsApp | in-progress |
+| 29 | WhatsApp launch readiness | Path 7: WhatsApp | planned |
+| 30 | Graph API version expiry guard | Path 7: WhatsApp | planned |
+| 31 | WhatsApp chat button | Path 7: WhatsApp | in-progress |
 
 ## Path 1: enter
 
@@ -242,13 +255,107 @@ Rewrite the share message to be calm, emoji free, and human looking. The verdict
 - [ ] Document it: `/tech-writer share message rewrite`
 Spec 0011 (`docs/specs/0001-ui-rebuild/0011-share-message-rewrite/index.md`)
 
+## Path 7: WhatsApp
+
+The number a message arrives from is the whole identity. Nothing else is collected, so nothing else can stand in the way of someone who needs help. Send the feature rows in order, each one leaves WhatsApp usable. Rows 19 and 20 come first because the platform changed under us and because the endpoint is fully public.
+
+### 19. WhatsApp platform rules and cost · in-progress
+Meta now charges per message for our own replies, the pinned API version has expired, and free form text only reaches a person for 24 hours after they write to us. Pin a current API version in one constant, put billing and a monthly budget in place, and record the window per thread so no reply is ever attempted outside it.
+**Done when:** every Meta call goes through one pinned current version, the account has a payment method so replies are not stopped at delivery, the free monthly allowance and the per message cost are written down as our cap, and a reply that would land outside the 24 hour window is refused at our edge with a clear reason instead of failing at Meta.
+- [x] Design it (spec): `/solution-architect whatsapp platform rules and cost`
+- [x] Build it: `/feature-build whatsapp platform rules and cost`
+   - [x] Pin the version and open the module (AC-1)
+   - [x] Migrate, then open the window per thread (AC-2, AC-3)
+   - [x] Count the month, cap the reply, send the cap note once a month (AC-4, AC-5, AC-6, AC-7)
+   - [x] Drop the fake success and hold one message per sender (AC-10, AC-11)
+   - [x] Give the reply a phone format and restore French accents (AC-8, AC-9)
+- [ ] Verify it: `/verify-release whatsapp platform rules and cost`
+- [ ] Test it: `/test-engineer whatsapp platform rules and cost`
+   - [x] Window, cap, timezone and phone format logic (`whatsapp-platform.test.ts`)
+   - [x] Send, media download, credentials and the development pretend send (`whatsapp-send.test.ts`)
+   - [x] The webhook's signature checks, redelivery and ignore paths (`whatsapp-webhook.test.ts`)
+   - [x] The cap's conditional write, the notice claim and the decision writers (`whatsapp-decisions.test.ts`)
+   - [x] Fix the fake success: a send is confirmed only by Meta's message id (`/fault-fix`)
+- [ ] Review it (fresh model): `/peer-review whatsapp platform rules and cost`
+- [ ] Document it: `/tech-writer whatsapp platform rules and cost`
+Spec 0015 (`docs/specs/0001-ui-rebuild/0015-whatsapp-platform-rules-and-cost/index.md`) · code in `src/lib/whatsapp/` (graph, config, thread, cap, send, media, event), `src/app/api/public/whatsapp/webhook/route.ts`, `src/inngest/functions/process-whatsapp-message.ts`, `src/lib/rules/engine.ts`, `prisma/schema.prisma` · tests in `src/tests/whatsapp-platform.test.ts`, `whatsapp-send.test.ts`, `whatsapp-webhook.test.ts`, `whatsapp-decisions.test.ts`
+
+### 20. Untrusted content hardening · planned
+Every WhatsApp message is attacker controlled text or an attacker controlled image arriving on a fully public endpoint, so treat the model's instruction boundary as breakable by design. Strip invisible and tag block characters on the way in and on the way out, filter images as well as text, keep every credential and send outside the model, and treat any written memory as privileged.
+**Done when:** invisible characters, tag blocks and hidden instructions in a flyer or a message cannot reach the model context, the model holds no credential and cannot send anything itself, a durable note written from a message carrying instructions is refused, and a suite of known injection and jailbreak attempts is a standing test.
+- [ ] Design it (spec): `/solution-architect untrusted content hardening`
+
+### 21. WhatsApp sender identity · planned
+Every incoming number becomes a thread key, normalised to Cameroon format, alongside Meta's own business scoped user id which survives a number change. Unknown senders get an anonymous record and guest treatment, never a wall. Linking starts in the app: save the number in settings, the app sends a one time code into WhatsApp, the sender echoes it back, attempts capped. Numbers are shared in families and get reassigned, so the code is what earns the attach. A reply may offer the link once per thread, naming what the person gets (history kept, a higher daily allowance, the same thread on the web), with no urgency and no push.
+**Done when:** every number opens a thread, a number change keeps the same thread through Meta's own id, an unknown sender gets a full answer with nothing asked first, a saved number attaches only after one confirmation from WhatsApp, the offer never repeats and never rides on a high risk verdict, and unlinking is one tap.
+- [ ] Design it (spec): `/solution-architect whatsapp sender identity`
+
+### 22. WhatsApp answer parity · planned
+The worker runs the turn the web chat already runs: flagged and approved registry lookups, web research, the reviewed answer prompt, then the rules engine seals the verdict on top. One shared renderer for both surfaces, so no slop, no emoji and no second format ever reach a phone. A high risk reply carries no link and no offer, because a link inside a scam alert spends the trust the alert depends on.
+**Done when:** a WhatsApp reply carries the same verdict, evidence and voice as the web answer in French and English, the verdict still comes only from the rules engine, and a high risk alert is a clean warning with nothing attached to it.
+- [ ] Design it (spec): `/solution-architect whatsapp answer parity`
+
+### 23. WhatsApp rate and abuse guard · planned
+The webhook fails closed outside development instead of skipping the signature check, the signature is compared over the raw body in constant time with a replay window, and every number gets a daily cap, a polite reply at the cap, and a stop keyword honoured at once. Arcjet stays authoritative on the web; this is the WhatsApp wall, and it is also our cost control now that each reply is billed.
+**Done when:** an unsigned, misdated or secretless payload is refused, a captured payload cannot be replayed, a capped sender gets a clear bilingual note, "stop" ends replies, and no single request can drain paid inference, spend past budget, or get the business number banned.
+- [ ] Design it (spec): `/solution-architect whatsapp rate and abuse guard`
+
+### 24. WhatsApp thread memory · planned
+Keep every exchange per number and maintain a short durable note holding language, topics and verdicts already given, so a follow up lands and the bot never contradicts itself days later. The note is written by our own code from structured facts, never by free prose from the model, because a note that carries instructions poisons every later turn.
+**Done when:** "and what about this number 699 12 34 56?" is answered in light of what came before, the chosen language sticks across turns, an earlier verdict is never quietly reversed, and a message trying to plant a rule in the note leaves no trace.
+- [ ] Design it (spec): `/solution-architect whatsapp thread memory`
+
+### 25. WhatsApp checks recorded · planned
+Each WhatsApp check writes the same verification record the web chat writes, in the language actually sent, so stats, moderation and history all see it.
+**Done when:** a WhatsApp check shows up in admin stats and moderation, the record keeps the language it was answered in, and a person can carry the thread into the app when they want to.
+- [ ] Design it (spec): `/solution-architect whatsapp checks recorded`
+
+### 26. WhatsApp media handling · planned
+Cap image size and payload, refuse a document in plain words, keep a checked flyer as moderation evidence, and never answer about a message the extractor could not read.
+**Done when:** an oversized flyer, a PDF and a captionless photo each get a truthful bilingual reply, the flyer is stored as evidence, and nothing produces a verdict from empty text.
+- [ ] Design it (spec): `/solution-architect whatsapp media handling`
+
+### 27. WhatsApp delivery reliability · planned
+Make the send idempotent across retries, write the failure state the schema already promises, read the Meta response body, and take the real outcome from the status webhook instead of assuming a 200 means delivered.
+**Done when:** a retry never double texts a person, a permanently failing event is marked failed and visible, a reply Meta refused inside the window never claims to have been sent, and missing credentials fail loud instead of pretending a mock dispatch worked.
+- [ ] Design it (spec): `/solution-architect whatsapp delivery reliability`
+
+### 28. WhatsApp guide truth · in-progress
+The guide page and the landing mockup render from the real renderer instead of hardcoded emoji replies, so what we advertise is exactly what the bot sends.
+**Done when:** the simulator on /whatsapp matches a real reply in format, and no hardcoded all caps or emoji string is left in the interface.
+**Note:** built as step 1 of spec 0016 (row 31), which needed it fixed before it could send anyone into WhatsApp. This row stays the owner. The hardcoded emoji replies are gone and the simulator renders `whatsappReply`; still to do: the landing mockup, and verification.
+- [x] Build it: `/feature-build whatsapp guide truth`
+
+### 29. WhatsApp launch readiness · planned
+Run history in admin, a credential health check that fails loud, webhook and worker test coverage, subscriptions to the policy and status webhooks so a restriction is seen the day it lands, and a go live checklist that matches the code.
+**Done when:** an operator can see every event and its outcome, missing credentials and a missing payment method are caught before launch, an account restriction reaches admin, and the critical webhook and worker paths carry test scenarios.
+- [ ] Design it (spec): `/solution-architect whatsapp launch readiness`
+
+### 30. Graph API version expiry guard · planned
+The Meta API version is a constant on purpose, so nothing warns us when it nears its sunset. Add a check that fails inside 90 days of a published expiry, and a written bump procedure so the fix is one file edit.
+**Done when:** the check runs in CI and fails inside 90 days of a published sunset date for the pinned version, the bump is documented as a single constant edit plus a deploy, and the current version is verified as not near expiry.
+- [ ] Design it (spec): `/solution-architect graph api version expiry guard`
+
+### 31. WhatsApp chat button · in-progress
+A real chat button that opens WhatsApp already talking to CheckAm, in the user's own language, in the landing hero, on small screens as a floating button, and on the guide page. It uses the click to chat code we hold, so the number leaves the page source and desktop users get a WhatsApp Web path. Step 1 of its build also lands the guide truth work from row 28, because shipping a button into a guide that misrepresents the reply is worse than leaving it alone.
+**Done when:** one tap from the landing page opens a branded WhatsApp chat with CheckAm in French or English, our number is in no page's HTML, the guide page shows the reply the bot actually sends, and nothing about the bot, the window, the cap or the send path changed.
+- [x] Design it (spec): `docs/specs/0001-ui-rebuild/0016-whatsapp-click-to-chat-cta/index.md`
+- [x] Guide page truth (scope 28, step 1 of the spec build)
+- [x] Chat destination constant and bilingual copy
+- [x] Chat button in the hero and on the guide page
+- [x] Floating button on small screens, mounted once in the site layout
+- [x] Tests for the destination, the labels, the language and the number
+- [x] Build it: `/feature-build whatsapp chat button` · code in `src/lib/whatsapp/click-to-chat.ts`, `src/components/whatsapp/`, `src/app/(site)/layout.tsx`, `src/app/(site)/whatsapp/page.tsx`
+
 ## Deferred
 
 Out of scope for the current build pass, kept so the plan stays honest.
 - **Guest folders / shared chats**: folders stay private for now · needs a decision
 - **Richer settings**: theme, notices, data export, delete account · needs a decision
-- **Multi turn WhatsApp memory**: WhatsApp stays single shot per turn · needs a decision
 - **Product analytics**: measure activation and habit · needs a decision
+- **Voice notes and transcription**: a voice note gets a graceful bilingual reply asking for text or a picture; transcribing FR and EN voice notes is a roadmap item open for contributors · from this pass
+- **Reaching out first**: any message we send outside a live reply needs an approved template and is billed per message from October 2026, so no reminders, no check back later, no campaigns · from this pass · needs a decision
+- **Mutual TLS on the webhook**: Meta supports it, the HMAC signature is what protects us today · needs a decision
 - **Pinned checks above every section**: pinning only reorders within a folder section today · from spec 0013 · needs a decision
 - **Exact folder delete count**: the rail is cursor paged so the count is a lower bound · from spec 0013 · needs a decision
 - **Hardcoded English in the shared dialog wrapper**: `src/components/ui/dialog.tsx` renders a fixed `Close` label for every consumer; spec 0007 passes a bilingual one in for the settings dialog only, the wrapper itself still needs fixing · from spec 0007
@@ -259,6 +366,8 @@ Out of scope for the current build pass, kept so the plan stays honest.
 - **The chat client never seeds the AI SDK's own message state**: the thread renders from fetched pages, so SDK features that read that state (`regenerate`, `resumeStream`) cannot work and spec 0014 routed around it · from spec 0014 · needs a decision
 - **`AGENTS.md` has no `## Agent skills` section**: `ai-sdk`, `frontend-design` and `tailwindcss` are installed and shaped spec 0014 but are not referenced from any context file · from spec 0014
 - **Test scenarios for shipped shell work**: AC-3, AC-5 and AC-6 shipped with no critical test scenario, so they have nothing to verify against if revisited · from spec 0007
+- **The long French safety paragraphs**: `src/lib/rules/engine.ts` carries safety text up to 980 characters each, which is what forces the 1,600 character reply ceiling in spec 0015 and pushes a scam alert past one phone screen; a tighter rewrite would let the alert fit without dropping evidence · from spec 0015 · needs a decision
+- **The WhatsApp guide contradicts the bot format**: `src/app/(site)/whatsapp/page.tsx` hardcodes French replies with emoji bullets, which spec 0015 forbids; row 28 owns the fix · from spec 0015
 
 ## Legend
 

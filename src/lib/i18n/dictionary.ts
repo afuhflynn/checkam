@@ -351,6 +351,8 @@ export const translations = {
     settingsNeedSignIn: "Sign in to open settings.",
 
     // WhatsApp guide trials
+    waChatTitle: "Start on WhatsApp",
+    waFloatLabel: "Check",
     guideNumberTitle: "Save the number, start trying",
     guideNumberDesc:
       "Save CheckAm in your contacts, then forward a suspect message. Samples below open a trial in one tap.",
@@ -854,6 +856,8 @@ export const translations = {
     settingsNeedSignIn: "Connectez-vous pour ouvrir les paramètres.",
 
     // Essais du guide WhatsApp
+    waChatTitle: "Démarrer sur WhatsApp",
+    waFloatLabel: "Vérifier",
     guideNumberTitle: "Enregistrez le numéro, essayez",
     guideNumberDesc:
       "Enregistrez CheckAm dans vos contacts, puis transférez un message suspect. Les exemples ci-dessous ouvrent un essai en un tap.",
