@@ -287,6 +287,10 @@ model ChatMessage {
   seq            Int
   role           String // user | assistant | system
   text           String
+  // Set when a re ask replaces this answer (spec 0014). Blank means live.
+  // Reads that render a thread filter on blank; reads that count or resolve
+  // deliberately do not.
+  supersededAt   DateTime?
   attachments    Json              @default("[]")
   toolCalls      Json              @default("[]")
   tokenUse       Json?

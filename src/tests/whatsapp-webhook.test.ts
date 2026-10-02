@@ -18,6 +18,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const APP_SECRET = "test-app-secret-value";
 const EVENT_ID = "event-1";
 
+const TEST_PHONE = "237XXXXXXXXX";
+
 const created: unknown[] = [];
 const threadUpserts: unknown[] = [];
 let sendEvents: unknown[] = [];
@@ -80,7 +82,7 @@ const { POST, GET } = await import("../app/api/public/whatsapp/webhook/route");
 function bodyFor(overrides: Record<string, unknown> = {}): string {
   const message = {
     id: "wamid.test.1",
-    from: "237622571469",
+    from: TEST_PHONE,
     type: "text",
     timestamp: "1790881088",
     text: { body: "on me demande 25 000 FCFA" },
@@ -222,7 +224,7 @@ describe("spec 0015 AC-2: the window opens on every accepted inbound message", (
                 messages: [
                   {
                     id: "wamid.no.ts",
-                    from: "237622571469",
+                    from: TEST_PHONE,
                     type: "text",
                     text: { body: "salut" },
                   },
@@ -243,7 +245,7 @@ describe("spec 0015 AC-2: the window opens on every accepted inbound message", (
   it("opens the thread before dispatching, so a backed up queue cannot widen the window", async () => {
     await post(signedRequest(bodyFor()));
 
-    expect(threadUpserts).toEqual(["237622571469"]);
+    expect(threadUpserts).toEqual([TEST_PHONE]);
     // The thread must exist before the worker is told to run, otherwise the
     // worker could decide against a window nobody wrote.
     expect(created).toHaveLength(1);
@@ -295,7 +297,7 @@ describe("spec 0015 AC-2: a redelivery is not a second event", () => {
     createThrows = Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
     await post(signedRequest(raw));
 
-    expect(threadUpserts).toEqual(["237622571469"]);
+    expect(threadUpserts).toEqual([TEST_PHONE]);
   });
 
   it("returns 500 so Meta retries when the write fails for a real reason", async () => {

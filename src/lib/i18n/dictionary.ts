@@ -473,6 +473,20 @@ export const translations = {
     chatShareX: "X",
     chatShareCopy: "Copy",
     chatShareCopied: "Copied",
+    // Message actions (spec 0014)
+    chatCopyMessage: "Copy this message",
+    chatCopiedMessage: "Copied",
+    chatReAsk: "Ask again",
+    chatReAskWorking: "Asking again",
+    chatReAskNoText: "The previous message has no text to send again.",
+    // Streamdown owns the controls inside a rendered answer (a code block's
+    // copy, a link's controls). These replace its English defaults so a French
+    // thread never shows an English title.
+    streamdownCopyCode: "Copy code",
+    streamdownCopied: "Copied",
+    streamdownCopyLink: "Copy link",
+    streamdownOpenLink: "Open link",
+    streamdownClose: "Close",
     chatFindingWarning: "Worth knowing",
     chatFindingReassuring: "In your favour",
     chatShareUnavailable: "No share text for this check yet.",
@@ -981,6 +995,17 @@ export const translations = {
     chatShareX: "X",
     chatShareCopy: "Copier",
     chatShareCopied: "Copié",
+    // Actions sur les messages (spec 0014)
+    chatCopyMessage: "Copier ce message",
+    chatCopiedMessage: "Copié",
+    chatReAsk: "Redemander",
+    chatReAskWorking: "Redemande en cours",
+    chatReAskNoText: "Le message précédent n'a pas de texte à renvoyer.",
+    streamdownCopyCode: "Copier le code",
+    streamdownCopied: "Copié",
+    streamdownCopyLink: "Copier le lien",
+    streamdownOpenLink: "Ouvrir le lien",
+    streamdownClose: "Fermer",
     chatFindingWarning: "À savoir",
     chatFindingReassuring: "Bon pour vous",
     chatShareUnavailable:

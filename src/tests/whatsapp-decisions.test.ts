@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const TEST_PHONE = "237XXXXXXXXX";
+
 /**
  * Spec 0015 AC-3 to AC-6: the database backed writes.
  *
@@ -262,8 +264,8 @@ describe("spec 0015 AC-5: the count and the ceiling are one statement", () => {
 
 describe("spec 0015 AC-4: one cap notice per thread per month", () => {
   beforeEach(() => {
-    threadRows.set("237622571469", {
-      threadKey: "237622571469",
+    threadRows.set(TEST_PHONE, {
+      threadKey: TEST_PHONE,
       capNoteSentAt: null,
     });
   });
@@ -272,25 +274,25 @@ describe("spec 0015 AC-4: one cap notice per thread per month", () => {
     // The claim is the guard. Without it a wave of messages from one thread
     // would each believe they were first.
     const claims = await Promise.all([
-      claimCapNotice("237622571469", MONTH),
-      claimCapNotice("237622571469", MONTH),
-      claimCapNotice("237622571469", MONTH),
+      claimCapNotice(TEST_PHONE, MONTH),
+      claimCapNotice(TEST_PHONE, MONTH),
+      claimCapNotice(TEST_PHONE, MONTH),
     ]);
 
     expect(claims.filter(Boolean)).toHaveLength(1);
   });
 
   it("refuses a second claim once the thread has one this month", async () => {
-    expect(await claimCapNotice("237622571469", MONTH)).toBe(true);
-    expect(await claimCapNotice("237622571469", MONTH)).toBe(false);
+    expect(await claimCapNotice(TEST_PHONE, MONTH)).toBe(true);
+    expect(await claimCapNotice(TEST_PHONE, MONTH)).toBe(false);
   });
 
   it("allows the notice again in the following month", async () => {
-    await claimCapNotice("237622571469", MONTH);
+    await claimCapNotice(TEST_PHONE, MONTH);
 
     // A new month clears the condition without clearing the column, so a thread
     // that already had a notice is not silenced forever.
-    expect(await claimCapNotice("237622571469", "2026-11")).toBe(true);
+    expect(await claimCapNotice(TEST_PHONE, "2026-11")).toBe(true);
   });
 });
 
@@ -372,11 +374,11 @@ describe("spec 0015 AC-3 and AC-10: the decision is written down", () => {
   });
 
   it("stamps the thread when a reply goes out", async () => {
-    threadRows.set("237622571469", { threadKey: "237622571469" });
+    threadRows.set(TEST_PHONE, { threadKey: TEST_PHONE });
 
-    await markThreadOutbound("237622571469");
+    await markThreadOutbound(TEST_PHONE);
 
-    expect(threadRows.get("237622571469")?.lastOutboundAt).toBeInstanceOf(Date);
+    expect(threadRows.get(TEST_PHONE)?.lastOutboundAt).toBeInstanceOf(Date);
   });
 });
 

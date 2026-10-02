@@ -1,7 +1,7 @@
 # 0014. Message actions and re ask in the chat thread
 
 **Date**: 2026-09-30
-**Status**: Proposed
+**Status**: In Progress
 **Scope**: `docs/scope/scope.md` feature 18
 **Build approach**: Journey (one full user path at a time, each phase usable)
 
@@ -129,15 +129,15 @@ Copy runs entirely in the browser and touches no server, so it adds no authoriza
 
 Ordered by Journey, so each step leaves the thread usable and the reader never meets a half built control.
 
-1. Migration: add the nullable `supersededAt` to `ChatMessage`, with no default and no backfill, since every existing row is live by definition. Satisfies **AC-8**.
-2. Server, the filter rule: filter `supersededAt` blank in the one read that renders a thread, and record the four paths that must not filter, with the reason each one breaks. Satisfies **AC-7**, **AC-8**, **AC-10**.
-3. Server, the re ask: add optional `supersedeId` to the transport body, validate it is the latest live answer of the caller's session or answer 409, then stamp the old row and insert the new one in a single transaction, leaving the sequence assignment unfiltered. Satisfies **AC-6**, **AC-7**, **AC-8**, **AC-15**.
-4. Server, the charge: extend the count the transport actually uses, which is the inline recount rather than the helper, so a superseded assistant row spends a guest try alongside a user row. Satisfies **AC-9**.
-5. Client, the action row: copy on every message, with the Markdown to plain conversion, the check confirmation, and the existing bilingual failure message. Always mounted, visible on hover or focus. Satisfies **AC-1**, **AC-3**, **AC-4**.
-6. Client, the strings: add every new key to both language halves of the dictionary, and supply Streamdown's `translations` prop so the code block control is not left in English. Only strings are configured here, never the `components` override, so Streamdown keeps rendering the block itself. Satisfies **AC-2**, **AC-4**, **AC-13**.
-7. Client, the re ask: the control on the most recent settled answer, resending the preceding question with `supersedeId`, hiding the answer being replaced while the stream runs, disabling while running, and mapping the guest wall to the wall message rather than the generic failure. Satisfies **AC-5**, **AC-6**, **AC-7**, **AC-11**, **AC-14**.
-8. Client, the settled state: drop the replaced answer from the mounted pages on finish so no reload is needed, and guard re ask in the client when the preceding turn has no typed text. Satisfies **AC-7**, **AC-12**.
-9. Surface pass: keyboard reach, focus visibility, reduced motion, touch target size, and both languages across every control. Satisfies **AC-4**.
+1. [x] Migration: add the nullable `supersededAt` to `ChatMessage`, with no default and no backfill, since every existing row is live by definition. Satisfies **AC-8**.
+2. [x] Server, the filter rule: filter `supersededAt` blank in the one read that renders a thread, and record the four paths that must not filter, with the reason each one breaks. Satisfies **AC-7**, **AC-8**, **AC-10**.
+3. [x] Server, the re ask: add optional `supersedeId` to the transport body, validate it is the latest live answer of the caller's session or answer 409, then stamp the old row and insert the new one in a single transaction, leaving the sequence assignment unfiltered. Satisfies **AC-6**, **AC-7**, **AC-8**, **AC-15**.
+4. [x] Server, the charge: extend the count the transport actually uses, which is the inline recount rather than the helper, so a superseded assistant row spends a guest try alongside a user row. Satisfies **AC-9**.
+5. [x] Client, the action row: copy on every message, with the Markdown to plain conversion, the check confirmation, and the existing bilingual failure message. Always mounted, visible on hover or focus. Satisfies **AC-1**, **AC-3**, **AC-4**.
+6. [x] Client, the strings: add every new key to both language halves of the dictionary, and supply Streamdown's `translations` prop so the code block control is not left in English. Only strings are configured here, never the `components` override, so Streamdown keeps rendering the block itself. Satisfies **AC-2**, **AC-4**, **AC-13**.
+7. [x] Client, the re ask: the control on the most recent settled answer, resending the preceding question with `supersedeId`, hiding the answer being replaced while the stream runs, disabling while running, and mapping the guest wall to the wall message rather than the generic failure. Satisfies **AC-5**, **AC-6**, **AC-7**, **AC-11**, **AC-14**.
+8. [x] Client, the settled state: drop the replaced answer from the mounted pages on finish so no reload is needed, and guard re ask in the client when the preceding turn has no typed text. Satisfies **AC-7**, **AC-12**.
+9. [x] Surface pass: keyboard reach, focus visibility, reduced motion, touch target size, and both languages across every control. Satisfies **AC-4**.
 
 ## Consequences
 

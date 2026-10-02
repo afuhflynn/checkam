@@ -324,19 +324,27 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 const streamdownPlugins = { cjk, code, math, mermaid };
 
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
+  ({ className, translations, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(
         "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className
       )}
       plugins={streamdownPlugins}
+      // Strings only (spec 0014 AC-2): the caller's language reaches the
+      // controls Streamdown renders inside an answer, such as a code block's
+      // copy. Never the components override, so the block still renders the
+      // way the library renders it.
+      translations={translations}
       {...props}
     />
   ),
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
-    nextProps.isAnimating === prevProps.isAnimating
+    nextProps.isAnimating === prevProps.isAnimating &&
+    // One object per language, so a language switch re-renders and a parent
+    // re-render does not.
+    prevProps.translations === nextProps.translations
 );
 
 MessageResponse.displayName = "MessageResponse";

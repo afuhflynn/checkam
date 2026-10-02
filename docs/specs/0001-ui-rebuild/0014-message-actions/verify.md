@@ -69,3 +69,45 @@ Verification steps for [`index.md`](index.md). Each step names the acceptance cr
 - Server test that a re ask stamps the previous row and inserts the new one in one transaction, that the sequence does not collide, and that the verdict reference is untouched. Verifies **AC-7**, **AC-10**.
 - Server test that a re ask against a stale target is refused with 409 and changes nothing. Verifies **AC-15**.
 - Server test that the guest counter counts user rows plus superseded assistant rows, including the wall boundary. Verifies **AC-9**.
+
+## Commands
+
+- `pnpm typecheck` → clean
+- `pnpm test` → all green
+- `pnpm db:migrate --name add_chat_message_superseded_at` (or the applied migration folder) → the `chat_messages` table carries a nullable `supersededAt`, and every existing row reads back as live. Verifies **AC-8**.
+- `POST /api/chat/transport` with a `supersedeId` naming a row that is not the latest live answer of the session → 409 `stale_supersede`, and no row is stamped. Verifies **AC-15**.
+- `POST /api/chat/transport` with a `supersedeId` from another reader's session → 409, never a stamp. Verifies **AC-14**, **AC-15**.
+- `GET /api/chat/sessions/<id>/messages` on a session holding superseded rows → the response carries only live rows, on the first page and on a cursor paged older page. Verifies **AC-8**.
+- After a re ask, query `chat_messages` → the replaced row has `supersededAt` set, keeps its `toolCalls` and its `verificationId`, and its `seq` is lower than the new row's. Verifies **AC-8**, **AC-10**.
+
+## Value sourcing (one step per row of the spec's Value sourcing table)
+
+- Copy a message → the clipboard text is the row's `text` converted from Markdown, never the stored string. Paste it into a plain text editor and confirm no Markdown marker of any kind survives. Verifies **AC-1**.
+- Copy a code block → the clipboard holds that block's source and nothing from the rest of the answer. Verifies **AC-2**.
+- Copy confirmation → the check appears from local component state and returns to the copy icon on its own after about one second, with no server round trip. Verifies **AC-3**.
+- Copy failure → the notice reads the existing `copyFailed` string, in the reader's language. Verifies **AC-3**.
+- Every new label (copy, copied, re ask, re ask working, re ask unavailable reason) reads from the dictionary in both language halves. Toggle the language and read each one. Verifies **AC-1**, **AC-4**.
+- Code control titles → they come from Streamdown's own `translations` prop in both languages, and Streamdown still renders the block itself (no `components` override anywhere). Verifies **AC-2**, **AC-13**.
+- Which answer gets re ask → the client picks the last assistant row, and the server refuses anything else, so a second reader or a second tab cannot leave two live answers to one question. Verifies **AC-6**, **AC-15**.
+- Re ask charge → the guest counter reads user rows plus superseded assistant rows. Check the count in the database and against the tries left line in the rail, before and after a re ask. Verifies **AC-9**.
+- Supersede stamp → the replaced row's `supersededAt` is the time the server accepted the re ask, not the client's clock. Check it against the row's `createdAt` ordering. Verifies **AC-7**, **AC-8**.
+- The answer being replaced → the `supersedeId` on the request is a cuid that belongs to the caller's own session; a cuid from another session is refused. Verifies **AC-14**, **AC-15**.
+- Verdict on a replaced answer → the old row's `verificationId` is untouched and still resolves through `/api/chat/verdict`. Verifies **AC-10**.
+
+## Acceptance-criteria coverage map
+
+- AC-1: Copy steps 1–4, 14, Value sourcing copy, Value sourcing conversion shapes
+- AC-2: Copy steps 6–8, 28, Value sourcing code block, Value sourcing titles
+- AC-3: Copy steps 3, 5, Value sourcing confirmation, Value sourcing failure
+- AC-4: Copy steps 1, 9–10, 22, 29–30, Surface 29–30, Value sourcing labels
+- AC-5: Re ask step 12
+- AC-6: Re ask step 11, Stale target 19, Value sourcing which answer
+- AC-7: Re ask 13–15, Persistence 20, Value sourcing supersede stamp
+- AC-8: Migration, Persistence 20–22, filter tests, Value sourcing supersede stamp, budget
+- AC-9: Persistence 21, guest wall 18, counter tests, Value sourcing charge
+- AC-10: Persistence 23–24, Value sourcing verdict
+- AC-11: Re ask 16–18, guest wall 18
+- AC-12: Disabled states 25, Value sourcing re ask unavailable
+- AC-13: Copy 7, Surface 28, Value sourcing titles
+- AC-14: Security 26–27, Value sourcing answer being replaced
+- AC-15: Stale target 19, Security 26, Value sourcing which answer / answer being replaced

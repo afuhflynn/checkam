@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+const TEST_PHONE = "237XXXXXXXXX";
 import { runRulesEngine } from "../lib/rules/engine";
 import { capNotice, capStatus } from "../lib/whatsapp/cap";
 import {
@@ -106,7 +108,7 @@ describe("spec 0015 AC-2 and AC-3: the 24 hour window", () => {
   it("rehydrates the window after the JSON round trip Inngest puts a step return value through", () => {
     const start = new Date("2026-10-01T12:00:00.000Z");
     const direct: OpenedWindow = {
-      threadKey: "237622571469",
+      threadKey: TEST_PHONE,
       lastInboundAt: start,
       windowExpiresAt: windowExpiry(start),
     };
@@ -142,7 +144,7 @@ describe("spec 0015 AC-2 and AC-3: the 24 hour window", () => {
     const start = new Date("2026-10-01T12:00:00.000Z");
     const broken = JSON.parse(
       JSON.stringify({
-        threadKey: "237622571469",
+        threadKey: TEST_PHONE,
         lastInboundAt: start,
         windowExpiresAt: windowExpiry(start),
       }),

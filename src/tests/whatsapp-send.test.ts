@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const TEST_PHONE = "237XXXXXXXXX";
 import { hasSendCredentials, phoneNumberId } from "../lib/whatsapp/config";
 import { downloadMedia } from "../lib/whatsapp/media";
 import { isMockDispatchAllowed, sendText } from "../lib/whatsapp/send";
@@ -39,7 +41,7 @@ describe("spec 0015 AC-1: every send goes through the pinned version", () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ messages: [{ id: "wamid.ok" }] }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendText("237622571469", "bonjour");
+    await sendText(TEST_PHONE, "bonjour");
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain("/v26.0/");
@@ -52,12 +54,12 @@ describe("spec 0015 AC-1: every send goes through the pinned version", () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ messages: [{ id: "wamid.ok" }] }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendText("237622571469", "Alerte arnaque");
+    await sendText(TEST_PHONE, "Alerte arnaque");
 
     const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
     expect(body).toMatchObject({
       messaging_product: "whatsapp",
-      to: "237622571469",
+      to: TEST_PHONE,
       type: "text",
       text: { body: "Alerte arnaque" },
     });
@@ -78,7 +80,7 @@ describe("spec 0015 AC-7: a refused send is never reported as sent", () => {
         ),
     );
 
-    const result = await sendText("237622571469", "trop tard");
+    const result = await sendText(TEST_PHONE, "trop tard");
 
     expect(result.ok).toBe(false);
     expect(result.errorCode).toBe(131047);
@@ -91,7 +93,7 @@ describe("spec 0015 AC-7: a refused send is never reported as sent", () => {
       vi.fn().mockResolvedValue(jsonResponse({ messages: [{ id: "wamid.accepted" }] })),
     );
 
-    const result = await sendText("237622571469", "bonjour");
+    const result = await sendText(TEST_PHONE, "bonjour");
 
     expect(result.ok).toBe(true);
     expect(result.messageId).toBe("wamid.accepted");
@@ -104,7 +106,7 @@ describe("spec 0015 AC-7: a refused send is never reported as sent", () => {
       vi.fn().mockResolvedValue(new Response("<html>oops</html>", { status: 200 })),
     );
 
-    const result = await sendText("237622571469", "bonjour");
+    const result = await sendText(TEST_PHONE, "bonjour");
 
     expect(result.ok).toBe(false);
     expect(result.status).toBe(200);
@@ -118,7 +120,7 @@ describe("spec 0015 AC-7: a refused send is never reported as sent", () => {
     // warning silently disappears and nothing ever notices.
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ contacts: [] })));
 
-    const result = await sendText("237622571469", "Alerte arnaque");
+    const result = await sendText(TEST_PHONE, "Alerte arnaque");
 
     expect(result.ok).toBe(false);
     expect(result.messageId).toBeNull();
@@ -127,7 +129,7 @@ describe("spec 0015 AC-7: a refused send is never reported as sent", () => {
   it("reports an empty body as not sent as well", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 200 })));
 
-    const result = await sendText("237622571469", "bonjour");
+    const result = await sendText(TEST_PHONE, "bonjour");
 
     expect(result.ok).toBe(false);
   });
@@ -138,7 +140,7 @@ describe("spec 0015 AC-7: a refused send is never reported as sent", () => {
       vi.fn().mockResolvedValue(jsonResponse({ error: { code: 190, message: "bad token" } }, 401)),
     );
 
-    const result = await sendText("237622571469", "bonjour");
+    const result = await sendText(TEST_PHONE, "bonjour");
 
     expect(result.ok).toBe(false);
     expect(result.status).toBe(401);
@@ -150,7 +152,7 @@ describe("spec 0015 AC-7: a refused send is never reported as sent", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await sendText("237622571469", "bonjour");
+    const result = await sendText(TEST_PHONE, "bonjour");
 
     // No Meta call may happen without an id to send from, so nothing is billed.
     expect(fetchMock).not.toHaveBeenCalled();

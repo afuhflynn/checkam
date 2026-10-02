@@ -57,7 +57,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const beforeRaw = search.get("before");
   // Newer than seq (live tail, oldest first) or older than seq (paging up,
   // newest first). No cursor means the latest page, newest first.
-  const base = { sessionId: id };
+  //
+  // supersededAt: null is the filter rule from spec 0014, and this is the only
+  // read it applies to. A re ask stamps the row it replaces rather than
+  // deleting it (the row keeps counting toward the Tavily budget and its
+  // verdict link keeps resolving), so the reads below are what keep a thread
+  // from showing two answers to one question. The reads that must NOT filter:
+  // verdict/route.ts, lib/agent/tools.ts (budget), transport/route.ts and
+  // messages POST (seq assignment, which would collide on [sessionId, seq]),
+  // and lib/chat/counter.ts (guest tries).
+  const base = { sessionId: id, supersededAt: null };
   let messages: {
     id: string;
     seq: number;

@@ -24,6 +24,9 @@ const TransportSchema = z.object({
   // excludes the current turn instead of charging it twice.
   userSeq: z.number().int().nonnegative().optional(),
   locale: z.enum(["en", "fr"]).optional(),
+  // Re ask (spec 0014): the assistant row this turn replaces. Blank means an
+  // ordinary turn. Validated against the latest live answer below.
+  supersedeId: z.string().cuid().optional(),
   messages: z
     .array(
       z.object({
@@ -94,7 +97,7 @@ export async function POST(req: NextRequest) {
   const body: unknown = await req.json().catch(() => null);
   const parsed = TransportSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "invalid_transport" }, { status: 422 });
-  const { sessionId, userSeq } = parsed.data;
+  const { sessionId, userSeq, supersedeId } = parsed.data;
 
   const session = await db.chatSession.findFirst({
     where: { id: sessionId, ...sessionScope(actor) },
@@ -104,24 +107,46 @@ export async function POST(req: NextRequest) {
   if (actor.kind === "guest") {
     const decision = await authLimiter.protect(req);
     if (decision.isDenied()) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
-    // Same counter owner as the append wall (spec 0004 AC-4). The current
-    // turn already persisted through messages-POST, so turns at or after
-    // its sequence do not count against it: single enforcement, no double
-    // charge.
+    // Same counter owner as the append wall (spec 0004 AC-4). Turns are user
+    // rows plus the answers a re ask superseded (spec 0014 AC-9), because a re
+    // ask adds no user row and would otherwise cost nothing. An ordinary turn
+    // already persisted through messages-POST, so it stops the count before
+    // its own row: single enforcement, no double charge. A re ask has no row of
+    // its own to skip, so it counts the whole thread and the answer it is
+    // about to replace is charged by the next turn.
     const ipHash = hashIp(clientIp(req.headers));
     const used =
       userSeq === undefined
         ? await guestTriesUsed(actor.guestKey, ipHash)
         : await db.chatMessage.count({
             where: {
-              role: "user",
               ipHash,
               createdAt: { gte: doualaDayStart() },
               session: { guestKey: actor.guestKey, ownerId: null, deletedAt: null },
-              seq: { lt: userSeq },
+              OR: [
+                supersedeId === undefined
+                  ? { role: "user", seq: { lt: userSeq } }
+                  : { role: "user" },
+                { role: "assistant", supersededAt: { not: null } },
+              ],
             },
           });
     if (used >= 2) return NextResponse.json({ error: "guest_wall", triesLeft: 0 }, { status: 403 });
+  }
+
+  // A re ask may only replace the latest live answer of the caller's own
+  // session (spec 0014 AC-15). Matching on the session we already scoped above
+  // is what stops one reader or one tab from superseding another's answer, and
+  // the latest-only match is what stops two live answers to one question.
+  if (supersedeId) {
+    const latest = await db.chatMessage.findFirst({
+      where: { sessionId, role: "assistant", supersededAt: null },
+      orderBy: { seq: "desc" },
+      select: { id: true },
+    });
+    if (latest?.id !== supersedeId) {
+      return NextResponse.json({ error: "stale_supersede" }, { status: 409 });
+    }
   }
 
   const text = lastUserText(parsed.data.messages);
@@ -226,9 +251,22 @@ export async function POST(req: NextRequest) {
                 orderBy: { seq: "desc" },
                 select: { seq: true },
               });
+              // Stamp and insert in one transaction so a session can never hold
+              // two live answers to one question, even if the seq insert below
+              // loses its race and retries. Stamping keeps the row: its
+              // toolCalls still count against the Tavily budget and its
+              // verificationId still resolves a link already shared.
+              if (supersedeId) {
+                await tx.chatMessage.update({
+                  where: { id: supersedeId },
+                  data: { supersededAt: new Date() },
+                });
+              }
               await tx.chatMessage.create({
                 data: {
                   sessionId,
+                  // Unfiltered on purpose: the sequence only ever grows and a
+                  // superseded row keeps its place in it.
                   seq: (last?.seq ?? -1) + 1,
                   role: "assistant",
                   text: answer,

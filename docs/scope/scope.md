@@ -146,16 +146,16 @@ Spec 0013 (`docs/specs/0001-ui-rebuild/0013-hover-icon-action-menu.md`), superse
 Every message earns a quiet action row, so you can copy any message and any code block, and re ask an answer that got a verdict wrong. Answers already render as proper rich text through Streamdown, so this wires the action primitives the repo already vendors, keeps the code block copy the library already renders, and adds one nullable column so a replaced answer still counts against the budget.
 **Done when:** you can copy a message or a code block in one tap, re ask an answer without losing the thread, read formatted answers properly, and the thread reads as one modern surface in both languages on phone and desktop.
 - [x] Design it (spec): `/solution-architect message actions and rich answers`
-- [ ] Build it: `/feature-build message actions and rich answers`
-   - [ ] Action row with plain text copy, check confirmation, and both languages (AC-1, AC-2, AC-3, AC-4, AC-13)
-   - [ ] Supersede column plus the filter rule, naming the four paths that must not filter (AC-7, AC-8, AC-10)
-   - [ ] Re ask end to end: one transport field, stale target refusal, the guest charge, the control, the settled state (AC-5, AC-6, AC-7, AC-9, AC-11, AC-12, AC-14, AC-15)
-   - [ ] Surface pass for keyboard, focus, reduced motion, touch targets and both languages (AC-4)
+- [x] Build it: `/feature-build message actions and rich answers`
+   - [x] Action row with plain text copy, check confirmation, and both languages (AC-1, AC-2, AC-3, AC-4, AC-13)
+   - [x] Supersede column plus the filter rule, naming the four paths that must not filter (AC-7, AC-8, AC-10)
+   - [x] Re ask end to end: one transport field, stale target refusal, the guest charge, the control, the settled state (AC-5, AC-6, AC-7, AC-9, AC-11, AC-12, AC-14, AC-15)
+   - [x] Surface pass for keyboard, focus, reduced motion, touch targets and both languages (AC-4)
 - [ ] Verify it: `/verify-release message actions and rich answers`
 - [ ] Test it: `/test-engineer message actions and rich answers`
 - [ ] Review it (fresh model): `/peer-review message actions and rich answers`
 - [ ] Document it: `/tech-writer message actions and rich answers`
-Spec 0014 (`../specs/0001-ui-rebuild/0014-message-actions/index.md`)
+Spec 0014 (`../specs/0001-ui-rebuild/0014-message-actions/index.md`) · code in `src/lib/chat/plain-text.ts`, `src/components/chat/message-actions.tsx`, `src/components/chat/thread-view.tsx`, `src/components/ai-elements/message.tsx`, `src/app/api/chat/transport/route.ts`, `src/app/api/chat/sessions/[id]/messages/route.ts`, `src/lib/chat/counter.ts`, `src/lib/i18n/dictionary.ts`, `prisma/schema.prisma`
 
 ## Path 4: account
 

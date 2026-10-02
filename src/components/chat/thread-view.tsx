@@ -2,9 +2,10 @@
 
 import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { StreamdownTranslations } from "streamdown";
 import { useStickToBottomContext } from "use-stick-to-bottom";
 import {
   Conversation,
@@ -17,6 +18,7 @@ import {
   MessageContent,
   MessageResponse,
 } from "../ai-elements/message";
+import { MessageActionRow } from "./message-actions";
 import {
   Source,
   Sources,
@@ -401,12 +403,28 @@ export function ThreadView({
   onLookup: (lookup: LookupResult | null) => void;
   onFallback: (text: string | null) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState("");
   const [inFlightSeq, setInFlightSeq] = useState<number | null>(null);
   const [online, setOnline] = useState(true);
   const [uploading, setUploading] = useState(false);
+  // The answer a re ask is replacing while it runs, or null when idle.
+  const [reAskingId, setReAskingId] = useState<string | null>(null);
+
+  // Streamdown's own controls, in the reader's language (spec 0014 AC-2).
+  // One object per language, so switching language reaches them and an
+  // unrelated re-render does not.
+  const streamdownTranslations = useMemo<Partial<StreamdownTranslations>>(
+    () => ({
+      copyCode: t.streamdownCopyCode,
+      copied: t.streamdownCopied,
+      copyLink: t.streamdownCopyLink,
+      openLink: t.streamdownOpenLink,
+      close: t.streamdownClose,
+    }),
+    [t],
+  );
 
   // Session reset effect must run on sessionId only; callbacks ride a ref
   // so parent re-renders never retrigger the thread fetch.
@@ -427,6 +445,9 @@ export function ThreadView({
   // Sequence of the persisted user turn, handed to the transport so the
   // wall recount excludes the current turn instead of charging it twice.
   const turnSeq = useRef<number | undefined>(undefined);
+  // Which answer the running re ask is replacing, readable from onFinish
+  // without making the stream callbacks depend on the current state.
+  const reAskingRef = useRef<string | null>(null);
 
   const { messages, sendMessage, stop, status, error } = useChat({
     id: sessionId ?? "guest-pending",
@@ -441,11 +462,36 @@ export function ThreadView({
       }
     },
     onFinish: () => {
+      const replaced = reAskingRef.current;
+      reAskingRef.current = null;
+      setReAskingId(null);
       setInFlightSeq(null);
+      if (replaced) {
+        // Drop the replaced answer from the mounted pages so the thread reads
+        // as one answer to the question, with no reload (spec 0014 AC-7). The
+        // row stays in the database, stamped, so the server keeps counting its
+        // tool calls and still resolves its verdict link.
+        setPages((prev) =>
+          prev
+            .map((page) => page.filter((row) => row.id !== replaced))
+            .filter((page) => page.length > 0),
+        );
+      }
       void syncNew();
       void queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      // A turn refused by the guest wall is a wall, not a broken turn (spec
+      // 0014 AC-11). Other 403s stay on the generic notice, so an unverified
+      // reader is not told they are out of tries.
+      const failure = error as { statusCode?: number; responseBody?: string };
+      if (
+        failure?.statusCode === 403 &&
+        failure.responseBody?.includes("guest_wall")
+      ) {
+        onWall();
+        return;
+      }
       toast.error(t.chatTurnFailed);
     },
   });
@@ -808,6 +854,68 @@ export function ThreadView({
       : mounted.filter((row) => row.seq < inFlightSeq);
   const streaming = status === "streaming" || status === "submitted";
 
+  // A re ask resends the question standing in front of the latest answer
+  // (spec 0014). Derived here, in the client, so the control is disabled with a
+  // stated reason before any request leaves rather than after a refusal
+  // (AC-12), and so the server re-validates the same target (AC-15). Only the
+  // latest settled answer ever carries the control (AC-6).
+  const reAskTurn = useMemo((): {
+    answerId: string | null;
+    text: string | null;
+  } => {
+    const none = { answerId: null, text: null };
+    if (streaming) return none;
+    let answerIndex = -1;
+    for (let i = visiblePersisted.length - 1; i >= 0; i -= 1) {
+      if (visiblePersisted[i]?.role === "assistant") {
+        answerIndex = i;
+        break;
+      }
+    }
+    if (answerIndex === -1) return none;
+    const answer = visiblePersisted[answerIndex];
+    if (!answer) return none;
+    const question = visiblePersisted
+      .slice(0, answerIndex)
+      .reverse()
+      .find((row) => row.role === "user");
+    return { answerId: answer.id, text: question?.text.trim() || null };
+  }, [visiblePersisted, streaming]);
+
+  // The SDK keeps every message it has ever sent, so the streaming block shows
+  // only the tail from the last question onward. A re ask adds no user row, and
+  // the question it resends is already on screen a row or two up, so during a
+  // re ask the streaming block carries the fresh answer alone.
+  const streamingRows = useMemo(() => {
+    if (!streaming) return [];
+    let lastQuestion = -1;
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i]?.role === "user") {
+        lastQuestion = i;
+        break;
+      }
+    }
+    if (lastQuestion === -1) return messages;
+    return messages.slice(reAskingId ? lastQuestion + 1 : lastQuestion);
+  }, [messages, streaming, reAskingId]);
+
+  async function handleReAsk() {
+    if (!sessionId || reAskingId || !reAskTurn.text || !reAskTurn.answerId) {
+      return;
+    }
+    reAskingRef.current = reAskTurn.answerId;
+    setReAskingId(reAskTurn.answerId);
+    onVerdict(null, false);
+    // No user row is persisted: the question is already in the thread, so a
+    // re ask spends one try and takes one sequence slot, not two.
+    await sendMessage(
+      { text: reAskTurn.text },
+      { body: { supersedeId: reAskTurn.answerId } },
+    );
+    setReAskingId(null);
+    reAskingRef.current = null;
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <Conversation className="min-h-0 flex-1">
@@ -838,22 +946,41 @@ export function ThreadView({
                 row.role === "assistant" &&
                 rowIndex === visiblePersisted.length - 1 &&
                 !streaming;
+              const canReAsk = reAskTurn.answerId === row.id;
               return (
                 <Message
                   key={row.id}
                   from={row.role === "user" ? "user" : "assistant"}
                 >
                   <MessageContent>
-                    <MessageResponse className="font-sans text-sm leading-relaxed text-slate-800">
+                    <MessageResponse
+                      translations={streamdownTranslations}
+                      className="font-sans text-sm leading-relaxed text-slate-800"
+                    >
                       {row.text}
                     </MessageResponse>
                     {isLastAssistant && <InlineVerdict verdict={verdict} />}
                   </MessageContent>
+                  {/* No action row while an answer streams: the row settles once
+                      the answer does (spec 0014 AC-5). */}
+                  {!streaming && (
+                    <MessageActionRow
+                      text={row.text}
+                      canReAsk={canReAsk}
+                      reAsking={reAskingId === row.id}
+                      blockedReason={
+                        canReAsk && !reAskTurn.text
+                          ? t.chatReAskNoText
+                          : null
+                      }
+                      onReAsk={handleReAsk}
+                    />
+                  )}
                 </Message>
               );
             })}
             {streaming &&
-              messages.map((message) => (
+              streamingRows.map((message) => (
                 <Message
                   key={message.id}
                   from={message.role === "user" ? "user" : "assistant"}
@@ -864,6 +991,7 @@ export function ThreadView({
                       .map((part, index) => (
                         <MessageResponse
                           key={`${message.id}-${index}`}
+                          translations={streamdownTranslations}
                           className="font-sans text-sm leading-relaxed text-slate-800"
                         >
                           {"text" in part ? part.text : ""}
