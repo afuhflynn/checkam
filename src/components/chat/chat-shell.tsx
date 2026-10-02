@@ -225,12 +225,16 @@ export function ChatShell({
   useEffect(() => {
     if (typeof BroadcastChannel === "undefined") return;
     const channel = new BroadcastChannel("checkam-chat-invalidation");
-    channel.onmessage = (event: MessageEvent<{ kind?: string; id?: string }>) => {
+    channel.onmessage = (
+      event: MessageEvent<{ kind?: string; id?: string }>,
+    ) => {
       const id = event.data?.id;
       if (event.data?.kind !== "deleted" || !id) return;
       // Drop an in flight edit on a row that no longer exists anywhere.
       setRenaming((current) => (current && current.id === id ? null : current));
-      setConfirmDelete((current) => (current && current.id === id ? null : current));
+      setConfirmDelete((current) =>
+        current && current.id === id ? null : current,
+      );
       resetRail();
       void queryClient.invalidateQueries({ queryKey: ["chat", "folders"] });
     };
@@ -586,7 +590,10 @@ export function ChatShell({
                 </form>
               ) : (
                 <div className="group flex min-w-0 flex-1 items-center rounded-lg px-1 py-0.5 hover:bg-slate-100">
-                  <PinnedMark pinned={folder.pinned} label={t.chatPinnedFolder} />
+                  <PinnedMark
+                    pinned={folder.pinned}
+                    label={t.chatPinnedFolder}
+                  />
                   <p className="min-w-0 flex-1 truncate text-sm font-bold text-slate-800">
                     {folder.name}
                   </p>
@@ -602,7 +609,8 @@ export function ChatShell({
                       {
                         label: folder.pinned ? t.chatUnpin : t.chatPin,
                         icon: folder.pinned ? PinOff : Pin,
-                        onSelect: () => togglePin("folder", folder.id, folder.pinned),
+                        onSelect: () =>
+                          togglePin("folder", folder.id, folder.pinned),
                       },
                       {
                         label: t.chatRename,
@@ -854,10 +862,9 @@ export function ChatShell({
                       {/* Lower bound, not a total: the rail only holds what it
                           has paged in, so saying "and more" is honest where a
                           bare number would look exact and be wrong. */}
-                      {(
-                        (confirmDelete.count ?? 0) === 1
-                          ? t.chatFolderCheckCountOne
-                          : t.chatFolderCheckCount
+                      {((confirmDelete.count ?? 0) === 1
+                        ? t.chatFolderCheckCountOne
+                        : t.chatFolderCheckCount
                       )
                         .replace("{count}", String(confirmDelete.count ?? 0))
                         .replace("{more}", t.chatFolderCheckCountMore)}
@@ -891,7 +898,10 @@ export function ChatShell({
       {/* Beside the thread rather than inside it, and inside a boundary of its
           own so the shell's own hook cannot put the thread behind a fallback. */}
       <Suspense fallback={null}>
-        <SettingsPanelHost ref={settingsPanelRef} triggerRef={settingsTriggerRef} />
+        <SettingsPanelHost
+          ref={settingsPanelRef}
+          triggerRef={settingsTriggerRef}
+        />
       </Suspense>
     </div>
   );
@@ -999,7 +1009,12 @@ function SessionRowView({
       ],
     });
   }
-  entries.push({ label: t.del, icon: Trash2, onSelect: onDelete, danger: true });
+  entries.push({
+    label: t.del,
+    icon: Trash2,
+    onSelect: onDelete,
+    danger: true,
+  });
 
   return (
     <li>
@@ -1079,7 +1094,9 @@ function RowMenu({
           entry.submenu ? (
             <DropdownMenuSub key={entry.label}>
               <DropdownMenuSubTrigger>
-                {entry.icon ? <entry.icon className="size-4" aria-hidden /> : null}
+                {entry.icon ? (
+                  <entry.icon className="size-4" aria-hidden />
+                ) : null}
                 {entry.label}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="motion-reduce:animate-none!">
@@ -1116,7 +1133,10 @@ function RowMenu({
 // never carried by the shape of an icon alone.
 function PinnedMark({ pinned, label }: { pinned: boolean; label: string }) {
   return (
-    <span className="flex w-4 shrink-0 items-center justify-center" aria-hidden={!pinned}>
+    <span
+      className="flex w-4 shrink-0 items-center justify-center"
+      aria-hidden={!pinned}
+    >
       {pinned ? (
         <>
           <Star className="size-3.5 fill-current" aria-hidden />

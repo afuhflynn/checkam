@@ -206,9 +206,6 @@ export function DossierPane({
 
         {verdict.bullets.length > 0 && (
           <div className="space-y-2">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-              {t.chatWhatWeFound}
-            </p>
             <ul className="space-y-1.5">
               {verdict.bullets.map((bullet, index) => {
                 const tone = verdict.tones?.[index] ?? "warning";
@@ -969,9 +966,7 @@ export function ThreadView({
                       canReAsk={canReAsk}
                       reAsking={reAskingId === row.id}
                       blockedReason={
-                        canReAsk && !reAskTurn.text
-                          ? t.chatReAskNoText
-                          : null
+                        canReAsk && !reAskTurn.text ? t.chatReAskNoText : null
                       }
                       onReAsk={handleReAsk}
                     />

@@ -53,3 +53,8 @@ next-env.d.ts
 
 # ignore our todo list file
 todo.md
+
+# mprocs logs
+mprocs.log
+
+certificates

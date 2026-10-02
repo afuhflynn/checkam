@@ -50,6 +50,39 @@ The window starts at the **earlier** of Meta's own message timestamp and our rec
 
 A Meta error we did not predict is recorded on the event as `META_REFUSED_<code>` and the event is deliberately left unfinished, which is where the failure state belongs (scope row 27).
 
+## Local runbook (receive a real message and get a reply)
+
+Run these in order, each in its own terminal. The order matters: Inngest
+connects to the app, and ngrok connects to the app, so the app goes first.
+
+1. `pnpm dev` and wait for `Ready`.
+2. `pnpm inngest:dev` and open http://localhost:8288. The app must appear as
+   a connected app; if it does not, the worker never runs.
+3. `ngrok http 3000`. Note the https host it prints.
+4. Set `NGROK_DOMAIN` in `.env` to that host (no scheme, no path) and restart
+   `pnpm dev`. Next only reads it at startup.
+5. In the Meta dashboard, set the webhook callback URL to
+   `https://<NGROK_DOMAIN>/api/public/whatsapp/webhook`, the verify token to
+   `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, and subscribe to the `messages` field.
+6. Send a WhatsApp message to the business number from a phone you control.
+
+How you know each layer is alive:
+
+- Webhook: the server log shows `POST /api/public/whatsapp/webhook 200` and
+  the event row appears in `whatsAppWebhookEvent` as `PENDING`.
+- Worker: the Inngest dashboard shows the `whatsapp/message.received` run for
+  that `messageId`, ending `SENT` or `COMPLETED`.
+- Reply: the thread row carries a fresh `lastOutboundAt`, the month counter
+  moves, and the event closes `COMPLETED`. Only a Meta message id counts as
+  sent; a 200 without one is recorded as a refusal.
+- Failure shapes: `401` means the verify token or the HMAC secret is wrong;
+  `ERR_NGROK_8012` means the app stopped while the tunnel stayed up; a refused
+  send means the 24 hour window closed, the cap was reached, or credentials are
+  missing (check the event's recorded reason).
+
+Replies only work inside the 24 hour customer service window that the
+person's own message opens, and only while the monthly cap still has room.
+
 ## Go-live checklist
 
 1. Create a Meta app and connect the WhatsApp Business product.
