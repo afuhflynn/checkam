@@ -23,20 +23,25 @@ function scam() {
   });
 }
 
-describe("spec 0017 AC-1: full reply carries a warm opener and closer", () => {
-  it("opens warm, keeps the titled header, and closes before the action block", () => {
+describe("spec 0017 AC-1: full reply leads with the verdict in plain words", () => {
+  it("opens on the verdict lead, caps signals at two, and closes on the signoff", () => {
     const full = scam();
     for (const body of [full.whatsappReply.en, full.whatsappReply.fr]) {
       const blocks = body.split("\n\n");
-      expect(blocks[1]).toMatch(/Scam alert|Alerte arnaque/);
+      expect(blocks[0]).toMatch(/carries the marks of a scam|porte les marques/);
+      expect(blocks[blocks.length - 1]).toMatch(/Analyzed by CheckAm|Analysé par CheckAm/);
       expect(blocks[blocks.length - 1]).toMatch(/8202/);
+      expect(body).not.toMatch(/Scam alert|Alerte arnaque/);
+      expect(body).not.toMatch(/checkam\.cm|vercel\.app/);
       expect(body).not.toMatch(EMOJI);
       expect(body).not.toMatch(/[─━―]/);
       expect(body.length).toBeLessThanOrEqual(1600);
     }
-    expect(full.whatsappReply.en).toContain("Thanks for checking");
-    expect(full.whatsappReply.en).toContain("anything else you want checked");
-    expect(full.whatsappReply.fr).toContain("Merci pour votre message");
+    expect(full.whatsappReply.en).toContain("This one carries the marks of a scam.");
+    expect(full.whatsappReply.fr).toContain("Ce message porte les marques d'une arnaque.");
+    const bullets = full.whatsappReply.en.split("\n").filter((line) => line.startsWith("• "));
+    expect(bullets.length).toBeLessThanOrEqual(2);
+    expect(bullets.length).toBeGreaterThan(0);
   });
 });
 
@@ -74,8 +79,8 @@ describe("spec 0017 AC-2, AC-4, AC-5: short follow up shape", () => {
   });
 });
 
-describe("spec 0017 AC-9: opener and closer survive the ceiling", () => {
-  it("keeps the opener first and the closer with the action block when over the ceiling", () => {
+describe("spec 0017 AC-9: lead and signoff survive the ceiling", () => {
+  it("keeps the verdict lead first and the signoff with the action block when over the ceiling", () => {
     const overCeiling = runRulesEngine({
       text: "Envoyez une photo intime nude sinon je vais publier à tout le monde vos photos. Ils menacent de diffuser dans 24h si vous ne payez pas 500 000 FCFA par Orange Money au 691 234 567. Ils ont le mot de passe et le code OTP de mon compte.",
       claimedEntity: "MINESEC",
@@ -87,13 +92,14 @@ describe("spec 0017 AC-9: opener and closer survive the ceiling", () => {
     const body = overCeiling.whatsappReply.fr;
     expect(body.length).toBeLessThanOrEqual(1600);
     const blocks = body.split("\n\n");
-    expect(blocks[0]).toBe("Merci pour votre message, je l'ai examiné pour vous.");
-    expect(body).toContain("Je peux vérifier un autre message si vous voulez.");
-    expect(body.trimEnd().endsWith("vos proches.")).toBe(true);
+    expect(blocks[0]).toBe("Ce message porte les marques d'une arnaque.");
+    expect(body).toContain("Analysé par CheckAm.");
+    expect(body.trimEnd().endsWith("Analysé par CheckAm.")).toBe(true);
   });
 });
 
-describe("spec 0017 AC-8: empty ask carries no verdict", () => {  it("asks for text or a picture in both languages without judging", () => {
+describe("spec 0017 AC-8: empty ask carries no verdict", () => {
+  it("asks for text or a picture in both languages without judging", () => {
     for (const language of ["en", "fr"] as const) {
       const ask = renderWhatsAppEmptyAsk(language);
       expect(ask).not.toMatch(/Scam alert|Alerte arnaque|Caution|Attention/);
@@ -109,6 +115,7 @@ describe("spec 0017 AC-3: new claim signal", () => {
     expect(isNewClaimText("Appelle le 699 12 34 56 vite")).toBe(true);
     expect(isNewClaimText("Envoyez 25 000 FCFA par momo")).toBe(true);
     expect(isNewClaimText("Voir https://example.com/offre pour gagner")).toBe(true);
+    expect(isNewClaimText("Voir minesec.cm pour les résultats")).toBe(true);
     expect(isNewClaimText("Écris à contact@example.com pour le dossier")).toBe(true);
     expect(isNewClaimText("ok", { hasMediaText: true })).toBe(true);
     expect(isNewClaimText("x".repeat(141))).toBe(true);

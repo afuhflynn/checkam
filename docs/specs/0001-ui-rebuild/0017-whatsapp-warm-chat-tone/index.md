@@ -7,7 +7,7 @@
 
 ## Summary
 
-WhatsApp replies feel stiff today because every turn repeats the full titled verdict shape, even a simple thanks. This spec keeps the full verdict for a first check and adds a short warm shape for follow ups in the same open window (the 24 hour reply window Meta allows). The verdict still comes only from the rules engine (the deterministic scorer that alone decides risk), and safety lines stay even when the note is short.
+WhatsApp replies feel stiff today because every turn repeats the full titled verdict shape, even a simple thanks. This spec keeps the full verdict for a first check and adds a short warm shape for follow ups in the same open window (the 24 hour reply window Meta allows). A later revision (row 33) rewrites the full shape in the web answer voice: the verdict leads in plain words, then at most two signals, then the action, closed by one small analyzed by note. No brand title, no host line, no stock closer, no doubled line. The short follow up shape is unchanged. The verdict still comes only from the rules engine (the deterministic scorer that alone decides risk), and safety lines stay even when the note is short.
 
 ## Requirements
 
@@ -19,7 +19,7 @@ WhatsApp replies feel stiff today because every turn repeats the full titled ver
 
 **Acceptance criteria** (the contract, each criterion is IDed and independently checkable):
 
-1. **AC-1**: A first check in a thread sends the full shape with a warm opener and closer in the thread language, plus verdict plus evidence plus contact lines plus action block where each applies.
+1. **AC-1**: A first check in a thread sends the full shape in the web answer voice in the thread language: a plain verdict sentence first, then at most two evidence signals, then contact lines where they apply, then the action block, closed by one small analyzed by note. No brand title, no host line, no stock closer, no repeated line.
 2. **AC-2**: A follow up in the same open window drops the title header and the intro line and reads as a short warm note. Caution and official shorts stay under about 400 characters. High risk keeps its full action block even past that guide.
 3. **AC-3**: A new claim in the same window earns a full verdict again. New claim means any of phone number, amount, link, readable image text, or long text above about 140 characters. Short thanks alone never counts as a new claim.
 4. **AC-4**: A high risk short note keeps the action lines in full (next step plus hotline plus forward ask). The action block is never dropped or cut, even when short.
@@ -28,12 +28,15 @@ WhatsApp replies feel stiff today because every turn repeats the full titled ver
 7. **AC-7**: A new window resets tone to full. Opening a new window clears the first reply marker so the next answer is full again.
 8. **AC-8**: Cap notes, window refusals, and missing credential notes stay plain and unchanged. An unreadable new check with no extractable text gets a short warm ask for text or a picture, with no verdict.
 9. **AC-9**: Existing phone guarantees hold for every full reply. At most 1600 characters with the spec 0015 drop order, real bullet character, no emoji, French accents correct, both languages available.
+10. **AC-10**: No reply carries a brand title, a host name, a stock closer, or a twice repeated line in either language.
 
 ## Decision
 
 **Chosen option**: Option 1: Fix in place with deterministic template
 
 One renderer builds the full shape with its warm opener and closer. Two small standalone builders cover the rest from a stored verdict with no fresh judging: `renderWhatsAppFollowUp` for short notes and `renderWhatsAppEmptyAsk` for unreadable input. The worker picks the path from stored thread state plus a cheap text signal, stores language on the first full, and skips extraction for pure reactions.
+
+**Voice revision (row 33)**: the full shape is rewritten verdict first, matching the web answer voice. The opener, the brand title, the host intro line, and the stock closer are removed. At most two evidence signals survive the cut, chosen by newest first after contacts drop. The hotline appears once. The reply closes with one small analyzed by note. Short notes, the empty ask, the marker machinery, and the worker paths are unchanged. Markdown and plain formats keep the full block untouched per spec 0011, including the standalone hotline line.
 
 ## Rationale
 
@@ -62,22 +65,25 @@ Relations unchanged. `WhatsAppThread` keeps 1 to N `WhatsAppWebhookEvent`. No ne
 
 | Shape | en | fr |
 |---|---|---|
-| Full opener | Thanks for checking, I looked into this for you. | Merci pour votre message, je l'ai examiné pour vous. |
-| Full closer | Send me anything else you want checked. | Je peux vérifier un autre message si vous voulez. |
+| Verdict lead high risk | This one carries the marks of a scam. | Ce message porte les marques d'une arnaque. |
+| Verdict lead caution | This one needs a closer look before you trust it. | Ce message mérite un examen attentif avant de lui faire confiance. |
+| Verdict lead official | This one checks out as official. | Ce message semble bien officiel. |
+| Signoff | Analyzed by CheckAm. | Analysé par CheckAm. |
 | Short ack | Thanks for letting me know. | Merci de me l'avoir dit. |
 | Short reminder high risk | Still high risk: do not send money or codes. | Toujours à risque élevé : n'envoyez ni argent ni code. |
 | Short reminder caution | Still worth caution: verify on the official site first. | Restez prudent : vérifiez d'abord sur le site officiel. |
 | Short reminder official | Still official as checked: use the institution site itself. | Toujours officiel selon ma vérification : utilisez le site de l'institution. |
 | Empty ask | I could not read this. Please send the full text or a clear picture. | Je n'ai pas pu lire ce message. Envoyez le texte complet ou une photo claire. |
 
-Short layout is ack line, then reminder line, then the unchanged action block. Full layout is opener, then today's full body (verdict plus evidence plus contacts), then closer, then the action block. The opener is the first block and is never dropped. The closer rides with the action block and is never dropped or cut. The whole body is sanitised as today.
+Short layout is ack line, then reminder line, then the unchanged action block. Caution and official shorts carry ack plus reminder only. High risk shorts carry the generic safety plus hotline plus forward lines. Category tailored safety appears in fulls only. Full layout is verdict lead sentence, then at most two evidence bullets, then contact lines, then the action block with the hotline named once, then the signoff. When more than two bullets survive the contact drop, keep the first two of the surviving list in engine order, since the drop already removes oldest first. Contact order is fixed and unchanged from the current builder: phone, else first email only, then entity, then amount, then payment method mined from the bullets. The verdict sentence is the first block and is never dropped. The signoff rides with the action block and is never dropped or cut. The whole body is sanitised as today. The retired opener, title, host intro, and closer constants are removed with their tests updated, never left beside the new shape.
 
 **New claim signal** (cheap text test first, no model involved):
 
-1. New claim is true when any holds: the existing phone normalizer finds a number, the existing amount pattern finds an amount, a link pattern finds `http` or `www`, extracted emails are non empty, an image yields non empty extracted text, or trimmed text length is above 140 characters.
+1. New claim is true when any holds: the existing phone normalizer finds a number, the shared engine amount pattern finds an amount, a link pattern finds `http`, `www`, or a bare domain ending in a common suffix (`cm`, `com`, `net`, `org`, `info`, `biz`, `me`, `io`), extracted emails are non empty, an image yields non empty extracted text, or trimmed text length is above 140 characters.
 2. Uncertain reads as new claim. The build fails to full, never to short, so a fresh scam never gets a stale stored verdict.
 3. Order per inbound is window, then cap, then claim test, then render, then count, then send. A reaction skips extraction and reuses the stored verdict. A new claim runs extraction as today, and an extraction that comes back empty falls back to the warm empty ask with no verdict.
-4. Captions count as text for this test, and email alone counts as a new claim.
+4. Captions count as text for this test, and email alone counts as a new claim. A long question over 140 characters without claim markers still takes the full path by the length rule, at accepted extra cost. Emoji only input follows the same marker rule below: marker present means short, else the warm ask.
+5. A reaction with no marker on the thread never takes the short path. With no stored verdict there is nothing truthful to remind, so the turn takes the full path, or the warm ask when nothing readable arrives.
 
 **Marker and language policy**:
 
@@ -86,6 +92,7 @@ Short layout is ack line, then reminder line, then the unchanged action block. F
 3. Image only turns use the stored language when present, else detection on the extracted summary, else the detector default.
 4. Old rows with empty marker fields read as first check, so the rollout needs no backfill.
 5. Marker writes ride with the decision record write, and the per sender worker concurrency already serialises them, so two racing messages cannot both believe they are first.
+6. A retry after a recorded success skips the recount and the resend through the `isAlreadySent` guard, so a billed duplicate never goes out. Refusals carry a reason and still retry, as today.
 
 **API surface**:
 
@@ -105,19 +112,24 @@ Short layout is ack line, then reminder line, then the unchanged action block. F
 | Full reply | evidence bullets | rules engine result for this check |
 | Full reply | contact lines | extracted facts for this check |
 | Full reply | action block | rules engine safety note for this verdict |
-| Full reply | warm opener plus closer | fixed copy constants in both languages |
+| Full reply | plain verdict sentence | fixed verdict lead per verdict from the copy deck |
+| Full reply | at most two signals | newest surviving evidence bullets after the spec 0015 drop order |
+| Full reply | at most two signals | newest surviving evidence bullets after the spec 0015 drop order |
+| Full reply | signoff | fixed copy constant in both languages |
 | Full reply | reply language | per message detection on first check, then stored |
 | Short reply | one line verdict reminder | stored `lastVerdict` on the thread row |
 | Short reply | action lines for high risk | fixed safety copy for stored verdict |
 | Short reply | reply language | stored `threadLanguage` on the thread row |
 | Short reply | first versus follow up choice | tone gate in the worker from `windowFirstReplyAt` present plus text signal says reaction |
-| New check test | new claim true or false | cheap text signal (phone pattern, amount pattern, link pattern, length) plus extraction emptiness |
+| New check test | new claim true or false | cheap text signal (phone pattern, shared amount pattern, link pattern with bare domains, length) plus extraction emptiness |
+| New check test | caption text | inbound caption, counted as text |
+| New check test | extraction emptiness | empty extracted summary claim |
 | Window reset | cleared tone fields | `openThread` when it opens a new window |
 
 **Key invariants**:
 
 1. Verdict comes only from the rules engine, never from model prose.
-2. A high risk reply always carries its full action block, in full and short shapes alike.
+2. A high risk reply always carries its full action block, in full and short shapes alike, with the hotline named once.
 3. A reaction never produces a verdict from empty text. Empty new checks get a warm ask with no verdict.
 4. Both languages ship every string. No reply ships with a missing translation.
 5. The 1600 character ceiling and drop order from spec 0015 still govern every full reply.
@@ -133,14 +145,15 @@ None. No new env value. Cap, window length, and ceiling stay as spec 0015 set th
 
 **Critical test scenarios** (each maps to an acceptance criterion in ## Requirements):
 
-1. Happy path: first text check in French gets full shape with warm opener plus evidence, verifies **AC-1**
+1. Happy path: first text check in French gets verdict first shape with at most two signals plus signoff and no brand title, verifies **AC-1**, **AC-10**
 2. Follow up: thanks in same window gets short note with no title and no extraction call, caution and official under about 400 characters while high risk keeps its full action block, verifies **AC-2**, **AC-5**
 3. New claim: second message with a new phone number in same window gets full again, verifies **AC-3**
 4. Safety: high risk follow up keeps hotline plus forward lines, verifies **AC-4**
 5. Language: first reply English then French thanks still answers English from stored value, verifies **AC-6**
 6. Reset: new window clears marker so next reply is full, verifies **AC-7**
 7. System plain: cap note and unreadable image ask follow existing plain or warm ask rules with no verdict invented, verifies **AC-8**
-8. Ceiling: long full French reply still fits 1600 with action intact, verifies **AC-9**
+8. Ceiling: long full French reply still fits 1600 with verdict lead plus signoff plus action intact, verifies **AC-9**
+9. No marker plus reaction input takes the full path or the warm ask, never a short, verifies **AC-5**
 
 ## Build plan
 
@@ -150,6 +163,7 @@ Ordered by user path, one path usable before the next, per the Journey approach 
 2. Extend the phone renderer with warm opener and closer plus the standalone short and empty ask builders in both languages, keeping the ceiling plus drop order plus sanitise, satisfies **AC-1**, **AC-2**, **AC-4**, **AC-9**
 3. Wire the worker first versus follow up path with the cheap new claim signal, language store and reuse, and extraction skip for pure reactions, satisfies **AC-3**, **AC-5**, **AC-6**
 4. Cover the reaction ack plus empty ask plus untouched system notes, with tests for thanks, new phone in same window, new window reset, and unreadable input, satisfies **AC-5**, **AC-7**, **AC-8**
+5. Rewrite the full voice verdict first with at most two signals plus signoff, remove the opener, title, host intro, closer, and the doubled hotline line, align the claim signal with the shared amount pattern plus bare domains, update the guide simulator including its short and empty ask display with no bold expectation, update the affected tests, satisfies **AC-1**, **AC-9**, **AC-10**
 
 ## Consequences
 
@@ -166,6 +180,7 @@ Ordered by user path, one path usable before the next, per the Journey approach 
 3. Storing language plus verdict per thread adds columns every future WhatsApp feature must respect.
 4. Warmth follows the 24 hour permission window, so a thanks 20 hours later still reads as a follow up even if it feels like a new chat. This matches the scope choice and Meta permission reality.
 5. Savings are inference only. A short note still pays the billed message, it only skips the model extraction call.
+6. The two signal cap trims context on multi signal scams to fit a phone screen. The verdict plus contacts plus action stay complete.
 
 **Neutral**:
 

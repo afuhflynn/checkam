@@ -1,4 +1,5 @@
 import { extractEmails } from "../rules/email-rules";
+import { MONEY_AMOUNT } from "../rules/engine";
 import { extractCameroonPhoneNumbers } from "../rules/phone-normalizer";
 
 /**
@@ -8,8 +9,7 @@ import { extractCameroonPhoneNumbers } from "../rules/phone-normalizer";
  * full, never to short, so a fresh scam never gets a stale stored verdict.
  */
 
-const AMOUNT_PATTERN = /(\d[\d\s.,]*)\s*(fcfa|xaf|cfa|francs?\b|f\b)/i;
-const LINK_PATTERN = /https?:\/\/|www\./i;
+const LINK_PATTERN = /https?:\/\/|www\.|\b[a-z0-9-]+\.(cm|com|net|org|info|biz|me|io)\b/i;
 /** Above this length a message is always a claim, never a reaction. */
 const NEW_CLAIM_LENGTH = 140;
 
@@ -23,7 +23,7 @@ export function isNewClaimText(
   if (body.length === 0) return false;
   if (body.length > NEW_CLAIM_LENGTH) return true;
   if (LINK_PATTERN.test(body)) return true;
-  if (AMOUNT_PATTERN.test(body)) return true;
+  if (MONEY_AMOUNT.test(body)) return true;
   if (extractCameroonPhoneNumbers(body).length > 0) return true;
   if (extractEmails(body).length > 0) return true;
   return false;

@@ -54,16 +54,26 @@ const GENERIC_HIGH_RISK_SAFETY = {
   fr: "N'envoyez ni argent, ni documents, ni aucun code à partir d'un SMS. Si vous avez déjà payé, contactez immédiatement votre opérateur Mobile Money et signalez gratuitement au numéro de l'ANTIC, le 8202.",
 };
 
-// Warm chat copy for the WhatsApp surface, fixed in both languages so review
-// stays honest and the verdict can never drift (spec 0017). No emoji and no
-// em dash survive here, the phone sanitiser enforces it again at render.
-const WARM_OPENER = {
-  en: "Thanks for checking, I looked into this for you.",
-  fr: "Merci pour votre message, je l'ai examiné pour vous.",
+// Verdict lead lines for the WhatsApp full shape (spec 0017, row 33). Fixed
+// per verdict in both languages, plain words with no brand title, so the
+// verdict itself is the first thing a reader sees.
+const VERDICT_LEAD: Record<VerdictStatus, { en: string; fr: string }> = {
+  HIGH_RISK: {
+    en: "This one carries the marks of a scam.",
+    fr: "Ce message porte les marques d'une arnaque.",
+  },
+  CAUTION: {
+    en: "This one needs a closer look before you trust it.",
+    fr: "Ce message mérite un examen attentif avant de lui faire confiance.",
+  },
+  VERIFIED_OFFICIAL: {
+    en: "This one checks out as official.",
+    fr: "Ce message semble bien officiel.",
+  },
 };
-const WARM_CLOSER = {
-  en: "Send me anything else you want checked.",
-  fr: "Je peux vérifier un autre message si vous voulez.",
+const SIGNOFF = {
+  en: "Analyzed by CheckAm.",
+  fr: "Analysé par CheckAm.",
 };
 const SHORT_ACK = {
   en: "Thanks for letting me know.",
@@ -208,7 +218,6 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
   // person closes the official path, whatever fee phrasing was used.
   const PERSONAL_PAYMENT_HINT =
     /(orange money|mtn momo|mobile money|\bmomo\b|virement|bank transfer|transfert|envoyez|transf(?:e|ère)rez)/i;
-  const MONEY_AMOUNT = /(\d[\d\s.,]*)\s*(fcfa|xaf|cfa|francs?\b|f\b)/i;
   const asksForPayment = PERSONAL_PAYMENT_HINT.test(lower) && MONEY_AMOUNT.test(lower);
   const paymentContradictsOfficial = Boolean(officialEntity) && asksForPayment;
 
@@ -560,6 +569,9 @@ function extractPaymentMethod(bullets: string[]): string | null {
   return null;
 }
 
+/** Shared money amount pattern, also used by the WhatsApp new claim signal. */
+export const MONEY_AMOUNT = /(\d[\d\s.,]*)\s*(fcfa|xaf|cfa|francs?\b|f\b)/i;
+
 /** WhatsApp renders this character as a list marker; a hyphen does not. */
 const WHATSAPP_BULLET = "•";
 
@@ -680,14 +692,26 @@ function renderAlert(params: {
   const action = replaceDashes(stripEmojis(actionLines.join("\n")));
 
   if (params.format === "whatsapp") {
+    // Verdict first voice (spec 0017, row 33): plain lead, at most two
+    // signals, contacts, action, signoff. No title, no host, no closer.
+    // The hotline is named once: the safety note already carries it for most
+    // verdicts, so the standalone line drops when the note has it. Markdown
+    // and plain keep the full block per spec 0011.
+    const lead = VERDICT_LEAD[params.verdict];
     return renderPhoneAlert({
-      header,
-      intro,
-      bulletLines,
+      lead: fr ? lead.fr : lead.en,
+      bulletLines: bulletLines.slice(0, 2),
       contactLines,
-      action,
-      opener: fr ? WARM_OPENER.fr : WARM_OPENER.en,
-      closer: fr ? WARM_CLOSER.fr : WARM_CLOSER.en,
+      action:
+        params.verdict === "HIGH_RISK" && params.nextStep.includes("8202")
+          ? action.replace(
+              fr
+                ? "\nSignalez gratuitement à l'ANTIC au 8202."
+                : "\nReport it free on the ANTIC hotline, 8202.",
+              "",
+            )
+          : action,
+      signoff: fr ? SIGNOFF.fr : SIGNOFF.en,
     });
   }
 
@@ -704,30 +728,25 @@ function renderAlert(params: {
 }
 
 /**
- * The phone shape. One blank line between sections, a real bullet character,
- * the whole body sanitised, and a stated drop order when the body is over the
- * ceiling: contact lines first, then the oldest evidence bullets, then the
- * closing block at a sentence boundary. At least one evidence bullet always
- * survives, and the opener, the verdict line and the closing block are never
- * cut. The closer rides with the action block, so a truncation from the end
- * keeps it.
+ * The phone shape (spec 0017, row 33). Verdict lead first, then at most two
+ * signals, contacts, the action block, and the signoff, one blank line
+ * between sections, the whole body sanitised. Drop order when over the
+ * ceiling: contact lines first, then the oldest of the two bullets, then the
+ * action at a sentence boundary. The lead always survives, and the signoff
+ * rides with the action block, so a truncation from the end keeps it.
  */
 function renderPhoneAlert(parts: {
-  header: string;
-  intro: string;
+  lead: string;
   bulletLines: string[];
   contactLines: string[];
   action: string;
-  opener: string;
-  closer: string;
+  signoff: string;
 }): string {
   const closingOf = (action: string): string =>
-    [parts.closer, action].filter((block) => block.length > 0).join("\n");
+    [action, parts.signoff].filter((block) => block.length > 0).join("\n");
   const assemble = (bullets: string[], contacts: string[], closing: string): string => {
     const blocks = [
-      parts.opener,
-      `*${parts.header}*`,
-      parts.intro,
+      parts.lead,
       bullets.length > 0 ? bullets.join("\n") : null,
       contacts.length > 0 ? contacts.join("\n") : null,
       closing,
@@ -750,8 +769,8 @@ function renderPhoneAlert(parts: {
   }
   if (body.length > WHATSAPP_MAX_CHARS) {
     const withoutClosing = assemble(bullets, contacts, "");
-    closing = parts.closer
-      ? `${parts.closer}\n${truncateAtSentence(parts.action, WHATSAPP_MAX_CHARS - withoutClosing.length - parts.closer.length - 3)}`
+    closing = parts.signoff
+      ? `${truncateAtSentence(parts.action, WHATSAPP_MAX_CHARS - withoutClosing.length - parts.signoff.length - 3)}\n${parts.signoff}`
       : truncateAtSentence(parts.action, WHATSAPP_MAX_CHARS - withoutClosing.length - 2);
     body = assemble(bullets, contacts, closing);
   }

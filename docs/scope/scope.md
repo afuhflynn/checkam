@@ -43,6 +43,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 30 | Graph API version expiry guard | Path 7: WhatsApp | planned |
 | 31 | WhatsApp chat button | Path 7: WhatsApp | in-progress |
 | 32 | WhatsApp warm chat tone | Path 7: WhatsApp | in-progress |
+| 33 | WhatsApp human voice | Path 7: WhatsApp | in-progress |
 
 ## Path 1: enter
 
@@ -362,6 +363,19 @@ First check in a thread keeps the full verdict shape with a warm opener and clos
 - [x] Review it (fresh model): `/peer-review whatsapp warm chat tone`
 - [x] Document it: `/tech-writer whatsapp warm chat tone`
 Spec 0017 (`../specs/0001-ui-rebuild/0017-whatsapp-warm-chat-tone/index.md`) · code in `src/lib/rules/engine.ts`, `src/lib/whatsapp/tone.ts`, `src/lib/whatsapp/thread.ts`, `src/lib/whatsapp/event.ts`, `src/inngest/functions/process-whatsapp-message.ts`, `prisma/schema.prisma`
+
+### 33. WhatsApp human voice · in-progress
+Row 32 made the chat warm but the reply still reads like a script: a branded title, a staging host, a stock closer, and doubled safety lines. This rewrites the reply in the web answer voice, verdict in plain words first, then evidence, then action, with only a small analyzed by note at the end. Builds on row 32, keeps its short follow up shape.
+**Done when:** a WhatsApp verdict reads like the web verdict in both languages, with no brand title, no preview host, no stock closer, and no repeated line, while the verdict still comes only from the rules engine.
+- [x] Design it (spec): `/solution-architect whatsapp human voice`
+- [x] Build it: `/feature-build whatsapp human voice`
+  - [x] Renderer verdict first with leads plus signoff, retire opener, title, host, closer, doubled hotline (AC-1, AC-9, AC-10)
+  - [x] Signal align plus simulator shorts and empty ask plus tests (AC-3, AC-5, AC-8, AC-10)
+- [ ] Verify it: `/verify-release whatsapp human voice`
+- [ ] Test it: `/test-engineer whatsapp human voice`
+- [ ] Review it (fresh model): `/peer-review whatsapp human voice`
+- [ ] Document it: `/tech-writer whatsapp human voice`
+Spec 0017, shared with row 32 (`../specs/0001-ui-rebuild/0017-whatsapp-warm-chat-tone/index.md`) · code in `src/lib/rules/engine.ts`, `src/lib/whatsapp/tone.ts`, `src/tests/whatsapp-tone.test.ts`, `src/tests/whatsapp-platform.test.ts`, `src/tests/whatsapp-chat-button.test.tsx`
 
 ## Deferred
 

@@ -208,21 +208,19 @@ describe("spec 0016 AC-12: the guide shows the real reply", () => {
     );
     const shown = container.textContent ?? "";
 
-    // The bold header is the one place the reply uses WhatsApp bold markup, and
-    // the simulator draws it the way WhatsApp draws it, so the asterisks
-    // themselves must not reach the page. Since spec 0017 the warm opener leads
-    // and the header follows it.
+    // Since spec 0017 row 33 the reply carries no bold markup at all: the
+    // verdict lead opens in plain words and the simulator shows it as is.
     const replyBlocks = whatsappReply.fr.split("\n\n");
-    expect(replyBlocks[0]).toBe("Merci pour votre message, je l'ai examiné pour vous.");
-    expect(replyBlocks[1]).toBe("*Alerte arnaque - CheckAm Cameroun*");
-    expect(shown).toContain("Alerte arnaque - CheckAm Cameroun");
+    expect(replyBlocks[0]).toBe("Ce message porte les marques d'une arnaque.");
+    expect(shown).toContain("Ce message porte les marques d'une arnaque");
     expect(shown).not.toContain("*Alerte arnaque");
-    // A domain glob still keeps its asterisks, because that is content.
-    expect(shown).toContain("*.gov.cm");
+    expect(shown).toContain("Analysé par CheckAm.");
+    // The capped reply carries no markup at all now, so nothing can leak.
+    // A domain glob would keep its asterisks as content if one survived the cut.
+    expect(whatsappReply.fr).not.toContain("*");
 
     expect(whatsappReply.fr).not.toMatch(/\p{Extended_Pictographic}/u);
-    // No em or en dash. An ordinary hyphen is fine and expected: the header and
-    // the configured host both carry one.
+    // No em or en dash. An ordinary hyphen is fine and expected in labels.
     expect(whatsappReply.fr).not.toMatch(/[—–]/);
   });
 

@@ -38,3 +38,20 @@ Build a new renderer module beside the old one, dual run both for a period, comp
 ## Rationale
 
 The product rule that the model extracts facts but never decides the verdict points straight at a deterministic short note. Option 2 would put free prose next to risk wording on the cheapest turns, which is exactly where drift would hide. Option 3 buys cutover safety this change does not need, since the edit is additive and the old full path stays the default for every new check. Fixed copy in both languages keeps review honest, keeps the 1600 character ceiling logic in one place, and lets the worker save money by skipping extraction when there is nothing new to extract.
+
+## Voice revision (row 33)
+
+Shipping the warm shape taught us warmth alone does not read human. The opener plus title plus intro triple greets, the brand header advertises, a preview host leaks where it should never appear, the closer begs for more work, and the hotline repeats itself. The revision keeps the machinery (marker, gate, language, shorts) and replaces only the full voice with the web answer shape: verdict first in plain words, at most two signals, action, one small signoff. Research backs each cut: verdict first survives chat preview truncation, no title or stock closer in texts, identity lives in the profile not the body, attribution belongs at the end, and scam warnings earn trust through plain explanations from a known sender rather than banners.
+
+## Voice research
+
+Read only landscape check, 2026-10-02, for the revision above:
+
+1. Verdict first: chat preview truncates the rest, so the result belongs in the first sentence.
+2. One idea per bubble, no branded title header, no stock hello or goodbye in texts.
+3. Bot upfront honesty about limits beats repeated identical lines.
+4. On WhatsApp, identity lives in the profile plus verified badge, not in body headers. In session replies stay free form and non promotional. Attribution belongs at the end as a short sender line.
+5. Forwarded tags alone barely move belief; sender identity and plain explanations do. Copy must stay paste ready plain text with no header art.
+6. Short sentences around fifteen words, active voice, no jargon, source stated in full.
+
+Sources named by the check: Nielsen Norman Group chatbots and tone studies, GOV.UK Service Manual on texts, digital.gov plain language principles, WhatsApp Business messaging policy and template rules, Everyday Misinformation Project survey, Tandoc Singapore study, ACM India field study on corrections, MIT social debunking review.

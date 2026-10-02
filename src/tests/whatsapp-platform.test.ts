@@ -282,41 +282,41 @@ describe("spec 0015 AC-8 and AC-9: the phone reply format", () => {
   });
 
   it("writes proper accented French and leaves our English copy unaccented", () => {
-    // French: accents restored on the header, the intro and the labels.
-    expect(scam.whatsappReply.fr).toContain("Alerte arnaque");
-    expect(scam.whatsappReply.fr).toContain("analysé");
+    // French: accents in the lead, the labels and the signoff.
+    expect(scam.whatsappReply.fr).toContain("Ce message porte les marques d'une arnaque");
     expect(scam.whatsappReply.fr).toContain("Numéro à surveiller");
+    expect(scam.whatsappReply.fr).toContain("Analysé par CheckAm");
     expect(scam.whatsappReply.fr).toMatch(/[àâäçéèêëîïôöùûüÿœæ]/);
 
-    // English: our own header, intro and labels carry no accent. A French word
+    // English: our own lead, labels and signoff carry no accent. A French word
     // inside a rule string (a ministry name) is content, not copy, so it is not
-    // what this asserts. The warm opener leads (spec 0017), the titled header
-    // follows it.
+    // what this asserts. Since spec 0017 row 33 the verdict lead opens.
     const englishLines = scam.whatsappReply.en.split("\n\n");
-    expect(englishLines[0]).toBe("Thanks for checking, I looked into this for you.");
-    expect(englishLines[1]).toBe("*Scam alert - CheckAm Cameroon*");
-    expect(englishLines[1]).not.toMatch(/[àâäçéèêëîïôöùûüÿœæ]/);
-    expect(scam.whatsappReply.en).toContain("This message was analyzed on checkam.cm:");
+    expect(englishLines[0]).toBe("This one carries the marks of a scam.");
+    expect(englishLines[0]).not.toMatch(/[àâäçéèêëîïôöùûüÿœæ]/);
     expect(scam.whatsappReply.en).toContain("Number to watch:");
     expect(scam.whatsappReply.en).toContain("Amount demanded:");
+    expect(scam.whatsappReply.en).toContain("Analyzed by CheckAm.");
   });
 
   it("carries the same verdict, evidence and closing block as the web answer", () => {
-    expect(scam.whatsappReply.en).toContain("Scam alert");
-    expect(scam.whatsappReply.fr).toContain("Alerte arnaque");
-    for (const bullet of scam.evidenceBullets.en) {
-      expect(scam.whatsappReply.en).toContain(bullet.replace(/[\u2014\u2013]/g, "-"));
-    }
-    expect(scam.whatsappReply.en).toContain("Report it free on the ANTIC hotline, 8202.");
+    expect(scam.whatsappReply.en).toContain("This one carries the marks of a scam.");
+    expect(scam.whatsappReply.fr).toContain("Ce message porte les marques d'une arnaque");
+    const phoneBullets = scam.whatsappReply.en.split("\n").filter((line) => line.startsWith("• "));
+    expect(phoneBullets.length).toBeGreaterThan(0);
+    expect(phoneBullets.length).toBeLessThanOrEqual(2);
+    expect(scam.whatsappReply.en).toContain("report it free on the ANTIC hotline, 8202");
     expect(scam.whatsappReply.en).toContain("Forward this to your family");
+    // The hotline is named once, never doubled.
+    expect((scam.whatsappReply.en.match(/8202/g) ?? []).length).toBe(1);
   });
 
-  it("stays inside the ceiling and ends on the closing block", () => {
+  it("stays inside the ceiling and ends on the signoff", () => {
     for (const body of [scam.whatsappReply.en, scam.whatsappReply.fr]) {
       expect(body.length).toBeLessThanOrEqual(1600);
     }
-    expect(scam.whatsappReply.en.trimEnd().endsWith("protect others.")).toBe(true);
-    expect(scam.whatsappReply.fr.trimEnd().endsWith("vos proches.")).toBe(true);
+    expect(scam.whatsappReply.en.trimEnd().endsWith("Analyzed by CheckAm.")).toBe(true);
+    expect(scam.whatsappReply.fr.trimEnd().endsWith("Analysé par CheckAm.")).toBe(true);
   });
 
   it("keeps the web formats untouched by the phone format", () => {
@@ -351,9 +351,9 @@ describe("spec 0015 AC-8 and AC-9: the phone reply format", () => {
     expect(phoneBullets).toBeGreaterThan(0);
     expect(phoneBullets).toBeLessThan(markdownBullets);
 
-    // The verdict line and the closing block are never cut.
-    expect(overCeiling.whatsappReply.fr).toContain("Alerte arnaque");
-    expect(overCeiling.whatsappReply.fr.trimEnd().endsWith("vos proches.")).toBe(true);
+    // The verdict lead and the signoff are never cut.
+    expect(overCeiling.whatsappReply.fr).toContain("Ce message porte les marques d'une arnaque");
+    expect(overCeiling.whatsappReply.fr.trimEnd().endsWith("Analysé par CheckAm.")).toBe(true);
   });
 });
 
