@@ -1,7 +1,12 @@
 import { extractFactsFromTextOrImage } from "../../lib/ai/extract-facts";
 import { db } from "../../lib/db";
 import { detectMessageLanguage } from "../../lib/i18n/detect";
-import { runRulesEngine } from "../../lib/rules/engine";
+import {
+  type VerdictStatus,
+  renderWhatsAppEmptyAsk,
+  renderWhatsAppFollowUp,
+  runRulesEngine,
+} from "../../lib/rules/engine";
 import {
   capNotice,
   capStatus,
@@ -14,13 +19,16 @@ import { hasSendCredentials, monthKey, phoneNumberId } from "../../lib/whatsapp/
 import {
   META_WINDOW_REFUSED,
   REPLY_REASON,
+  isAlreadySent,
   markEventCompleted,
+  markThreadFullReply,
   markThreadOutbound,
   recordDecision,
 } from "../../lib/whatsapp/event";
 import { downloadMedia } from "../../lib/whatsapp/media";
 import { isMockDispatchAllowed, sendText } from "../../lib/whatsapp/send";
 import { openThread, rehydrateWindow } from "../../lib/whatsapp/thread";
+import { isNewClaimText } from "../../lib/whatsapp/tone";
 import { inngest } from "../client";
 
 type Outcome =
@@ -74,39 +82,79 @@ export const processWhatsAppMessage = inngest.createFunction(
     }
     const eventRowId = eventRow.id;
 
-    // Step 2: Extract text or media
-    const extractedFacts = await step.run("extract-facts-from-message", async () => {
-      if (messageType === "text" && textBody) {
-        return extractFactsFromTextOrImage({ text: textBody });
-      }
-
-      if (mediaId) {
-        const downloaded = await downloadMedia(mediaId);
-        if (downloaded.ok) {
-          return extractFactsFromTextOrImage({
-            imageBase64: downloaded.media.buffer.toString("base64"),
-            mimeType: downloaded.media.mimeType || mimeType || "image/jpeg",
-          });
-        }
-        console.error(
-          `[WhatsApp Media] ${downloaded.errorCode}: ${downloaded.message} for ${mediaId}`,
-        );
-      }
-
-      return extractFactsFromTextOrImage({ text: textBody || "" });
-    });
-
-    // Step 3: Run Deterministic Rules Engine
-    const verification = await step.run("evaluate-rules", async () => {
-      return runRulesEngine({
-        text: textBody || extractedFacts.summaryClaim,
-        claimedEntity: extractedFacts.claimedEntity,
-        phoneNumbers: extractedFacts.phoneNumbers,
-        emails: extractedFacts.emails,
-        amount: extractedFacts.amount,
-        paymentMethod: extractedFacts.paymentMethod,
+    // Warm chat tone (spec 0017): the tone gate runs before any model call.
+    // A pure reaction in a thread that already got its full verdict skips
+    // extraction and the rules entirely and reuses the stored verdict. Every
+    // other turn, including any non text message, takes the full path.
+    const toneGate = await step.run("check-tone-gate", async () => {
+      const row = await db.whatsAppThread.findUnique({
+        where: { threadKey: fromNumber },
+        select: {
+          windowExpiresAt: true,
+          windowFirstReplyAt: true,
+          lastVerdict: true,
+          threadLanguage: true,
+        },
       });
+      const verdict =
+        row?.lastVerdict === "HIGH_RISK" ||
+        row?.lastVerdict === "CAUTION" ||
+        row?.lastVerdict === "VERIFIED_OFFICIAL"
+          ? (row.lastVerdict as VerdictStatus)
+          : null;
+      const markerAlive =
+        verdict !== null &&
+        row?.windowFirstReplyAt !== null &&
+        row !== null &&
+        row.windowExpiresAt.getTime() > Date.now();
+      const storedLanguage: "en" | "fr" = row?.threadLanguage === "en" ? "en" : "fr";
+      const stored = markerAlive && verdict !== null ? { verdict, language: storedLanguage } : null;
+      if (messageType !== "text" || isNewClaimText(textBody) || stored === null) {
+        return { reaction: null, stored };
+      }
+      return { reaction: { verdict: stored.verdict, language: stored.language }, stored };
     });
+
+    // Step 2: Extract text or media, skipped for a pure reaction which has no
+    // new claim to extract from.
+    const extractedFacts = toneGate.reaction
+      ? null
+      : await step.run("extract-facts-from-message", async () => {
+          if (messageType === "text" && textBody) {
+            return extractFactsFromTextOrImage({ text: textBody });
+          }
+
+          if (mediaId) {
+            const downloaded = await downloadMedia(mediaId);
+            if (downloaded.ok) {
+              return extractFactsFromTextOrImage({
+                imageBase64: downloaded.media.buffer.toString("base64"),
+                mimeType: downloaded.media.mimeType || mimeType || "image/jpeg",
+              });
+            }
+            console.error(
+              `[WhatsApp Media] ${downloaded.errorCode}: ${downloaded.message} for ${mediaId}`,
+            );
+          }
+
+          return extractFactsFromTextOrImage({ text: textBody || "" });
+        });
+
+    // Step 3: Run Deterministic Rules Engine, skipped for a pure reaction
+    // which reuses the stored verdict instead of judging again.
+    const verification = toneGate.reaction
+      ? null
+      : await step.run("evaluate-rules", async () => {
+          if (!extractedFacts) throw new Error("extracted facts are missing for a full check");
+          return runRulesEngine({
+            text: textBody || extractedFacts.summaryClaim,
+            claimedEntity: extractedFacts.claimedEntity,
+            phoneNumbers: extractedFacts.phoneNumbers,
+            emails: extractedFacts.emails,
+            amount: extractedFacts.amount,
+            paymentMethod: extractedFacts.paymentMethod,
+          });
+        });
 
     // Step 4: Open the window. The webhook already did this, and because both
     // clocks are read from the stored event the call is idempotent, so a worker
@@ -124,9 +172,41 @@ export const processWhatsAppMessage = inngest.createFunction(
     // not allowed to send never touches the cap.
     const outcome = await step.run("decide-and-send", async (): Promise<Outcome> => {
       const now = new Date();
-      const language = detectMessageLanguage(textBody);
-      const replyBody =
-        language === "fr" ? verification.whatsappReply.fr : verification.whatsappReply.en;
+
+      // Warm chat tone (spec 0017): pick the reply shape before the window
+      // and cap checks, so those paths behave the same for every shape.
+      // A reaction reuses the stored verdict with no fresh judging. An
+      // unreadable new check gets a warm ask with no verdict. Everything else
+      // gets the full verdict with its warm opener and closer.
+      let language: "en" | "fr";
+      let replyBody: string;
+      let isFull = false;
+      let fullVerdict: VerdictStatus | null = null;
+      if (toneGate.reaction) {
+        language = toneGate.reaction.language;
+        replyBody = renderWhatsAppFollowUp({
+          language,
+          verdict: toneGate.reaction.verdict,
+        });
+      } else if (!verification || !extractedFacts) {
+        throw new Error("fresh verification is missing for a full check");
+      } else {
+        const summary = extractedFacts.summaryClaim?.trim() ?? "";
+        if (messageType === "text" || textBody?.trim()) {
+          language = detectMessageLanguage(textBody);
+        } else {
+          language = summary ? detectMessageLanguage(summary) : (toneGate.stored?.language ?? "fr");
+        }
+        const readable = Boolean(textBody?.trim()) || summary.length > 0;
+        if (!readable) {
+          replyBody = renderWhatsAppEmptyAsk(language);
+        } else {
+          replyBody =
+            language === "fr" ? verification.whatsappReply.fr : verification.whatsappReply.en;
+          isFull = true;
+          fullVerdict = verification.verdict;
+        }
+      }
 
       if (now.getTime() >= windowExpiresAt.getTime()) {
         await recordDecision({
@@ -168,6 +248,25 @@ export const processWhatsAppMessage = inngest.createFunction(
       const month = monthKey(now);
       await ensureMonth(id, month);
 
+      // Retry guard: this step recounts and resends on every run, so a retry
+      // after a successful send would bill a duplicate message. A prior SENT
+      // with a success reason skips straight to the sent outcome with the
+      // same deterministic body. Refusals still retry, as today.
+      const prior = await db.whatsAppWebhookEvent.findUnique({
+        where: { id: eventRowId },
+        select: { replyDecision: true, replyDecisionReason: true },
+      });
+      if (
+        prior &&
+        isAlreadySent({ decision: prior.replyDecision, reason: prior.replyDecisionReason })
+      ) {
+        return {
+          kind: "sent",
+          body: replyBody,
+          isNotice: prior.replyDecisionReason === "CAP_NOTICE_SENT",
+        };
+      }
+
       const counted = await countReplyAttempt(id, month);
       if (!counted.counted) {
         return sendCapNotice({
@@ -205,7 +304,19 @@ export const processWhatsAppMessage = inngest.createFunction(
         reason: sent.ok ? null : `META_REFUSED_${sent.errorCode ?? sent.status}`,
         windowExpiresAt: windowExpiresAt,
       });
-      if (sent.ok) await markThreadOutbound(fromNumber);
+      // Warm chat tone (spec 0017): only a sent full sets the tone marker.
+      // Short notes ride the existing outbound stamp and leave it untouched.
+      if (sent.ok) {
+        if (isFull && fullVerdict) {
+          await markThreadFullReply({
+            threadKey: fromNumber,
+            verdict: fullVerdict,
+            language,
+          });
+        } else {
+          await markThreadOutbound(fromNumber);
+        }
+      }
 
       console.log(
         `[WhatsApp] reply to ${fromNumber} in ${language}, month ${month} at ${counted.countThisMonth}/${capStatus(month).cap}, sent=${sent.ok}`,
@@ -229,7 +340,7 @@ export const processWhatsAppMessage = inngest.createFunction(
     return {
       status: outcome.kind === "sent" ? "SENT" : outcome.kind.toUpperCase(),
       messageId,
-      verdict: verification.verdict,
+      verdict: verification?.verdict ?? toneGate.reaction?.verdict ?? null,
       reason: outcome.kind === "sent" ? null : outcome.reason,
     };
   },

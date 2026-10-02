@@ -199,6 +199,11 @@ model WhatsAppThread {
   windowExpiresAt  DateTime // lastInboundAt plus 24 hours, never extended by us
   lastOutboundAt   DateTime?
   capNoteSentAt    DateTime? // at most one cap notice per thread per month
+  // Warm chat tone (spec 0017). All nullable so old rows read as first check
+  // with no backfill: empty marker means the next reply is full.
+  windowFirstReplyAt DateTime? // when the full verdict first went out in the current window
+  lastVerdict        String? // the verdict sent in that full reply
+  threadLanguage     String? // the language sent, en or fr
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

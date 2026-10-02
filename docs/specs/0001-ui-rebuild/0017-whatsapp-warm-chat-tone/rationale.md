@@ -1,0 +1,40 @@
+# Rationale: 0017. Warm chat tone for WhatsApp replies
+
+## Context
+
+Every WhatsApp inbound runs the same path today. The worker extracts facts with the model (fact pull only, never a verdict), runs the rules engine, and sends `whatsappReply` from `src/lib/rules/engine.ts`. That reply always opens with a titled header plus an intro line, then evidence, contact lines, and a closing action block. There is no memory of what came before in the thread, so a follow up like thanks gets another full titled alert.
+
+The forces that shape this choice are trust plus cost plus safety. A stiff repeat title makes the bot feel robotic and makes people less likely to forward a real alert to family. Each reply is billed per message now, and each model call costs inference, so a pure reaction should not pay for a full extraction it does not need. Safety cannot bend for warmth. A high risk alert must still carry its action lines, and both languages (French and English) must feel human on a phone screen.
+
+## Options considered
+
+### Option 1: Fix in place with deterministic template
+
+Extend the current renderer with a follow up flag. The rules engine builds both shapes from the same verdict plus evidence, using fixed warm openers and closers in both languages. The worker decides first versus follow up from small thread fields and passes the flag in.
+
+1. Pro: one source of truth for verdict wording, so full and short can never disagree.
+2. Pro: no new service or model call, so cost and failure surface stay flat.
+3. Con: warm wording is fixed copy, so it cannot riff on what the person just said.
+4. Con: renderer gains a branch, so future voice edits must check both shapes.
+
+### Option 2: Model drafts the short note
+
+Keep the full shape deterministic and let the model draft the short follow up around the stored verdict. The template supplies verdict plus action lines, the model supplies the warm connective tissue.
+
+1. Pro: most human feel, since wording can echo the last turn.
+2. Pro: no copy to maintain for every small tone tweak.
+3. Con: risk of verdict drift, since free prose can soften or restate risk.
+4. Con: extra inference cost on exactly the turns this spec wants to make cheap, plus a new failure path when the model call fails.
+
+### Option 3: Strangler with parallel renderer
+
+Build a new renderer module beside the old one, dual run both for a period, compare outputs, then cut over and retire the old path.
+
+1. Pro: safest cutover story, since old output stays live until the new one proves itself.
+2. Pro: clean seam if the voice later grows into a full conversational layer.
+3. Con: two renderers to maintain during the overlap, with double test surface.
+4. Con: overkill for a small additive branch, slows a change the current module can absorb.
+
+## Rationale
+
+The product rule that the model extracts facts but never decides the verdict points straight at a deterministic short note. Option 2 would put free prose next to risk wording on the cheapest turns, which is exactly where drift would hide. Option 3 buys cutover safety this change does not need, since the edit is additive and the old full path stays the default for every new check. Fixed copy in both languages keeps review honest, keeps the 1600 character ceiling logic in one place, and lets the worker save money by skipping extraction when there is nothing new to extract.

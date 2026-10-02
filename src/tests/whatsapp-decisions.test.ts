@@ -152,10 +152,9 @@ const {
   ensureMonth,
   monthCount,
 } = await import("../lib/whatsapp/cap");
-const { markEventCompleted, markThreadOutbound, recordDecision } = await import(
+const { isAlreadySent, markEventCompleted, markThreadOutbound, recordDecision } = await import(
   "../lib/whatsapp/event"
-);
-const { isUniqueViolation } = await import("../lib/whatsapp/thread");
+);const { isUniqueViolation } = await import("../lib/whatsapp/thread");
 
 const PID = "phone-1";
 const MONTH = "2026-10";
@@ -397,5 +396,24 @@ describe("spec 0015 AC-2: a duplicate write is recognised, any other failure is 
     expect(isUniqueViolation(null)).toBe(false);
     expect(isUniqueViolation(undefined)).toBe(false);
     expect(isUniqueViolation("P2002")).toBe(false);
+  });
+});
+
+describe("spec 0017 review: a retry after a successful send skips the resend", () => {
+  it("treats a SENT with no reason as already sent", () => {
+    expect(isAlreadySent({ decision: "SENT", reason: null })).toBe(true);
+  });
+
+  it("treats a sent cap notice as already sent", () => {
+    expect(isAlreadySent({ decision: "SENT", reason: "CAP_NOTICE_SENT" })).toBe(true);
+  });
+
+  it("retries refusals, pending rows and rows with no decision", () => {
+    expect(isAlreadySent({ decision: "SENT", reason: "META_REFUSED_500" })).toBe(false);
+    expect(isAlreadySent({ decision: "SENT", reason: "WINDOW_EXPIRED" })).toBe(false);
+    expect(isAlreadySent({ decision: "PENDING", reason: null })).toBe(false);
+    expect(isAlreadySent({ decision: "REFUSED_CAP", reason: "MONTHLY_CAP_REACHED" })).toBe(false);
+    expect(isAlreadySent({ decision: null, reason: null })).toBe(false);
+    expect(isAlreadySent({ decision: undefined, reason: undefined })).toBe(false);
   });
 });

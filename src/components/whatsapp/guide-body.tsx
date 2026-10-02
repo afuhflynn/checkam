@@ -27,13 +27,22 @@ export type DemoReplies = Record<DemoScenario, { fr: string; en: string }>;
  * be on the phone.
  */
 function WhatsAppReply({ body }: { body: string }) {
-  const [first, ...rest] = body.split("\n");
-  const header = first && /^\*(.+)\*$/.exec(first);
+  // Any line wrapped in single asterisks draws bold, wherever it sits. The
+  // header used to lead the reply, so the first line was enough; since the
+  // warm opener leads instead, each line is matched on its own.
+  const lines = body.split("\n");
 
   return (
     <>
-      <span className="font-bold">{header ? header[1] : (first ?? "")}</span>
-      {rest.length > 0 && `\n${rest.join("\n")}`}
+      {lines.map((line, i) => {
+        const header = /^\*(.+)\*$/.exec(line);
+        return (
+          <span key={i}>
+            {i > 0 ? "\n" : null}
+            {header ? <span className="font-bold">{header[1]}</span> : line}
+          </span>
+        );
+      })}
     </>
   );
 }

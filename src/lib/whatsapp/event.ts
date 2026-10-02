@@ -34,10 +34,49 @@ export async function recordDecision(params: {
   });
 }
 
+/**
+ * Retry guard (spec 0017 review): the decide step recounts and resends on
+ * every run, so a retry after a successful send would bill a duplicate
+ * message. A prior `SENT` with a success reason means the send already went
+ * out and the rerun must skip straight to the sent outcome. Refusals carry a
+ * reason and still retry, as today.
+ */
+export function isAlreadySent(params: {
+  decision: WhatsAppReplyDecision | null | undefined;
+  reason: string | null | undefined;
+}): boolean {
+  return (
+    params.decision === "SENT" &&
+    (params.reason === null || params.reason === undefined || params.reason === "CAP_NOTICE_SENT")
+  );
+}
+
 export async function markThreadOutbound(threadKey: string): Promise<void> {
   await db.whatsAppThread.update({
     where: { threadKey },
     data: { lastOutboundAt: new Date() },
+  });
+}
+
+/**
+ * Warm chat tone (spec 0017): only a sent full verdict sets the tone marker.
+ * Short notes, cap notes, refusals and failed sends leave it untouched, and a
+ * fresh window clears it in `openThread`.
+ */
+export async function markThreadFullReply(params: {
+  threadKey: string;
+  verdict: string;
+  language: string;
+}): Promise<void> {
+  const now = new Date();
+  await db.whatsAppThread.update({
+    where: { threadKey: params.threadKey },
+    data: {
+      lastOutboundAt: now,
+      windowFirstReplyAt: now,
+      lastVerdict: params.verdict,
+      threadLanguage: params.language,
+    },
   });
 }
 

@@ -42,6 +42,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 29 | WhatsApp launch readiness | Path 7: WhatsApp | planned |
 | 30 | Graph API version expiry guard | Path 7: WhatsApp | planned |
 | 31 | WhatsApp chat button | Path 7: WhatsApp | in-progress |
+| 32 | WhatsApp warm chat tone | Path 7: WhatsApp | in-progress |
 
 ## Path 1: enter
 
@@ -346,6 +347,21 @@ A real chat button that opens WhatsApp already talking to CheckAm, in the user's
 - [x] Floating button on small screens, mounted once in the site layout
 - [x] Tests for the destination, the labels, the language and the number
 - [x] Build it: `/feature-build whatsapp chat button` · code in `src/lib/whatsapp/click-to-chat.ts`, `src/components/whatsapp/`, `src/app/(site)/layout.tsx`, `src/app/(site)/whatsapp/page.tsx`
+
+### 32. WhatsApp warm chat tone · in-progress
+First check in a thread keeps the full verdict shape with a warm opener and closer in the thread language. Later turns in the same open window drop the title and stay short and chatty, while the verdict itself stays clear and firm.
+**Done when:** a first check still reads as a full verdict with evidence, a follow up in the same window reads as a short warm note with no repeat title, and both languages feel human on a phone.
+- [x] Design it (spec): `/solution-architect whatsapp warm chat tone`
+- [x] Build it: `/feature-build whatsapp warm chat tone`
+  - [x] Migration plus tone fields and cleared on new window (AC-6, AC-7)
+  - [x] Renderer with follow up flag plus warm copy in both languages (AC-1, AC-2, AC-4, AC-9)
+  - [x] Worker first versus follow up path with claim signal and language store (AC-3, AC-5, AC-6)
+  - [x] Reaction ack plus empty ask plus untouched system notes with tests (AC-5, AC-7, AC-8)
+- [x] Verify it: `/verify-release whatsapp warm chat tone`
+- [x] Test it: `/test-engineer whatsapp warm chat tone`
+- [x] Review it (fresh model): `/peer-review whatsapp warm chat tone`
+- [x] Document it: `/tech-writer whatsapp warm chat tone`
+Spec 0017 (`../specs/0001-ui-rebuild/0017-whatsapp-warm-chat-tone/index.md`) · code in `src/lib/rules/engine.ts`, `src/lib/whatsapp/tone.ts`, `src/lib/whatsapp/thread.ts`, `src/lib/whatsapp/event.ts`, `src/inngest/functions/process-whatsapp-message.ts`, `prisma/schema.prisma`
 
 ## Deferred
 

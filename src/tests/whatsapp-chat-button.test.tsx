@@ -208,10 +208,13 @@ describe("spec 0016 AC-12: the guide shows the real reply", () => {
     );
     const shown = container.textContent ?? "";
 
-    // The header is the one place the reply uses WhatsApp bold markup, and the
-    // simulator draws it the way WhatsApp draws it, so the asterisks themselves
-    // must not reach the page.
-    expect(whatsappReply.fr.startsWith("*")).toBe(true);
+    // The bold header is the one place the reply uses WhatsApp bold markup, and
+    // the simulator draws it the way WhatsApp draws it, so the asterisks
+    // themselves must not reach the page. Since spec 0017 the warm opener leads
+    // and the header follows it.
+    const replyBlocks = whatsappReply.fr.split("\n\n");
+    expect(replyBlocks[0]).toBe("Merci pour votre message, je l'ai examiné pour vous.");
+    expect(replyBlocks[1]).toBe("*Alerte arnaque - CheckAm Cameroun*");
     expect(shown).toContain("Alerte arnaque - CheckAm Cameroun");
     expect(shown).not.toContain("*Alerte arnaque");
     // A domain glob still keeps its asterisks, because that is content.

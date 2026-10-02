@@ -15,6 +15,13 @@ export interface OpenedWindow {
   threadKey: string;
   lastInboundAt: Date;
   windowExpiresAt: Date;
+  // Warm chat tone (spec 0017): the marker of a full reply already sent in
+  // the current window. Null when no full went out yet or a fresh window just
+  // opened. Old rows predate these columns, so they read as first check.
+  windowFirstReplyAt: Date | null;
+  lastVerdict: string | null;
+  threadLanguage: string | null;
+  isFreshWindow: boolean;
 }
 
 /**
@@ -58,11 +65,30 @@ export async function openThread(params: {
     const lastInboundAt = windowStart(event.inboundAt, event.createdAt);
     const expiresAt = windowExpiry(lastInboundAt);
 
+    // Warm chat tone (spec 0017): a fresh window clears the tone marker, so
+    // the next reply is full again. Fresh means no thread yet, or the stored
+    // window had already expired when this message arrived. An inbound that
+    // merely extends a live window keeps the marker.
+    const existing = await tx.whatsAppThread.findUnique({
+      where: { threadKey: fromNumber },
+      select: {
+        windowExpiresAt: true,
+        windowFirstReplyAt: true,
+        lastVerdict: true,
+        threadLanguage: true,
+      },
+    });
+    const isFreshWindow =
+      !existing || existing.windowExpiresAt.getTime() <= lastInboundAt.getTime();
+    const clearedTone = isFreshWindow
+      ? { windowFirstReplyAt: null, lastVerdict: null, threadLanguage: null }
+      : {};
+
     try {
       await tx.whatsAppThread.upsert({
         where: { threadKey: fromNumber },
         create: { threadKey: fromNumber, lastInboundAt, windowExpiresAt: expiresAt },
-        update: { lastInboundAt, windowExpiresAt: expiresAt },
+        update: { lastInboundAt, windowExpiresAt: expiresAt, ...clearedTone },
       });
     } catch (error) {
       // Two deliveries of the same sender can race here. Upsert is find then
@@ -71,7 +97,7 @@ export async function openThread(params: {
       if (!isUniqueViolation(error)) throw error;
       await tx.whatsAppThread.update({
         where: { threadKey: fromNumber },
-        data: { lastInboundAt, windowExpiresAt: expiresAt },
+        data: { lastInboundAt, windowExpiresAt: expiresAt, ...clearedTone },
       });
     }
 
@@ -80,7 +106,15 @@ export async function openThread(params: {
       data: { threadKey: fromNumber },
     });
 
-    return { threadKey: fromNumber, lastInboundAt, windowExpiresAt: expiresAt };
+    return {
+      threadKey: fromNumber,
+      lastInboundAt,
+      windowExpiresAt: expiresAt,
+      windowFirstReplyAt: isFreshWindow ? null : (existing?.windowFirstReplyAt ?? null),
+      lastVerdict: isFreshWindow ? null : (existing?.lastVerdict ?? null),
+      threadLanguage: isFreshWindow ? null : (existing?.threadLanguage ?? null),
+      isFreshWindow,
+    };
   });
 }
 
@@ -99,7 +133,12 @@ export function rehydrateWindow(window: OpenedWindow): OpenedWindow {
   if (Number.isNaN(windowExpiresAt.getTime()) || Number.isNaN(lastInboundAt.getTime())) {
     throw new Error(`Thread ${window.threadKey} has an unreadable window`);
   }
-  return { ...window, lastInboundAt, windowExpiresAt };
+  // Inngest serializes Dates as ISO strings, so a stored marker date arrives
+  // as a string too. Null stays null for threads with no full reply yet.
+  const rawMarker: unknown = window.windowFirstReplyAt;
+  const windowFirstReplyAt =
+    typeof rawMarker === "string" ? new Date(rawMarker) : ((rawMarker as Date | null) ?? null);
+  return { ...window, lastInboundAt, windowExpiresAt, windowFirstReplyAt };
 }
 
 export function isUniqueViolation(error: unknown): boolean {

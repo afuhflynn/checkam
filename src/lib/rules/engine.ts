@@ -47,6 +47,47 @@ export interface WebSource {
 
 export type EvidenceTone = "warning" | "reassuring" | "neutral";
 
+// Generic high risk safety note, shared by the full reply and the short
+// follow up so both shapes warn the same way (spec 0017).
+const GENERIC_HIGH_RISK_SAFETY = {
+  en: "Do not send money, documents, or any code from a text message. If you already paid, contact your Mobile Money operator at once and report it free on the ANTIC hotline, 8202.",
+  fr: "N'envoyez ni argent, ni documents, ni aucun code à partir d'un SMS. Si vous avez déjà payé, contactez immédiatement votre opérateur Mobile Money et signalez gratuitement au numéro de l'ANTIC, le 8202.",
+};
+
+// Warm chat copy for the WhatsApp surface, fixed in both languages so review
+// stays honest and the verdict can never drift (spec 0017). No emoji and no
+// em dash survive here, the phone sanitiser enforces it again at render.
+const WARM_OPENER = {
+  en: "Thanks for checking, I looked into this for you.",
+  fr: "Merci pour votre message, je l'ai examiné pour vous.",
+};
+const WARM_CLOSER = {
+  en: "Send me anything else you want checked.",
+  fr: "Je peux vérifier un autre message si vous voulez.",
+};
+const SHORT_ACK = {
+  en: "Thanks for letting me know.",
+  fr: "Merci de me l'avoir dit.",
+};
+const SHORT_REMINDER: Record<VerdictStatus, { en: string; fr: string }> = {
+  HIGH_RISK: {
+    en: "Still high risk: do not send money or codes.",
+    fr: "Toujours à risque élevé : n'envoyez ni argent ni code.",
+  },
+  CAUTION: {
+    en: "Still worth caution: verify on the official site first.",
+    fr: "Restez prudent : vérifiez d'abord sur le site officiel.",
+  },
+  VERIFIED_OFFICIAL: {
+    en: "Still official as checked: use the institution site itself.",
+    fr: "Toujours officiel selon ma vérification : utilisez le site de l'institution.",
+  },
+};
+const EMPTY_ASK = {
+  en: "I could not read this. Please send the full text or a clear picture.",
+  fr: "Je n'ai pas pu lire ce message. Envoyez le texte complet ou une photo claire.",
+};
+
 // Legitimacy signals that describe something the message did NOT do. They
 // count towards the score, but they are never shown as findings.
 const ABSENCE_SIGNALS = new Set(["no-payment", "no-urgency"]);
@@ -386,10 +427,7 @@ export function runRulesEngine(input: VerificationInput): VerificationResult {
       : category === "PHISHING"
         ? PHISHING_SAFETY
         : verdict === "HIGH_RISK"
-          ? {
-              en: "Do not send money, documents, or any code from a text message. If you already paid, contact your Mobile Money operator at once and report it free on the ANTIC hotline, 8202.",
-              fr: "N'envoyez ni argent, ni documents, ni aucun code à partir d'un SMS. Si vous avez déjà payé, contactez immédiatement votre opérateur Mobile Money et signalez gratuitement au numéro de l'ANTIC, le 8202.",
-            }
+          ? GENERIC_HIGH_RISK_SAFETY
           : verdict === "VERIFIED_OFFICIAL"
             ? {
                 en: "This points at an official channel. Still open the institution's own website yourself instead of using the link in the message, and never send an OTP to anyone.",
@@ -642,7 +680,15 @@ function renderAlert(params: {
   const action = replaceDashes(stripEmojis(actionLines.join("\n")));
 
   if (params.format === "whatsapp") {
-    return renderPhoneAlert({ header, intro, bulletLines, contactLines, action });
+    return renderPhoneAlert({
+      header,
+      intro,
+      bulletLines,
+      contactLines,
+      action,
+      opener: fr ? WARM_OPENER.fr : WARM_OPENER.en,
+      closer: fr ? WARM_CLOSER.fr : WARM_CLOSER.en,
+    });
   }
 
   const sections: string[] = [strong(header), "", intro];
@@ -662,7 +708,9 @@ function renderAlert(params: {
  * the whole body sanitised, and a stated drop order when the body is over the
  * ceiling: contact lines first, then the oldest evidence bullets, then the
  * closing block at a sentence boundary. At least one evidence bullet always
- * survives, and the verdict line and the closing block are never cut.
+ * survives, and the opener, the verdict line and the closing block are never
+ * cut. The closer rides with the action block, so a truncation from the end
+ * keeps it.
  */
 function renderPhoneAlert(parts: {
   header: string;
@@ -670,39 +718,95 @@ function renderPhoneAlert(parts: {
   bulletLines: string[];
   contactLines: string[];
   action: string;
+  opener: string;
+  closer: string;
 }): string {
-  const assemble = (bullets: string[], contacts: string[], action: string): string => {
+  const closingOf = (action: string): string =>
+    [parts.closer, action].filter((block) => block.length > 0).join("\n");
+  const assemble = (bullets: string[], contacts: string[], closing: string): string => {
     const blocks = [
+      parts.opener,
       `*${parts.header}*`,
       parts.intro,
       bullets.length > 0 ? bullets.join("\n") : null,
       contacts.length > 0 ? contacts.join("\n") : null,
-      action,
+      closing,
     ].filter((block): block is string => block !== null && block.length > 0);
     return blocks.join("\n\n");
   };
 
   let bullets = parts.bulletLines;
   let contacts = parts.contactLines;
-  let action = parts.action;
+  let closing = closingOf(parts.action);
 
-  let body = assemble(bullets, contacts, action);
+  let body = assemble(bullets, contacts, closing);
   if (body.length > WHATSAPP_MAX_CHARS) {
     contacts = [];
-    body = assemble(bullets, contacts, action);
+    body = assemble(bullets, contacts, closing);
   }
   while (body.length > WHATSAPP_MAX_CHARS && bullets.length > 1) {
     bullets = bullets.slice(1);
-    body = assemble(bullets, contacts, action);
+    body = assemble(bullets, contacts, closing);
   }
   if (body.length > WHATSAPP_MAX_CHARS) {
-    const withoutAction = assemble(bullets, contacts, "");
-    action = truncateAtSentence(action, WHATSAPP_MAX_CHARS - withoutAction.length - 2);
-    body = assemble(bullets, contacts, action);
+    const withoutClosing = assemble(bullets, contacts, "");
+    closing = parts.closer
+      ? `${parts.closer}\n${truncateAtSentence(parts.action, WHATSAPP_MAX_CHARS - withoutClosing.length - parts.closer.length - 3)}`
+      : truncateAtSentence(parts.action, WHATSAPP_MAX_CHARS - withoutClosing.length - 2);
+    body = assemble(bullets, contacts, closing);
   }
   if (body.length > WHATSAPP_MAX_CHARS) {
     body = body.slice(0, WHATSAPP_MAX_CHARS).trimEnd();
   }
 
   return sanitizeForPhone(body);
+}
+
+/**
+ * The short follow up shape (spec 0017): an ack line, a one line verdict
+ * reminder, then the unchanged action block. No title, no intro, no evidence.
+ * Well under the ceiling by construction, so no drop logic applies.
+ */
+function renderShortPhoneAlert(parts: { ack: string; reminder: string; action: string }): string {
+  const blocks = [parts.ack, parts.reminder, parts.action].filter((block) => block.length > 0);
+  return sanitizeForPhone(blocks.join("\n\n"));
+}
+
+/** Generic high risk action block for a short built from a stored verdict. */
+function highRiskActionBlock(fr: boolean): string {
+  return replaceDashes(
+    stripEmojis(
+      [
+        fr ? GENERIC_HIGH_RISK_SAFETY.fr : GENERIC_HIGH_RISK_SAFETY.en,
+        fr
+          ? "Signalez gratuitement à l'ANTIC au 8202."
+          : "Report it free on the ANTIC hotline, 8202.",
+        fr
+          ? "Faites suivre à vos groupes WhatsApp pour protéger vos proches."
+          : "Forward this to your family and groups to protect others.",
+      ].join("\n"),
+    ),
+  );
+}
+
+/**
+ * Build a short follow up from a stored verdict, with no fresh engine result
+ * and no model call. Used for pure reactions such as thanks (spec 0017).
+ */
+export function renderWhatsAppFollowUp(params: {
+  language: "en" | "fr";
+  verdict: VerdictStatus;
+}): string {
+  const fr = params.language === "fr";
+  const reminder = SHORT_REMINDER[params.verdict];
+  return renderShortPhoneAlert({
+    ack: fr ? SHORT_ACK.fr : SHORT_ACK.en,
+    reminder: fr ? reminder.fr : reminder.en,
+    action: params.verdict === "HIGH_RISK" ? highRiskActionBlock(fr) : "",
+  });
+}
+
+/** Short warm ask for an unreadable new check, carrying no verdict. */
+export function renderWhatsAppEmptyAsk(language: "en" | "fr"): string {
+  return language === "fr" ? EMPTY_ASK.fr : EMPTY_ASK.en;
 }

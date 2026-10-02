@@ -111,6 +111,10 @@ describe("spec 0015 AC-2 and AC-3: the 24 hour window", () => {
       threadKey: TEST_PHONE,
       lastInboundAt: start,
       windowExpiresAt: windowExpiry(start),
+      windowFirstReplyAt: null,
+      lastVerdict: null,
+      threadLanguage: null,
+      isFreshWindow: true,
     };
 
     // What Inngest actually hands the next step.
@@ -286,10 +290,12 @@ describe("spec 0015 AC-8 and AC-9: the phone reply format", () => {
 
     // English: our own header, intro and labels carry no accent. A French word
     // inside a rule string (a ministry name) is content, not copy, so it is not
-    // what this asserts.
-    const englishHeader = scam.whatsappReply.en.split("\n")[0] ?? "";
-    expect(englishHeader).toBe("*Scam alert - CheckAm Cameroon*");
-    expect(englishHeader).not.toMatch(/[àâäçéèêëîïôöùûüÿœæ]/);
+    // what this asserts. The warm opener leads (spec 0017), the titled header
+    // follows it.
+    const englishLines = scam.whatsappReply.en.split("\n\n");
+    expect(englishLines[0]).toBe("Thanks for checking, I looked into this for you.");
+    expect(englishLines[1]).toBe("*Scam alert - CheckAm Cameroon*");
+    expect(englishLines[1]).not.toMatch(/[àâäçéèêëîïôöùûüÿœæ]/);
     expect(scam.whatsappReply.en).toContain("This message was analyzed on checkam.cm:");
     expect(scam.whatsappReply.en).toContain("Number to watch:");
     expect(scam.whatsappReply.en).toContain("Amount demanded:");
