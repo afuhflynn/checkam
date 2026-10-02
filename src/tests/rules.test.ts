@@ -24,9 +24,11 @@ describe("CheckAm Rules Engine", () => {
     expect(result.evidenceBullets.en.length).toBe(3);
     expect(result.evidenceBullets.fr.length).toBe(3);
     // Should flag free gmail address
-    expect(result.evidenceBullets.fr.some((b) => b.includes("email gratuite non officielle"))).toBe(
-      true,
-    );
+    expect(
+      result.evidenceBullets.fr.some((b) =>
+        b.includes("email gratuite non officielle"),
+      ),
+    ).toBe(true);
     // Should contain WhatsApp alert template
     expect(result.whatsappWarning.fr).toContain("Alerte arnaque");
     expect(result.whatsappWarning.en).toContain("Scam alert");
@@ -46,7 +48,9 @@ describe("CheckAm Rules Engine", () => {
 
     expect(result.verdict).toBe("HIGH_RISK");
     expect(result.category).toBe("MOBILE_MONEY");
-    expect(result.evidenceBullets.en.some((b) => b.includes("reversal fraud"))).toBe(true);
+    expect(
+      result.evidenceBullets.en.some((b) => b.includes("reversal fraud")),
+    ).toBe(true);
   });
 
   it("flags Express Canada Visa 14 days scam as HIGH_RISK", () => {
@@ -109,7 +113,11 @@ describe("Official verdict cannot be self granted", () => {
       emails: ["contact@recrutement-minesec.cm"],
     });
     expect(result.verdict).not.toBe("VERIFIED_OFFICIAL");
-    expect(result.evidenceBullets.en.some((b) => b.includes("recrutement-minesec.cm"))).toBe(true);
+    expect(
+      result.evidenceBullets.en.some((b) =>
+        b.includes("recrutement-minesec.cm"),
+      ),
+    ).toBe(true);
   });
 
   it("does not treat a plain .cm sender as a government sender", () => {
@@ -221,7 +229,10 @@ describe("Forwardable notices", () => {
   });
 
   it("carries the verdict header and the next step in both renderings", () => {
-    for (const text of [result.whatsappWarning.en, result.whatsappWarningPlain.en]) {
+    for (const text of [
+      result.whatsappWarning.en,
+      result.whatsappWarningPlain.en,
+    ]) {
       expect(text).toContain("Scam alert - CheckAm Cameroon");
       expect(text).toContain("8202");
       expect(text).toContain("699123456");
@@ -229,14 +240,20 @@ describe("Forwardable notices", () => {
   });
 
   it("uses no emojis in the share message", () => {
-    expect(result.whatsappWarning.en).not.toMatch(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u);
-    expect(result.whatsappWarning.fr).not.toMatch(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u);
+    expect(result.whatsappWarning.en).not.toMatch(
+      /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u,
+    );
+    expect(result.whatsappWarning.fr).not.toMatch(
+      /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u,
+    );
   });
 
   it("skips the bullet section when there are no evidence bullets", () => {
     const thin = runRulesEngine({ text: "Bonjour, merci." });
     expect(thin.whatsappWarningPlain.en).not.toContain("\n- ");
-    expect(thin.whatsappWarningPlain.en).toContain("This message was analyzed on checkam.cm:");
+    expect(thin.whatsappWarningPlain.en).toContain(
+      "This message was analyzed on checkam.cm:",
+    );
   });
 
   it("shows all phone numbers comma separated", () => {
@@ -272,9 +289,9 @@ describe("Forwardable notices", () => {
 
   it("replaces em dashes with hyphens", () => {
     const emDashResult = runRulesEngine({
-      text: "This is a test — with an em dash",
+      text: "This is a test - with an em dash",
     });
-    expect(emDashResult.whatsappWarning.en).not.toContain("—");
+    expect(emDashResult.whatsappWarning.en).not.toContain("-");
     expect(emDashResult.whatsappWarning.en).not.toContain("–");
   });
 
@@ -283,15 +300,21 @@ describe("Forwardable notices", () => {
     const cautionResult = runRulesEngine({
       text: "Bonjour, je suis le ministre. Merci de me rappeler.",
     });
-    expect(cautionResult.whatsappWarning.en).not.toContain("Forward this to your family");
+    expect(cautionResult.whatsappWarning.en).not.toContain(
+      "Forward this to your family",
+    );
   });
 
   it("includes the ANTIC hotline only on HIGH_RISK", () => {
-    expect(result.whatsappWarning.en).toContain("Report it free on the ANTIC hotline, 8202.");
+    expect(result.whatsappWarning.en).toContain(
+      "Report it free on the ANTIC hotline, 8202.",
+    );
     const cautionResult = runRulesEngine({
       text: "Bonjour, je suis le ministre. Merci de me rappeler.",
     });
-    expect(cautionResult.whatsappWarning.en).not.toContain("Report it free on the ANTIC hotline, 8202.");
+    expect(cautionResult.whatsappWarning.en).not.toContain(
+      "Report it free on the ANTIC hotline, 8202.",
+    );
   });
 
   it("uses a lighter safety note for VERIFIED_OFFICIAL", () => {
@@ -300,9 +323,15 @@ describe("Forwardable notices", () => {
       claimedEntity: "MINFOPRA",
       emails: ["concours@minfopra.gov.cm"],
     });
-    expect(officialResult.whatsappWarningPlain.en).toContain("Official communication - CheckAm");
-    expect(officialResult.whatsappWarningPlain.en).not.toContain("Report it free on the ANTIC hotline");
-    expect(officialResult.whatsappWarningPlain.en).not.toContain("Forward this to your family");
+    expect(officialResult.whatsappWarningPlain.en).toContain(
+      "Official communication - CheckAm",
+    );
+    expect(officialResult.whatsappWarningPlain.en).not.toContain(
+      "Report it free on the ANTIC hotline",
+    );
+    expect(officialResult.whatsappWarningPlain.en).not.toContain(
+      "Forward this to your family",
+    );
   });
 });
 
@@ -475,7 +504,9 @@ describe("Coercive threats", () => {
       "Votre dossier a bien ete recu, nous vous repondrons sous 72h.",
       "Transfert recu, merci.",
     ]) {
-      expect(runRulesEngine({ text }).category).not.toMatch(/EXTORTION|SEXTORTION|PHISHING/);
+      expect(runRulesEngine({ text }).category).not.toMatch(
+        /EXTORTION|SEXTORTION|PHISHING/,
+      );
     }
   });
 });
@@ -515,7 +546,9 @@ describe("Legitimacy relief", () => {
 
     expect(result.verdict).toBe("CAUTION");
     expect(result.score).toBeLessThan(45);
-    expect(result.evidenceBullets.en.some((b) => b.includes("anzisha.org"))).toBe(true);
+    expect(
+      result.evidenceBullets.en.some((b) => b.includes("anzisha.org")),
+    ).toBe(true);
   });
 
   it("keeps red flags above legit softeners", () => {
@@ -544,9 +577,13 @@ describe("Legitimacy relief", () => {
       },
     });
 
-    expect(result.sources).toEqual([{ title: "Anzisha", url: "https://anzisha.org" }]);
+    expect(result.sources).toEqual([
+      { title: "Anzisha", url: "https://anzisha.org" },
+    ]);
     expect(
-      result.evidenceBullets.en.some((b) => b.toLowerCase().includes("found this on the web")),
+      result.evidenceBullets.en.some((b) =>
+        b.toLowerCase().includes("found this on the web"),
+      ),
     ).toBe(true);
   });
 });

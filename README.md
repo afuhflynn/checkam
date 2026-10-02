@@ -85,12 +85,12 @@ The rules engine is the final authority for the verdict. AI is for fact extracti
 
 ## Documentation map
 
-- [AGENTS.md](AGENTS.md) — repository-level operational guide
-- [docs/ADMIN.md](docs/ADMIN.md) — moderation and admin workflow
-- [docs/WHATSAPP.md](docs/WHATSAPP.md) — WhatsApp integration and go-live notes
-- [docs/THREAT-FEED.md](docs/THREAT-FEED.md) — public threat feed format and usage
-- [docs/scope/scope.md](docs/scope/scope.md) — current rebuild plan and status
-- [docs/specs/0001-ui-rebuild/index.md](docs/specs/0001-ui-rebuild/index.md) — UI rebuild umbrella spec
+- [AGENTS.md](AGENTS.md) - repository-level operational guide
+- [docs/ADMIN.md](docs/ADMIN.md) - moderation and admin workflow
+- [docs/WHATSAPP.md](docs/WHATSAPP.md) - WhatsApp integration and go-live notes
+- [docs/THREAT-FEED.md](docs/THREAT-FEED.md) - public threat feed format and usage
+- [docs/scope/scope.md](docs/scope/scope.md) - current rebuild plan and status
+- [docs/specs/0001-ui-rebuild/index.md](docs/specs/0001-ui-rebuild/index.md) - UI rebuild umbrella spec
 
 ## Quality checks
 

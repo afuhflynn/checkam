@@ -12,7 +12,10 @@ import { WhatsAppGuideBody } from "../components/whatsapp/guide-body";
 import { LanguageProvider } from "../lib/i18n/context";
 import { detectMessageLanguage } from "../lib/i18n/detect";
 import { runRulesEngine } from "../lib/rules/engine";
-import { CLICK_TO_CHAT_LABEL, CLICK_TO_CHAT_URL } from "../lib/whatsapp/click-to-chat";
+import {
+  CLICK_TO_CHAT_LABEL,
+  CLICK_TO_CHAT_URL,
+} from "../lib/whatsapp/click-to-chat";
 
 /**
  * Spec 0016: the chat button.
@@ -35,7 +38,9 @@ afterEach(() => {
  */
 function renderWithLanguage(node: React.ReactNode, language: "en" | "fr") {
   window.localStorage.setItem("checkam_lang", language);
-  return render(<LanguageProvider initialLanguage={language}>{node}</LanguageProvider>);
+  return render(
+    <LanguageProvider initialLanguage={language}>{node}</LanguageProvider>,
+  );
 }
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -50,7 +55,9 @@ function walk(dir: string, out: string[] = []): string[] {
 describe("spec 0016 AC-1: one destination for every chat button", () => {
   it("points the button at the click to chat code", () => {
     renderWithLanguage(<WhatsAppChatButton />, "en");
-    expect(screen.getByRole("link").getAttribute("href")).toBe(CLICK_TO_CHAT_URL);
+    expect(screen.getByRole("link").getAttribute("href")).toBe(
+      CLICK_TO_CHAT_URL,
+    );
     expect(CLICK_TO_CHAT_URL).toBe("https://wa.me/message/JW4YDECEFLJQN1");
   });
 
@@ -86,7 +93,9 @@ describe("spec 0016 AC-1: one destination for every chat button", () => {
       "src/components/whatsapp/chat-button.tsx",
       "src/components/whatsapp/float-button.tsx",
     ]) {
-      expect(readFileSync(join(process.cwd(), file), "utf8")).not.toContain("wa.me/");
+      expect(readFileSync(join(process.cwd(), file), "utf8")).not.toContain(
+        "wa.me/",
+      );
     }
   });
 });
@@ -116,12 +125,17 @@ describe("spec 0016 AC-7: the language the reply comes back in", () => {
     // editing sends English, and the reply language follows the inbound text.
     // The spec accepts this and asks Meta for a French code; the test exists so
     // the day that changes, someone notices on purpose rather than by accident.
-    const prefilled = "Hello CheckAm, I want to verify a suspicious message I just received.";
+    const prefilled =
+      "Hello CheckAm, I want to verify a suspicious message I just received.";
     expect(detectMessageLanguage(prefilled)).toBe("en");
 
     // A French speaker who writes in French still gets French, which is the
     // path the guide, the simulator and the bot all depend on.
-    expect(detectMessageLanguage("Bonjour, on me demande 500 000 FCFA pour un colis")).toBe("fr");
+    expect(
+      detectMessageLanguage(
+        "Bonjour, on me demande 500 000 FCFA pour un colis",
+      ),
+    ).toBe("fr");
   });
 
   it("gives both languages a real label, never an empty one", () => {
@@ -204,7 +218,7 @@ describe("spec 0016 AC-12: the guide shows the real reply", () => {
     expect(shown).toContain("*.gov.cm");
 
     expect(whatsappReply.fr).not.toMatch(/\p{Extended_Pictographic}/u);
-    expect(whatsappReply.fr).not.toMatch(/[—–]/);
+    expect(whatsappReply.fr).not.toMatch(/[-–]/);
   });
 
   it("shows the chat button as the page's primary action", () => {
@@ -216,7 +230,9 @@ describe("spec 0016 AC-12: the guide shows the real reply", () => {
       />,
       "fr",
     );
-    expect(screen.getByRole("link").getAttribute("href")).toBe(CLICK_TO_CHAT_URL);
+    expect(screen.getByRole("link").getAttribute("href")).toBe(
+      CLICK_TO_CHAT_URL,
+    );
   });
 
   it("no longer carries the hardcoded emoji sample replies", () => {

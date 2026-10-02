@@ -44,10 +44,10 @@ Stored under `docs/specs/` and `docs/`.
 
 ## Context files
 
-- [prisma/AGENTS.md](prisma/AGENTS.md) — data model and database conventions
-- [src/inngest/AGENTS.md](src/inngest/AGENTS.md) — async jobs and WhatsApp flow
-- [src/lib/ai/AGENTS.md](src/lib/ai/AGENTS.md) — extraction, prompts, and model cascade
-- [src/lib/rules/AGENTS.md](src/lib/rules/AGENTS.md) — verdict engine and Cameroon heuristics
+- [prisma/AGENTS.md](prisma/AGENTS.md) - data model and database conventions
+- [src/inngest/AGENTS.md](src/inngest/AGENTS.md) - async jobs and WhatsApp flow
+- [src/lib/ai/AGENTS.md](src/lib/ai/AGENTS.md) - extraction, prompts, and model cascade
+- [src/lib/rules/AGENTS.md](src/lib/rules/AGENTS.md) - verdict engine and Cameroon heuristics
 
 ## Notes for contributors
 
