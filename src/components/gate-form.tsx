@@ -7,6 +7,7 @@ import { useTranslation } from "../lib/i18n/context";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
+import { useRouter } from "next/navigation";
 
 type GateMode = "signin" | "signup" | "forgot" | "otp" | "sent";
 
@@ -37,7 +38,11 @@ function passwordScore(password: string): 0 | 1 | 2 {
   if (COMMON_PASSWORDS.has(password.toLowerCase())) return 0;
   let points = 0;
   if (password.length >= 8) points += 1;
-  if (password.length >= 12 || (/[A-Z]/.test(password) && /[0-9]/.test(password))) points += 1;
+  if (
+    password.length >= 12 ||
+    (/[A-Z]/.test(password) && /[0-9]/.test(password))
+  )
+    points += 1;
   return points as 0 | 1 | 2;
 }
 
@@ -49,14 +54,26 @@ interface ErrorDict {
 }
 
 function errorCopy(code: string, dict: ErrorDict): string {
-  if (code === "rate_limited" || code === "RATE_LIMITED") return dict.gateRateLimited;
+  if (code === "rate_limited" || code === "RATE_LIMITED")
+    return dict.gateRateLimited;
   if (code === "EMAIL_NOT_VERIFIED") return dict.gateUnverifiedDesc;
-  if (code === "INVALID_TOKEN" || code === "EXPIRED_TOKEN") return dict.gateExpiredDesc;
+  if (code === "INVALID_TOKEN" || code === "EXPIRED_TOKEN")
+    return dict.gateExpiredDesc;
   return dict.gateFailed;
 }
 
-export function GateForm({ notice, next }: { notice: string | null; next?: string }) {
-  const landing = typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+export function GateForm({
+  notice,
+  next,
+}: {
+  notice: string | null;
+  next?: string;
+}) {
+  const landing =
+    typeof next === "string" && next.startsWith("/") && !next.startsWith("//")
+      ? next
+      : "/";
+  const router = useRouter();
   const { t } = useTranslation();
   const [mode, setMode] = useState<GateMode>("signin");
   const [email, setEmail] = useState("");
@@ -83,7 +100,10 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
     setBusy(true);
     setFieldError(null);
     try {
-      await authClient.signIn.social({ provider: "google", callbackURL: landing });
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: landing,
+      });
     } catch (err: unknown) {
       await fail(err);
     } finally {
@@ -97,7 +117,11 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
     setFieldError(null);
     try {
       if (mode === "signup") {
-        const res = await authClient.signUp.email({ email, password, name: "" });
+        const res = await authClient.signUp.email({
+          email,
+          password,
+          name: "",
+        });
         if (res.error) throw new Error(res.error.code ?? "failed");
         setMode("sent");
         toast.success(t.gateVerifyTitle);
@@ -107,7 +131,14 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
         setMode("otp");
         toast.success(t.gateResetTitle);
       } else {
-        const res = await authClient.signIn.email({ email, password });
+        const res = await authClient.signIn.email(
+          { email, password },
+          {
+            onSuccess: (data) => {
+              router.push("/chat");
+            },
+          },
+        );
         if (res.error) throw new Error(res.error.code ?? "failed");
         window.location.href = landing;
       }
@@ -154,7 +185,9 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
         for (let attempt = 0; attempt < 3; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 2000));
           try {
-            const poll = await fetch(`/api/mail/status?jobId=${encodeURIComponent(data.jobId)}`);
+            const poll = await fetch(
+              `/api/mail/status?jobId=${encodeURIComponent(data.jobId)}`,
+            );
             if (!poll.ok) continue;
             const state = (await poll.json()) as { state?: string };
             if (state.state === "failed") {
@@ -182,9 +215,15 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
             {t.gateKicker}
           </p>
           <h1 className="font-display text-3xl font-black tracking-tight text-ink">
-            {mode === "forgot" ? t.gateResetTitle : mode === "otp" ? t.gateOtpBtn : t.gateTitle}
+            {mode === "forgot"
+              ? t.gateResetTitle
+              : mode === "otp"
+                ? t.gateOtpBtn
+                : t.gateTitle}
           </h1>
-          <p className="text-sm text-slate-500">{mode === "otp" ? t.gateResetDesc : t.gateSub}</p>
+          <p className="text-sm text-slate-500">
+            {mode === "otp" ? t.gateResetDesc : t.gateSub}
+          </p>
         </div>
 
         {notice === "google-kept" && (
@@ -194,8 +233,12 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
         )}
         {notice === "expired" && (
           <div className="space-y-2 rounded-lg bg-verdict-caution-bg px-3 py-2">
-            <p className="text-sm font-bold text-verdict-caution-text">{t.gateExpiredTitle}</p>
-            <p className="text-sm text-verdict-caution-text">{t.gateExpiredDesc}</p>
+            <p className="text-sm font-bold text-verdict-caution-text">
+              {t.gateExpiredTitle}
+            </p>
+            <p className="text-sm text-verdict-caution-text">
+              {t.gateExpiredDesc}
+            </p>
             <Input
               type="email"
               value={email}
@@ -216,7 +259,10 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
           </div>
         )}
         {fieldError && (
-          <p role="alert" className="rounded-lg bg-verdict-scam-bg px-3 py-2 text-sm text-verdict-scam-text">
+          <p
+            role="alert"
+            className="rounded-lg bg-verdict-scam-bg px-3 py-2 text-sm text-verdict-scam-text"
+          >
             {fieldError}
           </p>
         )}
@@ -225,11 +271,20 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
           <div className="space-y-3 text-center">
             <p className="text-sm font-bold text-ink">{t.gateVerifyTitle}</p>
             <p className="text-sm text-slate-500">{t.gateVerifyDesc}</p>
-            <Button type="button" variant="outline" onClick={handleResend} disabled={busy}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleResend}
+              disabled={busy}
+            >
               {t.gateResendBtn}
             </Button>
             <div>
-              <Button type="button" variant="ghost" onClick={() => setMode("signin")}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setMode("signin")}
+              >
                 {t.gateBackBtn}
               </Button>
             </div>
@@ -237,7 +292,10 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
         ) : mode === "otp" ? (
           <form onSubmit={handleOtp} className="space-y-4">
             <div className="space-y-1.5">
-              <label htmlFor="gate-otp" className="text-sm font-semibold text-slate-800">
+              <label
+                htmlFor="gate-otp"
+                className="text-sm font-semibold text-slate-800"
+              >
                 {t.gateOtpLabel}
               </label>
               <Input
@@ -250,10 +308,19 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
                 disabled={busy}
               />
             </div>
-            <Button type="submit" size="lg" className="w-full font-bold" disabled={busy || !otp}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full font-bold"
+              disabled={busy || !otp}
+            >
               {t.gateOtpBtn}
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setMode("signin")}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setMode("signin")}
+            >
               {t.gateBackBtn}
             </Button>
           </form>
@@ -276,7 +343,10 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
             </div>
             <form onSubmit={handleMail} className="space-y-4">
               <div className="space-y-1.5">
-                <label htmlFor="gate-email" className="text-sm font-semibold text-slate-800">
+                <label
+                  htmlFor="gate-email"
+                  className="text-sm font-semibold text-slate-800"
+                >
                   {t.gateEmailLabel}
                 </label>
                 <Input
@@ -291,7 +361,10 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
               </div>
               {mode !== "forgot" && (
                 <div className="space-y-1.5">
-                  <label htmlFor="gate-password" className="text-sm font-semibold text-slate-800">
+                  <label
+                    htmlFor="gate-password"
+                    className="text-sm font-semibold text-slate-800"
+                  >
                     {t.gatePasswordLabel}
                   </label>
                   <Input
@@ -300,7 +373,9 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t.gatePasswordPlaceholder}
-                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                    autoComplete={
+                      mode === "signup" ? "new-password" : "current-password"
+                    }
                     disabled={busy}
                   />
                   {mode === "signup" && password.length > 0 && (
@@ -314,8 +389,17 @@ export function GateForm({ notice, next }: { notice: string | null; next?: strin
                   )}
                 </div>
               )}
-              <Button type="submit" size="lg" className="w-full font-bold" disabled={busy}>
-                {mode === "signup" ? t.gateSignUpBtn : mode === "forgot" ? t.gateResetTitle : t.gateSignInBtn}
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full font-bold"
+                disabled={busy}
+              >
+                {mode === "signup"
+                  ? t.gateSignUpBtn
+                  : mode === "forgot"
+                    ? t.gateResetTitle
+                    : t.gateSignInBtn}
               </Button>
             </form>
             <div className="flex flex-col items-center gap-2 text-sm">

@@ -31,7 +31,7 @@ function isUnusable(value: string | undefined): boolean {
   if (trimmed === "") return true;
   if (trimmed.includes("placeholder")) return true;
   if (trimmed.includes("CHANGE_ME")) return true;
-  if (trimmed.includes("localhost")) return true;
+  // if (trimmed.includes("localhost")) return true; // commented out for now to make this function locally usable
   if (trimmed.includes("127.0.0.1")) return true;
   if (trimmed.startsWith("http://")) return true;
   return false;
@@ -55,7 +55,9 @@ export function appUrl(): string {
  * `localhost:3000`, for the same reason `appUrl` exists.
  */
 export function appHost(): string {
-  return appUrl().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  return appUrl()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/+$/, "");
 }
 
 /**
