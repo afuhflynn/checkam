@@ -328,9 +328,11 @@ describe("the composer (spec 0005 AC-4, AC-7, AC-9)", () => {
     await waitFor(() => expect(writes).toHaveLength(1));
     // The user row is written before the stream starts, so the turn exists even
     // if the answer never arrives.
-    expect(writes[0].method).toBe("POST");
-    expect(writes[0].url).toBe(`/api/chat/sessions/${SESSION}/messages`);
-    expect(writes[0].body).toMatchObject({ role: "user", text: "on me demande 25000" });
+    expect(writes[0]).toMatchObject({
+      method: "POST",
+      url: `/api/chat/sessions/${SESSION}/messages`,
+      body: { role: "user", text: "on me demande 25000" },
+    });
     await waitFor(() => expect(chat.sendMessage).toHaveBeenCalledTimes(1));
     expect(chat.sendMessage).toHaveBeenCalledWith({ text: "on me demande 25000" });
   });
@@ -362,7 +364,7 @@ describe("the composer (spec 0005 AC-4, AC-7, AC-9)", () => {
 
     fireEvent.click(retry);
     await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].body).toMatchObject({ role: "user", text: "retry me" });
+    expect(writes[0]).toMatchObject({ body: { role: "user", text: "retry me" } });
     // A failed turn never invents a verdict: the pane is handed nothing.
     expect(props.onVerdict).toHaveBeenCalledWith(null, false);
   });
@@ -452,7 +454,7 @@ describe("the verdict (spec 0005 AC-3, AC-9)", () => {
 
     // Sealed is what tells the dossier the verdict is final rather than a draft.
     await waitFor(() => expect(props.onVerdict).toHaveBeenCalled());
-    const [payload, sealed] = props.onVerdict.mock.calls.at(-1) as [
+    const [payload, sealed] = vi.mocked(props.onVerdict).mock.calls.at(-1) as [
       { verdict: string; verificationId: string },
       boolean,
     ];
@@ -502,7 +504,7 @@ describe("the verdict (spec 0005 AC-3, AC-9)", () => {
 
     // Without this, a reload silently drops a verdict the reader already saw.
     await waitFor(() => expect(props.onVerdict).toHaveBeenCalled());
-    const [payload, sealed] = props.onVerdict.mock.calls.at(-1) as [
+    const [payload, sealed] = vi.mocked(props.onVerdict).mock.calls.at(-1) as [
       { verdict: string },
       boolean,
     ];
@@ -534,7 +536,7 @@ describe("offline (spec 0005 AC-10)", () => {
     fireEvent(window, new Event("online"));
 
     await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].body).toMatchObject({ role: "user", text: "envoyee plus tard" });
+    expect(writes[0]).toMatchObject({ body: { role: "user", text: "envoyee plus tard" } });
     await waitFor(() => expect(localStorage.getItem("checkam-offline-queue")).toBe("[]"));
   });
 });
