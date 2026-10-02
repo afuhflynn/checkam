@@ -74,7 +74,7 @@ Permit style gate: Google on top, password below, sign up with email verify, pas
    - [x] Verify wall plus reset link plus OTP (AC-3, AC-4, AC-5)
    - [x] Sessions plus caps plus helper (AC-6, AC-7, AC-9, AC-11, AC-12)
 - [x] Verify it: `/verify-release auth refresh`
-- [ ] Test it: `/test-engineer auth refresh`
+- [x] Test it: `/test-engineer auth refresh`
 Spec 0002 (`docs/specs/0001-ui-rebuild/0002-auth.md`) · code in `src/lib/auth.ts`, `src/lib/gate.ts`, `src/lib/mail/queue.ts`, `src/app/signin/`, `src/components/gate-form.tsx`, `src/components/user-button.tsx`, `src/app/api/auth/resend-verify/`
 
 ### 3. Mail plumbing (Nodemailer + Inngest) · done · GA
