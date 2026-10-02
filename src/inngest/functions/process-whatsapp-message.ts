@@ -3,7 +3,7 @@ import { db } from "../../lib/db";
 import { detectMessageLanguage } from "../../lib/i18n/detect";
 import { runRulesEngine } from "../../lib/rules/engine";
 import {
-  CAP_NOTICE,
+  capNotice,
   capStatus,
   claimCapNotice,
   countCapNoticeAttempt,
@@ -276,7 +276,7 @@ async function sendCapNotice(params: {
     );
   }
 
-  const notice = language === "fr" ? CAP_NOTICE.fr : CAP_NOTICE.en;
+  const notice = capNotice(language);
   const sent = await sendText(fromNumber, notice);
   await recordDecision({
     eventId: eventRowId,

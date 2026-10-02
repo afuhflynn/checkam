@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import type { Language } from "../../lib/i18n/dictionary";
 import { useTranslation } from "../../lib/i18n/context";
+import { absoluteUrl } from "../../lib/app-url";
 
 export interface ThreadItem {
   id: string;
@@ -349,7 +350,7 @@ export function InlineVerdict({ verdict }: { verdict: Verdict | null }) {
           className="gap-1.5 bg-white font-sans font-semibold"
           onClick={() =>
             open(
-              `https://twitter.com/intent/tweet?text=${encodeURIComponent(plain)}&url=${encodeURIComponent("https://checkam.cm")}`,
+              `https://twitter.com/intent/tweet?text=${encodeURIComponent(plain)}&url=${encodeURIComponent(absoluteUrl())}`,
             )
           }
         >

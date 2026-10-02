@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { appHost } from "../app-url";
 import { capNoticeReserve, monthStartUtc, monthlyReplyCap } from "./config";
 
 /**
@@ -14,11 +15,17 @@ import { capNoticeReserve, monthStartUtc, monthlyReplyCap } from "./config";
  * What we send when the cap is reached and the window is still open. Brand
  * voice: calm, plain, no urgency, no emoji, no dashes. Both languages ship
  * together and one is picked per sender, never both in one message.
+ *
+ * A function rather than a constant so the host can come from configuration: a
+ * preview or staging deploy must not tell a real person to visit production.
+ * See `src/lib/app-url.ts`.
  */
-export const CAP_NOTICE = {
-  en: "We have reached this month's free reply limit on CheckAm. Your message is not the problem. Write again next month, or check on checkam.cm.",
-  fr: "Nous avons atteint la limite de réponses gratuites de ce mois sur CheckAm. Votre message n'est pas en cause. Écrivez de nouveau le mois prochain, ou vérifiez sur checkam.cm.",
-} as const;
+export function capNotice(language: "fr" | "en"): string {
+  const host = appHost();
+  return language === "fr"
+    ? `Nous avons atteint la limite de réponses gratuites de ce mois sur CheckAm. Votre message n'est pas en cause. Écrivez de nouveau le mois prochain, ou vérifiez sur ${host}.`
+    : `We have reached this month's free reply limit on CheckAm. Your message is not the problem. Write again next month, or check on ${host}.`;
+}
 
 export interface CapStatus {
   month: string;

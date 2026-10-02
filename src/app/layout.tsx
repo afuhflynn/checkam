@@ -3,6 +3,7 @@ import { Fraunces, IBM_Plex_Mono, Public_Sans } from "next/font/google";
 import Script from "next/script";
 import { Providers } from "../components/providers";
 import "./globals.css";
+import { absoluteUrl } from "../lib/app-url";
 
 const display = Fraunces({
   subsets: ["latin"],
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
     title: "CheckAm - Verify before you pay (Cameroun)",
     description:
       "Vérifiez les avis de concours, faux virements Mobile Money et faux visas avant d'envoyer votre argent.",
-    url: "https://checkam.cm",
+    url: absoluteUrl(),
     siteName: "CheckAm",
     images: [
       {

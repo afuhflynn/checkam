@@ -1,3 +1,4 @@
+import { appHost } from "../app-url";
 import { type OfficialInstitution, findOfficialEntity } from "./cameroon-entities";
 import { extractHosts, isCameroonGovHost, looksCameroonian } from "./domain-trust";
 import { FREE_EMAIL_DOMAINS, evaluateEmailLegitimacy, extractEmails } from "./email-rules";
@@ -588,9 +589,13 @@ function renderAlert(params: {
           ? "Communication officielle - CheckAm"
           : "Official communication - CheckAm";
 
+  // The host comes from configuration so a preview or staging deploy does not
+  // tell a real person the message was analysed on production. appHost() never
+  // returns a localhost address, see src/lib/app-url.ts.
+  const host = appHost();
   const intro = fr
-    ? "Ce message a été analysé sur checkam.cm :"
-    : "This message was analyzed on checkam.cm:";
+    ? `Ce message a été analysé sur ${host} :`
+    : `This message was analyzed on ${host}:`;
 
   const bulletLines = params.bullets.map((b) =>
     params.format === "whatsapp" ? `${WHATSAPP_BULLET} ${b}` : `- ${stripEmojis(replaceDashes(b))}`,

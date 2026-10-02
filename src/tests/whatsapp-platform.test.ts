@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runRulesEngine } from "../lib/rules/engine";
-import { CAP_NOTICE, capStatus } from "../lib/whatsapp/cap";
+import { capNotice, capStatus } from "../lib/whatsapp/cap";
 import {
   META_FREE_SERVICE_MESSAGES_PER_MONTH,
   monthKey,
@@ -196,13 +196,30 @@ describe("spec 0015 AC-5 to AC-7: the monthly cap", () => {
 
 describe("spec 0015 AC-4: the cap notice", () => {
   it("ships both languages, clean of emoji and dashes", () => {
-    for (const text of [CAP_NOTICE.en, CAP_NOTICE.fr]) {
+    for (const text of [capNotice("en"), capNotice("fr")]) {
       expect(text.length).toBeGreaterThan(0);
       expect(text).not.toMatch(EMOJI);
-      expect(text).not.toMatch(/[\u2014\u2013]/);
+      expect(text).not.toMatch(/[—–]/);
     }
-    expect(CAP_NOTICE.en).toMatch(/[.!?]$/);
-    expect(CAP_NOTICE.fr).toMatch(/[.!?]$/);
+    expect(capNotice("en")).toMatch(/[.!?]$/);
+    expect(capNotice("fr")).toMatch(/[.!?]$/);
+  });
+
+  it("names the configured host, and never a localhost", () => {
+    // The notice is read by someone who may be worried, so it must never point
+    // them at a developer's machine.
+    for (const language of ["fr", "en"] as const) {
+      const text = capNotice(language);
+      expect(text).toContain("checkam.cm");
+      expect(text).not.toContain("localhost");
+      expect(text).not.toContain("http://");
+    }
+  });
+
+  it("follows NEXT_PUBLIC_APP_URL when it is a real address", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.checkam.cm/");
+    expect(capNotice("fr")).toContain("staging.checkam.cm");
+    expect(capNotice("fr")).not.toContain("https://staging.checkam.cm/.");
   });
 });
 

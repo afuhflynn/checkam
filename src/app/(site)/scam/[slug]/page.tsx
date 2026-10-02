@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { type DossierReport, ScamDossier } from "../../../../components/scam-dossier";
 import { db } from "../../../../lib/db";
 import { runRulesEngine } from "../../../../lib/rules/engine";
+import { absoluteUrl } from "../../../../lib/app-url";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `🚨 Scam Alert / Alerte Arnaque: ${report.title} | CheckAm`,
       description: report.description.slice(0, 160),
-      url: `https://checkam.cm/scam/${report.slug}`,
+      url: absoluteUrl(`/scam/${report.slug}`),
       siteName: "CheckAm Cameroon",
     },
   };

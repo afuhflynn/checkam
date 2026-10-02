@@ -218,7 +218,9 @@ describe("spec 0016 AC-12: the guide shows the real reply", () => {
     expect(shown).toContain("*.gov.cm");
 
     expect(whatsappReply.fr).not.toMatch(/\p{Extended_Pictographic}/u);
-    expect(whatsappReply.fr).not.toMatch(/[-–]/);
+    // No em or en dash. An ordinary hyphen is fine and expected: the header and
+    // the configured host both carry one.
+    expect(whatsappReply.fr).not.toMatch(/[—–]/);
   });
 
   it("shows the chat button as the page's primary action", () => {

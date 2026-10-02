@@ -1,4 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
+import { appUrl } from "../app-url";
 
 // OpenRouter AI Gateway client configured with Vercel AI SDK v7.
 //
@@ -10,7 +11,7 @@ export const openrouter = createOpenAI({
   baseURL: process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1",
   apiKey: process.env.OPENROUTER_API_KEY || "sk-or-placeholder",
   headers: {
-    "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://checkam.cm",
+    "HTTP-Referer": appUrl(),
     "X-Title": "CheckAm Cameroon",
   },
 });

@@ -29,8 +29,8 @@ This repo is a working Next.js application with a live product surface, not only
 ## Quick start
 
 ```bash
-docker compose up -d
 pnpm install
+pnpm db:up `or` docker compose up -d
 pnpm db:generate
 pnpm db:push
 pnpm db:seed
