@@ -1,4 +1,5 @@
 import { type DemoReplies, WhatsAppGuideBody } from "../../../components/whatsapp/guide-body";
+import { type BenignKind, classifyBenignChat, renderBenignReply } from "../../../lib/chat/benign";
 import { runRulesEngine } from "../../../lib/rules/engine";
 
 /**
@@ -15,6 +16,10 @@ const SCENARIOS = {
     label: "Orange Money",
     text: "Vous avez reçu 75.000 FCFA de NKODO PIERRE (698001122). Erreur de transfert, veuillez renvoyer.",
   },
+  hello: {
+    label: "Bonjour",
+    text: "Hello, how does it work?",
+  },
 } as const;
 
 /**
@@ -30,6 +35,18 @@ const SCENARIOS = {
 function renderReplies(): DemoReplies {
   return Object.fromEntries(
     Object.entries(SCENARIOS).map(([key, scenario]) => {
+      // Calm truth (spec 0019): a benign demo renders the same fixed copy the
+      // worker sends, never a verdict, so the guide matches the bot exactly.
+      const benign = classifyBenignChat(scenario.text) as BenignKind;
+      if (benign !== "check") {
+        return [
+          key,
+          {
+            fr: renderBenignReply(benign, "fr"),
+            en: renderBenignReply(benign, "en"),
+          },
+        ];
+      }
       const { whatsappReply } = runRulesEngine({ text: scenario.text });
       return [key, { fr: whatsappReply.fr, en: whatsappReply.en }];
     }),

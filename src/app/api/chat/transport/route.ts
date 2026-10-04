@@ -8,6 +8,7 @@ import type { ExtractedFacts } from "../../../../lib/ai/extract-facts";
 import { hashContent } from "../../../../lib/ai/extract-facts";
 import { authLimiter } from "../../../../lib/arcjet";
 import { clientIp, hashIp, resolveActor } from "../../../../lib/chat/actor";
+import { classifyBenignChat, renderBenignReply } from "../../../../lib/chat/benign";
 import { guestTriesUsed } from "../../../../lib/chat/counter";
 import { doualaDayStart } from "../../../../lib/chat/day";
 import { refuseUnverifiedWrite, sessionScope } from "../../../../lib/chat/scope";
@@ -287,6 +288,50 @@ export async function POST(req: NextRequest) {
       const partId = "answer-0";
       writer.write({ type: "text-start", id: partId });
       try {
+        // Calm benign gate (spec 0019): small talk and product questions skip
+        // extraction, tools, and rules entirely and get fixed copy with no
+        // verdict part, so no verdict card and no share row render. The
+        // language ask above still runs first per spec 0018.
+        const benignKind = classifyBenignChat(text);
+        if (benignKind !== "check") {
+          const calm = renderBenignReply(benignKind, locale);
+          console.log(`[check.kind] benign=${benignKind} lang=${locale} session=${sessionId}`);
+          for (const slice of calm.match(/.{1,24}/gsu) ?? [calm]) {
+            writer.write({ type: "text-delta", id: partId, delta: slice });
+          }
+          writer.write({ type: "text-end", id: partId });
+          await db.$transaction(async (tx) => {
+            const last = await tx.chatMessage.findFirst({
+              where: { sessionId },
+              orderBy: { seq: "desc" },
+              select: { seq: true },
+            });
+            await tx.chatMessage.create({
+              data: {
+                sessionId,
+                seq: (last?.seq ?? -1) + 1,
+                role: "assistant",
+                text: calm,
+                attachments: [],
+                toolCalls: [],
+                ipHash: hashIp(ip),
+              },
+            });
+            await tx.chatSession.update({
+              where: { id: sessionId },
+              data: { updatedAt: new Date() },
+            });
+          });
+          if (session.title === "New check") {
+            const fallback =
+              `${new Date().toLocaleDateString(uiLocale === "fr" ? "fr-CM" : "en-CM")} · ${text.split(/\s+/).slice(0, 6).join(" ")}`.slice(
+                0,
+                60,
+              );
+            await db.chatSession.update({ where: { id: sessionId }, data: { title: fallback } });
+          }
+          return;
+        }
         const fileHash = hashContent(text);
         // Extraction cache (repo rule): a repeat text reuses the stored facts
         // instead of re-running the extractor, but still gets fresh research

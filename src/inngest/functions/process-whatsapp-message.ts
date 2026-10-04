@@ -1,4 +1,5 @@
 import { extractFactsFromTextOrImage } from "../../lib/ai/extract-facts";
+import { classifyBenignChat, renderBenignReply } from "../../lib/chat/benign";
 import { db } from "../../lib/db";
 import { detectMessageLanguageWithSignal } from "../../lib/i18n/detect";
 import { translations } from "../../lib/i18n/dictionary";
@@ -121,11 +122,26 @@ export const processWhatsAppMessage = inngest.createFunction(
       const heuristic = validThreadLanguage(row?.threadLanguage);
       const replyLanguage = fixed ?? heuristic ?? "fr";
       const stored = markerAlive && verdict !== null ? { verdict, language: replyLanguage } : null;
+      // Calm benign gate (spec 0019): small talk and product questions skip
+      // extraction and rules and get fixed copy with no verdict. Small talk
+      // with a live full marker keeps the 0017 short reminder path, so an
+      // established thread never loses its context.
+      const benignKind = messageType === "text" ? classifyBenignChat(textBody) : "check";
+      const benign =
+        benignKind === "product"
+          ? { kind: "product" as const }
+          : benignKind === "smalltalk" && stored === null
+            ? { kind: "smalltalk" as const }
+            : null;
+      if (benign) {
+        return { reaction: null, benign, stored, fixed, askSentAt: row?.askSentAt ?? null, heuristic };
+      }
       if (messageType !== "text" || isNewClaimText(textBody) || stored === null) {
-        return { reaction: null, stored, fixed, askSentAt: row?.askSentAt ?? null, heuristic };
+        return { reaction: null, benign: null, stored, fixed, askSentAt: row?.askSentAt ?? null, heuristic };
       }
       return {
         reaction: { verdict: stored.verdict, language: stored.language },
+        benign: null,
         stored,
         fixed,
         askSentAt: row?.askSentAt ?? null,
@@ -134,8 +150,8 @@ export const processWhatsAppMessage = inngest.createFunction(
     });
 
     // Step 2: Extract text or media, skipped for a pure reaction which has no
-    // new claim to extract from.
-    const extractedFacts = toneGate.reaction
+    // new claim to extract from, and for a benign turn which needs no facts.
+    const extractedFacts = toneGate.reaction || toneGate.benign
       ? null
       : await step.run("extract-facts-from-message", async () => {
           if (messageType === "text" && textBody) {
@@ -159,8 +175,9 @@ export const processWhatsAppMessage = inngest.createFunction(
         });
 
     // Step 3: Run Deterministic Rules Engine, skipped for a pure reaction
-    // which reuses the stored verdict instead of judging again.
-    const verification = toneGate.reaction
+    // which reuses the stored verdict instead of judging again, and for a
+    // benign turn which carries no verdict at all.
+    const verification = toneGate.reaction || toneGate.benign
       ? null
       : await step.run("evaluate-rules", async () => {
           if (!extractedFacts) throw new Error("extracted facts are missing for a full check");
@@ -202,7 +219,29 @@ export const processWhatsAppMessage = inngest.createFunction(
       let replyBody: string;
       let isFull = false;
       let fullVerdict: VerdictStatus | null = null;
-      if (toneGate.reaction) {
+      if (toneGate.benign) {
+        // Calm reply (spec 0019): fixed copy with no verdict, never setting
+        // the full marker. A signal free first turn still earns the one time
+        // language ask per spec 0018 before any calm reply.
+        const detected = detectMessageLanguageWithSignal(textBody ?? "");
+        if (!toneGate.fixed && !toneGate.heuristic && !toneGate.askSentAt) {
+          language = detected.language;
+          replyBody = translations.en.fixLanguageAsk;
+          await db.whatsAppThread.update({
+            where: { threadKey: fromNumber },
+            data: { askSentAt: new Date() },
+          });
+        } else {
+          language =
+            toneGate.fixed ??
+            toneGate.heuristic ??
+            (detected.hasSignal ? detected.language : "en");
+          replyBody = renderBenignReply(toneGate.benign.kind, language);
+        }
+        console.log(
+          `[check.kind] benign=${toneGate.benign.kind} lang=${language} from=${fromNumber}`,
+        );
+      } else if (toneGate.reaction) {
         language = toneGate.reaction.language;
         replyBody = renderWhatsAppFollowUp({
           language,

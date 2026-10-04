@@ -192,6 +192,10 @@ describe("spec 0016 AC-12: the guide shows the real reply", () => {
       label: "Orange Money",
       text: "Vous avez reçu 75.000 FCFA de NKODO PIERRE (698001122). Erreur de transfert, veuillez renvoyer.",
     },
+    hello: {
+      label: "Bonjour",
+      text: "Hello, how does it work?",
+    },
   };
 
   it("renders whatsappReply for the demo input, clean of emoji and dashes", () => {
@@ -202,6 +206,7 @@ describe("spec 0016 AC-12: the guide shows the real reply", () => {
         replies={{
           minesec: { fr: whatsappReply.fr, en: whatsappReply.en },
           momo: { fr: whatsappReply.fr, en: whatsappReply.en },
+          hello: { fr: whatsappReply.fr, en: whatsappReply.en },
         }}
       />,
       "fr",
@@ -229,7 +234,7 @@ describe("spec 0016 AC-12: the guide shows the real reply", () => {
     renderWithLanguage(
       <WhatsAppGuideBody
         scenarios={scenarios}
-        replies={{ minesec: whatsappReply, momo: whatsappReply }}
+        replies={{ minesec: whatsappReply, momo: whatsappReply, hello: whatsappReply }}
       />,
       "fr",
     );

@@ -45,6 +45,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 32 | WhatsApp warm chat tone | Path 7: WhatsApp | in-progress |
 | 33 | WhatsApp human voice | Path 7: WhatsApp | in-progress |
 | 34 | Language respect across chat and WhatsApp | Path 7: WhatsApp | in-progress |
+| 35 | Calm check for benign chat | Path 7: WhatsApp | in-progress |
 
 ## Path 1: enter
 
@@ -393,6 +394,21 @@ You may think of detection as guessing English or French from your words, and pr
 - [ ] Review it (fresh model): `/peer-review language respect across chat and WhatsApp`
 - [ ] Document it: `/tech-writer language respect across chat and WhatsApp`
 Spec 0018 (`../specs/0001-ui-rebuild/0018-language-respect-chat-whatsapp/index.md`) · code in `src/lib/i18n/preference.ts`, `src/lib/i18n/detect.ts`, `src/lib/i18n/dictionary.ts`, `src/app/api/chat/transport/route.ts`, `src/inngest/functions/process-whatsapp-message.ts`, `src/lib/whatsapp/event.ts`, `src/lib/whatsapp/thread.ts`, `prisma/schema.prisma`
+
+### 35. Calm check for benign chat · in-progress
+Small talk, greetings and product questions get a warm helpful reply with no verdict and no alarm, on web and WhatsApp alike. True checks keep the full verdict shape.
+**Done when:** a hello or How does it work gets a friendly answer with no CAUTION and no share block, while a true claim still gets evidence and a verdict from rules.
+- [x] Design it (spec): `/solution-architect calm check for benign chat`
+- [x] Build it: `/feature-build calm check for benign chat`
+    - [x] Shared helper plus copy deck in EN and FR (`AC-1`, `AC-2`, `AC-3`, `AC-4`)
+    - [x] Web chat wiring with calm reply and no share row (`AC-1`, `AC-2`, `AC-6`, `AC-7`)
+    - [x] WhatsApp worker wiring with full verdict for checks (`AC-3`, `AC-4`, `AC-5`, `AC-6`, `AC-7`)
+    - [x] Guide truth plus benign or check counts (`AC-6`, `AC-8`)
+- [ ] Verify it: `/verify-release calm check for benign chat`
+- [ ] Test it: `/test-engineer calm check for benign chat`
+- [ ] Review it (fresh model): `/peer-review calm check for benign chat`
+- [ ] Document it: `/tech-writer calm check for benign chat`
+Spec 0019 (`../specs/0001-ui-rebuild/0019-calm-check-benign-chat/index.md`) · code in `src/lib/chat/benign.ts`, `src/app/api/chat/transport/route.ts`, `src/inngest/functions/process-whatsapp-message.ts`, `src/app/(site)/whatsapp/page.tsx`
 
 ## Deferred
 

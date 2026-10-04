@@ -6,8 +6,8 @@ import { useTranslation } from "../../lib/i18n/context";
 import { CLICK_TO_CHAT_ANCHOR_ID } from "../../lib/whatsapp/click-to-chat";
 import { WhatsAppChatButton } from "./chat-button";
 
-/** The two scenarios the guide demonstrates, keyed by the switcher. */
-export type DemoScenario = "minesec" | "momo";
+/** The three scenarios the guide demonstrates, keyed by the switcher. */
+export type DemoScenario = "minesec" | "momo" | "hello";
 
 /**
  * One rendered reply per scenario per language, produced by the rules engine on
