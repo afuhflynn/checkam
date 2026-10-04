@@ -1,6 +1,8 @@
 import { extractFactsFromTextOrImage } from "../../lib/ai/extract-facts";
 import { db } from "../../lib/db";
-import { detectMessageLanguage } from "../../lib/i18n/detect";
+import { detectMessageLanguageWithSignal } from "../../lib/i18n/detect";
+import { translations } from "../../lib/i18n/dictionary";
+import { parseAskAnswer, resolveReplyLanguage } from "../../lib/i18n/preference";
 import {
   type VerdictStatus,
   renderWhatsAppEmptyAsk,
@@ -32,9 +34,13 @@ import { isNewClaimText } from "../../lib/whatsapp/tone";
 import { inngest } from "../client";
 
 type Outcome =
-  | { kind: "sent"; body: string; isNotice: boolean }
+  | { kind: "sent"; body: string; isNotice: boolean; language: "en" | "fr" }
   | { kind: "refused"; reason: string }
   | { kind: "failed"; reason: string };
+
+function validThreadLanguage(value: unknown): "en" | "fr" | null {
+  return value === "en" || value === "fr" ? value : null;
+}
 
 export const processWhatsAppMessage = inngest.createFunction(
   {
@@ -82,10 +88,11 @@ export const processWhatsAppMessage = inngest.createFunction(
     }
     const eventRowId = eventRow.id;
 
-    // Warm chat tone (spec 0017): the tone gate runs before any model call.
-    // A pure reaction in a thread that already got its full verdict skips
-    // extraction and the rules entirely and reuses the stored verdict. Every
-    // other turn, including any non text message, takes the full path.
+    // Warm chat tone (spec 0017) plus language respect (spec 0018): the tone
+    // gate runs before any model call. A pure reaction in a thread that
+    // already got its full verdict skips extraction and the rules entirely
+    // and reuses the stored verdict. The fixed preferred triple wins over the
+    // heuristic thread language on every path below.
     const toneGate = await step.run("check-tone-gate", async () => {
       const row = await db.whatsAppThread.findUnique({
         where: { threadKey: fromNumber },
@@ -94,6 +101,9 @@ export const processWhatsAppMessage = inngest.createFunction(
           windowFirstReplyAt: true,
           lastVerdict: true,
           threadLanguage: true,
+          preferredLanguage: true,
+          preferredLanguageSource: true,
+          askSentAt: true,
         },
       });
       const verdict =
@@ -107,12 +117,20 @@ export const processWhatsAppMessage = inngest.createFunction(
         row?.windowFirstReplyAt !== null &&
         row !== null &&
         row.windowExpiresAt.getTime() > Date.now();
-      const storedLanguage: "en" | "fr" = row?.threadLanguage === "en" ? "en" : "fr";
-      const stored = markerAlive && verdict !== null ? { verdict, language: storedLanguage } : null;
+      const fixed = validThreadLanguage(row?.preferredLanguage);
+      const heuristic = validThreadLanguage(row?.threadLanguage);
+      const replyLanguage = fixed ?? heuristic ?? "fr";
+      const stored = markerAlive && verdict !== null ? { verdict, language: replyLanguage } : null;
       if (messageType !== "text" || isNewClaimText(textBody) || stored === null) {
-        return { reaction: null, stored };
+        return { reaction: null, stored, fixed, askSentAt: row?.askSentAt ?? null, heuristic };
       }
-      return { reaction: { verdict: stored.verdict, language: stored.language }, stored };
+      return {
+        reaction: { verdict: stored.verdict, language: stored.language },
+        stored,
+        fixed,
+        askSentAt: row?.askSentAt ?? null,
+        heuristic,
+      };
     });
 
     // Step 2: Extract text or media, skipped for a pure reaction which has no
@@ -173,11 +191,13 @@ export const processWhatsAppMessage = inngest.createFunction(
     const outcome = await step.run("decide-and-send", async (): Promise<Outcome> => {
       const now = new Date();
 
-      // Warm chat tone (spec 0017): pick the reply shape before the window
-      // and cap checks, so those paths behave the same for every shape.
-      // A reaction reuses the stored verdict with no fresh judging. An
-      // unreadable new check gets a warm ask with no verdict. Everything else
-      // gets the full verdict with its warm opener and closer.
+      // Warm chat tone (spec 0017) plus language respect (spec 0018): pick the
+      // reply shape before the window and cap checks, so those paths behave
+      // the same for every shape. A reaction reuses the stored verdict with
+      // no fresh judging. Fixed choice wins over detection on every path, a
+      // signal free turn earns the one time ask, and an unreadable new check
+      // gets a warm ask with no verdict. Everything else gets the full
+      // verdict. Asks never set the full marker below.
       let language: "en" | "fr";
       let replyBody: string;
       let isFull = false;
@@ -192,14 +212,56 @@ export const processWhatsAppMessage = inngest.createFunction(
         throw new Error("fresh verification is missing for a full check");
       } else {
         const summary = extractedFacts.summaryClaim?.trim() ?? "";
-        if (messageType === "text" || textBody?.trim()) {
-          language = detectMessageLanguage(textBody);
-        } else {
-          language = summary ? detectMessageLanguage(summary) : (toneGate.stored?.language ?? "fr");
-        }
         const readable = Boolean(textBody?.trim()) || summary.length > 0;
+        let fixed = toneGate.fixed;
+        if (!fixed && toneGate.askSentAt && textBody) {
+          const answered = parseAskAnswer(textBody);
+          if (answered) {
+            fixed = answered;
+            await db.whatsAppThread.update({
+              where: { threadKey: fromNumber },
+              data: {
+                preferredLanguage: answered,
+                preferredLanguageSource: "ask",
+                preferredLanguageUpdatedAt: new Date(),
+              },
+            });
+          }
+        }
+        const rawText = textBody?.trim() ? (textBody as string) : summary;
+        const detected = rawText
+          ? detectMessageLanguageWithSignal(rawText)
+          : {
+              language: (toneGate.heuristic ?? "fr") as "en" | "fr",
+              hasSignal: toneGate.heuristic !== null,
+            };
+        const resolution = resolveReplyLanguage({
+          fixed,
+          text: textBody ?? "",
+          shortTurn: messageType === "text" && !isNewClaimText(textBody),
+          storedHeuristic: toneGate.heuristic,
+          askSent: toneGate.askSentAt !== null,
+          detected,
+        });
+        if (resolution.fixedByPhrase) {
+          await db.whatsAppThread.update({
+            where: { threadKey: fromNumber },
+            data: {
+              preferredLanguage: resolution.fixedByPhrase,
+              preferredLanguageSource: "phrase",
+              preferredLanguageUpdatedAt: new Date(),
+            },
+          });
+        }
+        language = resolution.language;
         if (!readable) {
           replyBody = renderWhatsAppEmptyAsk(language);
+        } else if (resolution.shouldAsk) {
+          replyBody = translations.en.fixLanguageAsk;
+          await db.whatsAppThread.update({
+            where: { threadKey: fromNumber },
+            data: { askSentAt: new Date() },
+          });
         } else {
           replyBody =
             language === "fr" ? verification.whatsappReply.fr : verification.whatsappReply.en;
@@ -264,6 +326,7 @@ export const processWhatsAppMessage = inngest.createFunction(
           kind: "sent",
           body: replyBody,
           isNotice: prior.replyDecisionReason === "CAP_NOTICE_SENT",
+          language,
         };
       }
 
@@ -322,7 +385,7 @@ export const processWhatsAppMessage = inngest.createFunction(
         `[WhatsApp] reply to ${fromNumber} in ${language}, month ${month} at ${counted.countThisMonth}/${capStatus(month).cap}, sent=${sent.ok}`,
       );
       return sent.ok
-        ? { kind: "sent", body: replyBody, isNotice: false }
+        ? { kind: "sent", body: replyBody, isNotice: false, language }
         : { kind: "failed", reason: `META_REFUSED_${sent.errorCode ?? sent.status}` };
     });
 
@@ -333,6 +396,7 @@ export const processWhatsAppMessage = inngest.createFunction(
         await markEventCompleted({
           eventId: eventRowId,
           replyText: outcome.isNotice ? null : outcome.body,
+          replyLanguage: outcome.language,
         });
       });
     }
@@ -400,6 +464,6 @@ async function sendCapNotice(params: {
     `[WhatsApp] cap notice to ${fromNumber} in ${language}, month ${month} at ${noticeCount.countThisMonth}/${capStatus(month).cap}, sent=${sent.ok}`,
   );
   return sent.ok
-    ? { kind: "sent", body: notice, isNotice: true }
+    ? { kind: "sent", body: notice, isNotice: true, language }
     : { kind: "failed", reason: `CAP_NOTICE_REFUSED_${sent.errorCode ?? sent.status}` };
 }

@@ -154,7 +154,8 @@ const {
 } = await import("../lib/whatsapp/cap");
 const { isAlreadySent, markEventCompleted, markThreadOutbound, recordDecision } = await import(
   "../lib/whatsapp/event"
-);const { isUniqueViolation } = await import("../lib/whatsapp/thread");
+);
+const { isUniqueViolation } = await import("../lib/whatsapp/thread");
 
 const PID = "phone-1";
 const MONTH = "2026-10";
@@ -356,11 +357,12 @@ describe("spec 0015 AC-3 and AC-10: the decision is written down", () => {
   it("marks an event complete only when a send was accepted", async () => {
     eventRows.set("e5", { processedStatus: "PENDING", replyText: null });
 
-    await markEventCompleted({ eventId: "e5", replyText: "Alerte arnaque" });
+    await markEventCompleted({ eventId: "e5", replyText: "Alerte arnaque", replyLanguage: "fr" });
 
     expect(eventRows.get("e5")).toEqual({
       processedStatus: "COMPLETED",
       replyText: "Alerte arnaque",
+      replyLanguage: "fr",
     });
   });
 

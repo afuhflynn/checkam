@@ -89,4 +89,14 @@ describe("Translation dictionary parity", () => {
     expect("chatSave" in en).toBe(false);
     expect("chatSave" in fr).toBe(false);
   });
+
+  it("covers: AC-1 the language ask is one shared bilingual bubble", () => {
+    // Unlike every other key, the ask serves both crowds at once, so both
+    // sides must carry the identical string. A distinct French version would
+    // fork the ask by interface language and defeat the single bubble.
+    expect(en.fixLanguageAsk).toBeTruthy();
+    expect(fr.fixLanguageAsk).toBe(en.fixLanguageAsk);
+    expect(en.fixLanguageAsk).toContain("EN");
+    expect(en.fixLanguageAsk).toContain("FR");
+  });
 });

@@ -88,9 +88,15 @@ export async function markThreadFullReply(params: {
 export async function markEventCompleted(params: {
   eventId: string;
   replyText: string | null;
+  // Language respect (spec 0018): the reply language actually sent.
+  replyLanguage?: "en" | "fr" | null;
 }): Promise<void> {
   await db.whatsAppWebhookEvent.update({
     where: { id: params.eventId },
-    data: { processedStatus: "COMPLETED", replyText: params.replyText },
+    data: {
+      processedStatus: "COMPLETED",
+      replyText: params.replyText,
+      replyLanguage: params.replyLanguage ?? null,
+    },
   });
 }

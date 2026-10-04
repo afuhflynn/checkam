@@ -44,6 +44,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 31 | WhatsApp chat button | Path 7: WhatsApp | in-progress |
 | 32 | WhatsApp warm chat tone | Path 7: WhatsApp | in-progress |
 | 33 | WhatsApp human voice | Path 7: WhatsApp | in-progress |
+| 34 | Language respect across chat and WhatsApp | Path 7: WhatsApp | in-progress |
 
 ## Path 1: enter
 
@@ -376,6 +377,22 @@ Row 32 made the chat warm but the reply still reads like a script: a branded tit
 - [ ] Review it (fresh model): `/peer-review whatsapp human voice`
 - [ ] Document it: `/tech-writer whatsapp human voice`
 Spec 0017, shared with row 32 (`../specs/0001-ui-rebuild/0017-whatsapp-warm-chat-tone/index.md`) · code in `src/lib/rules/engine.ts`, `src/lib/whatsapp/tone.ts`, `src/tests/whatsapp-tone.test.ts`, `src/tests/whatsapp-platform.test.ts`, `src/tests/whatsapp-chat-button.test.tsx`
+
+### 34. Language respect across chat and WhatsApp · in-progress
+Reply in the language you used, remember a fixed choice when you set one, and use the same rule on web chat and WhatsApp.
+**Done when:** a hi gets an English reply and a bonjour gets a French reply, a fixed choice stays fixed even when you switch input language, and both chat and WhatsApp follow the same rule.
+You may think of detection as guessing English or French from your words, and preference as your saved choice that stays until you change it.
+- [x] Design it (spec): `/solution-architect language respect across chat and WhatsApp`
+- [x] Build it: `/feature-build language respect across chat and WhatsApp`
+    - [x] Guesser plus ask gate on web (AC-1, AC-5, AC-11)
+    - [x] Triples migration plus settings fan out (AC-4, AC-6, AC-7)
+    - [x] Worker parity plus silent window plus recorded language (AC-2, AC-3, AC-6, AC-9)
+    - [x] Prompt slot plus mixed evidence plus model down fallback (AC-8, AC-10, AC-11)
+- [ ] Verify it: `/verify-release language respect across chat and WhatsApp`
+- [x] Test it: `/test-engineer language respect across chat and WhatsApp`
+- [ ] Review it (fresh model): `/peer-review language respect across chat and WhatsApp`
+- [ ] Document it: `/tech-writer language respect across chat and WhatsApp`
+Spec 0018 (`../specs/0001-ui-rebuild/0018-language-respect-chat-whatsapp/index.md`) · code in `src/lib/i18n/preference.ts`, `src/lib/i18n/detect.ts`, `src/lib/i18n/dictionary.ts`, `src/app/api/chat/transport/route.ts`, `src/inngest/functions/process-whatsapp-message.ts`, `src/lib/whatsapp/event.ts`, `src/lib/whatsapp/thread.ts`, `prisma/schema.prisma`
 
 ## Deferred
 

@@ -49,6 +49,11 @@ model User {
   emailVerified    Boolean      @default(false)
   image            String?
   role             Role         @default(USER)
+  // Language respect (spec 0018). All nullable so current rows read as no
+  // fixed choice with no backfill: empty means detect or ask per turn.
+  preferredLanguage          String?
+  preferredLanguageSource    String?
+  preferredLanguageUpdatedAt DateTime?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   sessions         Session[]
@@ -102,6 +107,8 @@ model ScamVerification {
   // saw live, instead of degrading to a bare text fallback.
   dossier        Json?
   whatsappWarning String?
+  // Language respect (spec 0018): the reply language actually sent.
+  replyLanguage    String?
   clientIpHash    String?
   createdAt       DateTime      @default(now())
   chatMessages    ChatMessage[]
@@ -203,7 +210,13 @@ model WhatsAppThread {
   // with no backfill: empty marker means the next reply is full.
   windowFirstReplyAt DateTime? // when the full verdict first went out in the current window
   lastVerdict        String? // the verdict sent in that full reply
-  threadLanguage     String? // the language sent, en or fr
+  threadLanguage     String? // heuristic language for short notes, en or fr
+  // Language respect (spec 0018): separate fixed triple plus ask stamp.
+  // Guessing stays in threadLanguage above; a saved pick lives below and wins.
+  preferredLanguage          String?
+  preferredLanguageSource    String?
+  preferredLanguageUpdatedAt DateTime?
+  askSentAt                  DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -233,6 +246,8 @@ model WhatsAppWebhookEvent {
   rawPayload      Json
   processedStatus String   @default("PENDING") // PENDING, COMPLETED, FAILED
   replyText       String?
+  // Language respect (spec 0018): the reply language actually sent.
+  replyLanguage   String?
   // Nullable so the column can be added to a populated table in one step; it is
   // written in the same transaction that opens the thread (spec 0015).
   threadKey                 String?
@@ -274,6 +289,12 @@ model ChatSession {
   title      String        @default("New check")
   guestKey   String?
   pinned     Boolean       @default(false)
+  // Language respect (spec 0018): web thread home and guest home. Signed in
+  // sessions copy the user triple at creation; settings fan out writes here.
+  replyLanguage          String?
+  replyLanguageSource    String?
+  replyLanguageUpdatedAt DateTime?
+  askSentAt              DateTime?
   deletedAt  DateTime?
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt

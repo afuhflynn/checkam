@@ -26,6 +26,10 @@ type ThreadRow = {
   windowFirstReplyAt: Date | null;
   lastVerdict: string | null;
   threadLanguage: string | null;
+  preferredLanguage?: string | null;
+  preferredLanguageSource?: string | null;
+  preferredLanguageUpdatedAt?: Date | null;
+  askSentAt?: Date | null;
 };
 
 type EventRow = { id: string; createdAt: Date; inboundAt: Date | null; threadKey: string | null };
@@ -204,5 +208,55 @@ describe("spec 0017: marker survives the Inngest step boundary", () => {
     expect(reopened.windowFirstReplyAt).toBeInstanceOf(Date);
     expect(reopened.lastVerdict).toBe("CAUTION");
     expect(reopened.threadLanguage).toBe("en");
+  });
+});
+
+describe("spec 0018: a fresh window keeps the fixed triple plus the ask stamp", () => {
+  it("covers: AC-2 clears the tone marker but preserves the saved pick", async () => {
+    seedEvent("e1", new Date("2026-10-02T10:00:00.000Z"));
+    await openThread({ eventId: "e1", fromNumber: SENDER });
+    threadRows.set(SENDER, {
+      ...threadRows.get(SENDER)!,
+      windowFirstReplyAt: new Date("2026-10-02T10:01:00.000Z"),
+      lastVerdict: "HIGH_RISK",
+      threadLanguage: "fr",
+      preferredLanguage: "en",
+      preferredLanguageSource: "phrase",
+      preferredLanguageUpdatedAt: new Date("2026-10-02T10:01:00.000Z"),
+      askSentAt: new Date("2026-10-02T09:00:00.000Z"),
+    });
+    seedEvent("e2", new Date("2026-10-04T10:00:01.000Z"));
+
+    const opened = await openThread({ eventId: "e2", fromNumber: SENDER });
+
+    expect(opened.isFreshWindow).toBe(true);
+    expect(opened.windowFirstReplyAt).toBeNull();
+    expect(opened.lastVerdict).toBeNull();
+    const row = threadRows.get(SENDER);
+    expect(row?.preferredLanguage).toBe("en");
+    expect(row?.preferredLanguageSource).toBe("phrase");
+    expect(row?.askSentAt).toBeInstanceOf(Date);
+  });
+
+  it("covers: AC-2 an inbound extending a live window keeps marker and pick", async () => {
+    seedEvent("e1", new Date("2026-10-02T10:00:00.000Z"));
+    await openThread({ eventId: "e1", fromNumber: SENDER });
+    threadRows.set(SENDER, {
+      ...threadRows.get(SENDER)!,
+      windowFirstReplyAt: new Date("2026-10-02T10:01:00.000Z"),
+      lastVerdict: "CAUTION",
+      threadLanguage: "fr",
+      preferredLanguage: "en",
+      preferredLanguageSource: "ask",
+      askSentAt: new Date("2026-10-02T09:30:00.000Z"),
+    });
+    seedEvent("e2", new Date("2026-10-02T12:00:00.000Z"));
+
+    const opened = await openThread({ eventId: "e2", fromNumber: SENDER });
+
+    expect(opened.isFreshWindow).toBe(false);
+    expect(opened.lastVerdict).toBe("CAUTION");
+    expect(threadRows.get(SENDER)?.preferredLanguage).toBe("en");
+    expect(threadRows.get(SENDER)?.askSentAt).toBeInstanceOf(Date);
   });
 });

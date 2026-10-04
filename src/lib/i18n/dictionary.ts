@@ -473,6 +473,8 @@ export const translations = {
     chatShareX: "X",
     chatShareCopy: "Copy",
     chatShareCopied: "Copied",
+    fixLanguageAsk:
+      "Hello / Bonjour! Should I reply in English or en français? Answer EN or FR and I will stick to it.",
     // Message actions (spec 0014)
     chatCopyMessage: "Copy this message",
     chatCopiedMessage: "Copied",
@@ -995,6 +997,8 @@ export const translations = {
     chatShareX: "X",
     chatShareCopy: "Copier",
     chatShareCopied: "Copié",
+    fixLanguageAsk:
+      "Hello / Bonjour! Should I reply in English or en français? Answer EN or FR and I will stick to it.",
     // Actions sur les messages (spec 0014)
     chatCopyMessage: "Copier ce message",
     chatCopiedMessage: "Copié",

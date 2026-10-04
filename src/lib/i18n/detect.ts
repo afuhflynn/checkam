@@ -41,6 +41,10 @@ const FRENCH_WORDS = new Set([
   "transfert",
   "erreur",
   "silvousplait",
+  // Short greetings (spec 0018): these carry real signal for tiny turns.
+  "bonjour",
+  "salut",
+  "bonsoir",
 ]);
 
 const ENGLISH_WORDS = new Set([
@@ -64,6 +68,10 @@ const ENGLISH_WORDS = new Set([
   "congratulations",
   "winner",
   "urgent",
+  // Short greetings (spec 0018): tiny turns like hi now read as English.
+  "hi",
+  "hey",
+  "morning",
 ]);
 
 /**
@@ -71,13 +79,23 @@ const ENGLISH_WORDS = new Set([
  * English so the bot can reply in the sender's language. Defaults to French
  * (majority language in Cameroon) when there is no usable signal.
  */
-export function detectMessageLanguage(
-  text: string | undefined | null,
-): Language {
-  if (!text) return "fr";
+export function detectMessageLanguage(text: string | undefined | null): Language {
+  return detectMessageLanguageWithSignal(text).language;
+}
+
+/**
+ * Language respect (spec 0018): same guess as above, plus a signal flag that
+ * tells signal free turns apart from detected ones. Callers use the flag to
+ * decide between answering and asking once, instead of silently defaulting.
+ */
+export function detectMessageLanguageWithSignal(text: string | undefined | null): {
+  language: Language;
+  hasSignal: boolean;
+} {
+  if (!text) return { language: "fr", hasSignal: false };
   const lower = text.toLowerCase();
   // French diacritics are a near-certain signal
-  if (/[àâäçéèêëîïôöùûüÿœæ]/.test(lower)) return "fr";
+  if (/[àâäçéèêëîïôöùûüÿœæ]/.test(lower)) return { language: "fr", hasSignal: true };
   const words = lower.match(/[a-z]+/g) ?? [];
   let fr = 0;
   let en = 0;
@@ -85,6 +103,6 @@ export function detectMessageLanguage(
     if (FRENCH_WORDS.has(w)) fr += 1;
     if (ENGLISH_WORDS.has(w)) en += 1;
   }
-  if (fr === 0 && en === 0) return "fr";
-  return fr >= en ? "fr" : "en";
+  if (fr === 0 && en === 0) return { language: "fr", hasSignal: false };
+  return { language: fr >= en ? "fr" : "en", hasSignal: true };
 }

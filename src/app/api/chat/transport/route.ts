@@ -1,20 +1,24 @@
-import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from "ai";
-import type { VerdictPayload } from "../../../../lib/chat/verdict-payload";
+import { type UIMessage, createUIMessageStream, createUIMessageStreamResponse } from "ai";
+import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { draftTitle, runAgentTurn } from "../../../../lib/agent/runner";
-import type { ExtractedFacts } from "../../../../lib/ai/extract-facts";
 import { withTimeout } from "../../../../lib/agent/tools";
-import { authLimiter } from "../../../../lib/arcjet";
+import type { ExtractedFacts } from "../../../../lib/ai/extract-facts";
 import { hashContent } from "../../../../lib/ai/extract-facts";
-import { detectMessageLanguage } from "../../../../lib/i18n/detect";
+import { authLimiter } from "../../../../lib/arcjet";
 import { clientIp, hashIp, resolveActor } from "../../../../lib/chat/actor";
-import { doualaDayStart } from "../../../../lib/chat/day";
 import { guestTriesUsed } from "../../../../lib/chat/counter";
-import { sessionScope, refuseUnverifiedWrite } from "../../../../lib/chat/scope";
-import { db } from "../../../../lib/db";
-import { runRulesEngine } from "../../../../lib/rules/engine";
+import { doualaDayStart } from "../../../../lib/chat/day";
+import { refuseUnverifiedWrite, sessionScope } from "../../../../lib/chat/scope";
+import type { VerdictPayload } from "../../../../lib/chat/verdict-payload";
 import { buildVerdictPayload } from "../../../../lib/chat/verdict-payload";
+import { db } from "../../../../lib/db";
+import { detectMessageLanguageWithSignal } from "../../../../lib/i18n/detect";
+import { translations } from "../../../../lib/i18n/dictionary";
+import { parseAskAnswer, resolveReplyLanguage } from "../../../../lib/i18n/preference";
+import { runRulesEngine } from "../../../../lib/rules/engine";
+import { isNewClaimText } from "../../../../lib/whatsapp/tone";
 
 type ChatStreamMessage = UIMessage<{ verdict: VerdictPayload }>;
 
@@ -151,8 +155,132 @@ export async function POST(req: NextRequest) {
 
   const text = lastUserText(parsed.data.messages);
   if (!text) return NextResponse.json({ error: "empty_turn" }, { status: 422 });
-  const locale = parsed.data.locale ?? detectMessageLanguage(text);
+
+  // Language respect (spec 0018): the reply language resolves server side and
+  // the interface locale stays chrome only. Fixed choice wins first, then a
+  // fix phrase on short turns, then fresh detection, then the one time ask,
+  // then the silent fallback. The cookie toggle counts as a setting source.
+  const validLanguage = (value: unknown): "en" | "fr" | null =>
+    value === "en" || value === "fr" ? value : null;
+  const cookieStore = await cookies();
+  const cookieFixed = validLanguage(cookieStore.get("checkam_lang")?.value);
+  let sessionFixed = validLanguage(session.replyLanguage);
+  let userFixed: "en" | "fr" | null = null;
+  let userFixedSource: string | null = null;
+  if (actor.kind === "user") {
+    const owner = await db.user.findUnique({
+      where: { id: actor.userId },
+      select: {
+        preferredLanguage: true,
+        preferredLanguageSource: true,
+      },
+    });
+    userFixed = validLanguage(owner?.preferredLanguage);
+    userFixedSource = owner?.preferredLanguageSource ?? null;
+  }
+  const now = new Date();
+  async function persistWebTriple(language: "en" | "fr", source: string): Promise<void> {
+    await db.chatSession.update({
+      where: { id: sessionId },
+      data: {
+        replyLanguage: language,
+        replyLanguageSource: source,
+        replyLanguageUpdatedAt: now,
+      },
+    });
+    if (actor.kind === "user") {
+      await db.user.update({
+        where: { id: actor.userId },
+        data: {
+          preferredLanguage: language,
+          preferredLanguageSource: source,
+          preferredLanguageUpdatedAt: now,
+        },
+      });
+    }
+  }
+  if (!sessionFixed && cookieFixed) {
+    await persistWebTriple(cookieFixed, "setting");
+    sessionFixed = cookieFixed;
+    if (!userFixed) {
+      userFixed = cookieFixed;
+      userFixedSource = "setting";
+    }
+  }
+  if (!sessionFixed && userFixed) {
+    await db.chatSession.update({
+      where: { id: sessionId },
+      data: {
+        replyLanguage: userFixed,
+        replyLanguageSource: userFixedSource ?? "setting",
+        replyLanguageUpdatedAt: now,
+      },
+    });
+    sessionFixed = userFixed;
+  }
+  let fixed = sessionFixed ?? userFixed ?? cookieFixed;
+  if (!fixed && session.askSentAt) {
+    const answered = parseAskAnswer(text);
+    if (answered) {
+      await persistWebTriple(answered, "ask");
+      fixed = answered;
+    }
+  }
+  const shortTurn = !isNewClaimText(text);
+  const detected = detectMessageLanguageWithSignal(text);
+  const resolution = resolveReplyLanguage({
+    fixed,
+    text,
+    shortTurn,
+    storedHeuristic: null,
+    askSent: session.askSentAt !== null,
+    detected,
+  });
+  if (resolution.fixedByPhrase) {
+    await persistWebTriple(resolution.fixedByPhrase, "phrase");
+  }
+  const locale = resolution.language;
+  // Interface locale stays chrome only from here: date strings may still use
+  // the page language, while every reply uses the resolved language above.
+  const uiLocale = parsed.data.locale ?? locale;
   const ip = clientIp(req.headers);
+
+  if (resolution.shouldAsk) {
+    const ask = translations.en.fixLanguageAsk;
+    await db.$transaction(async (tx) => {
+      const last = await tx.chatMessage.findFirst({
+        where: { sessionId },
+        orderBy: { seq: "desc" },
+        select: { seq: true },
+      });
+      await tx.chatMessage.create({
+        data: {
+          sessionId,
+          seq: (last?.seq ?? -1) + 1,
+          role: "assistant",
+          text: ask,
+          attachments: [],
+          toolCalls: [],
+          ipHash: hashIp(ip),
+        },
+      });
+      await tx.chatSession.update({
+        where: { id: sessionId },
+        data: { updatedAt: new Date(), askSentAt: new Date() },
+      });
+    });
+    const stream = createUIMessageStream<ChatStreamMessage>({
+      execute: async ({ writer }) => {
+        const partId = "answer-0";
+        writer.write({ type: "text-start", id: partId });
+        for (const slice of ask.match(/.{1,24}/gsu) ?? [ask]) {
+          writer.write({ type: "text-delta", id: partId, delta: slice });
+        }
+        writer.write({ type: "text-end", id: partId });
+      },
+    });
+    return createUIMessageStreamResponse({ stream });
+  }
 
   const stream = createUIMessageStream<ChatStreamMessage>({
     execute: async ({ writer }) => {
@@ -229,6 +357,7 @@ export async function POST(req: NextRequest) {
             } as unknown as object,
             whatsappWarning:
               locale === "fr" ? result.whatsappWarning.fr : result.whatsappWarning.en,
+            replyLanguage: locale,
             clientIpHash: hashIp(ip),
           },
           select: { id: true },
@@ -292,7 +421,7 @@ export async function POST(req: NextRequest) {
 
         if (session.title === "New check") {
           const fallback =
-            `${new Date().toLocaleDateString(locale === "fr" ? "fr-CM" : "en-CM")} · ${text.split(/\s+/).slice(0, 6).join(" ")}`.slice(
+            `${new Date().toLocaleDateString(uiLocale === "fr" ? "fr-CM" : "en-CM")} · ${text.split(/\s+/).slice(0, 6).join(" ")}`.slice(
               0,
               60,
             );

@@ -65,10 +65,13 @@ export async function openThread(params: {
     const lastInboundAt = windowStart(event.inboundAt, event.createdAt);
     const expiresAt = windowExpiry(lastInboundAt);
 
-    // Warm chat tone (spec 0017): a fresh window clears the tone marker, so
-    // the next reply is full again. Fresh means no thread yet, or the stored
-    // window had already expired when this message arrived. An inbound that
-    // merely extends a live window keeps the marker.
+    // Warm chat tone (spec 0017) plus language respect (spec 0018): a fresh
+    // window clears the tone marker, so the next reply is full again. The
+    // heuristic thread language is window scoped and clears with it. The
+    // fixed preferred triple plus the ask stamp survive, so your saved pick
+    // and your answered ask carry across windows. Fresh means no thread yet,
+    // or the stored window had already expired when this message arrived. An
+    // inbound that merely extends a live window keeps the marker.
     const existing = await tx.whatsAppThread.findUnique({
       where: { threadKey: fromNumber },
       select: {
